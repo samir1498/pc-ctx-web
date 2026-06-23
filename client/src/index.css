@@ -1,0 +1,59 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+@import "highlight.js/styles/github-dark.css";
+
+@theme {
+  --color-page: #0b0b12;
+  --color-surface: #111118;
+  --color-elevated: #181820;
+  --color-border: #222230;
+  --color-foreground: #ededef;
+  --color-secondary: #a1a1b5;
+  --color-accent: #6366f1;
+  --color-accent-subtle: rgba(99, 102, 241, 0.12);
+  --color-green: #22c55e;
+  --color-green-bg: rgba(34, 197, 94, 0.12);
+  --color-amber: #f59e0b;
+  --color-amber-bg: rgba(245, 158, 11, 0.12);
+  --color-blue: #3b82f6;
+  --color-blue-bg: rgba(59, 130, 246, 0.12);
+  --color-red: #ef4444;
+  --color-red-bg: rgba(239, 68, 68, 0.12);
+}
+
+body {
+  background-color: var(--color-page);
+  color: var(--color-foreground);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out;
+}
+
+.rdp-has-progress::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background-color: var(--color-accent);
+}
+
+.rdp-day_selected.rdp-has-progress::after {
+  background-color: white;
+}
+
+@keyframes donut-fill {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}

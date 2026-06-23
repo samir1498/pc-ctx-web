@@ -1,0 +1,20 @@
+{
+  "name": "pc-ctx-web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler pages dev --port 8788",
+    "build": "cd client && bun install --frozen-lockfile && bun run build",
+    "bundle": "npm run build && tar czf web-ui.tar.gz -C client/dist .",
+    "deploy": "npm run build && wrangler pages deploy client/dist --project-name pc-ctx-web",
+    "typecheck": "cd client && npx tsc --noEmit"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250201.0",
+    "wrangler": "^4.0.0"
+  },
+  "dependencies": {
+    "hono": "^4.7.0",
+    "js-yaml": "^5.0.0"
+  }
+}
