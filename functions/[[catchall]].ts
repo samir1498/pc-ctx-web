@@ -63,7 +63,7 @@ function parseFrontmatter(raw: string): { frontmatter: Record<string, unknown>; 
   }
 }
 
-const FOLDERS = ['plans', 'roadmaps', 'references', 'progress'] as const
+const FOLDERS = ['plans', 'roadmaps', 'references', 'progress', 'ideas', 'processes'] as const
 
 app.get('/api/:folder', async (c) => {
   const { folder } = c.req.param()
