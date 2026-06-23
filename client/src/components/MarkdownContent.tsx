@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { marked } from 'marked'
 import { markedHighlight } from 'marked-highlight'
 import hljs from 'highlight.js'
+import DOMPurify from 'dompurify'
 
 marked.use(markedHighlight({
   langPrefix: 'hljs language-',
@@ -18,7 +19,7 @@ interface MarkdownContentProps {
 }
 
 export function MarkdownContent({ body }: MarkdownContentProps) {
-  const html = useMemo(() => marked.parse(body, { async: false }) as string, [body])
+  const html = useMemo(() => DOMPurify.sanitize(marked.parse(body, { async: false }) as string), [body])
 
   return (
     <div

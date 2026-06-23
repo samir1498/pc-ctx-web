@@ -37,22 +37,6 @@ body {
   animation: fade-in 0.2s ease-out;
 }
 
-.rdp-has-progress::after {
-  content: '';
-  position: absolute;
-  bottom: 2px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background-color: var(--color-accent);
-}
-
-.rdp-day_selected.rdp-has-progress::after {
-  background-color: white;
-}
-
 @keyframes donut-fill {
   from { opacity: 0; }
   to { opacity: 1; }

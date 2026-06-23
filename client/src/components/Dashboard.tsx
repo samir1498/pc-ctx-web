@@ -1,28 +1,28 @@
 import { useMemo } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { motion } from 'framer-motion'
+import type { Variants } from 'framer-motion'
 import { useFolder } from '../hooks/useContext'
 import type { ContextItem } from '../types'
 import { AnimatedCounter } from './AnimatedCounter'
 import { DonutChart } from './DonutChart'
 import { BarChart } from './BarChart'
-import { LoadingSpinner } from './LoadingSpinner'
 import { DashboardSkeleton } from './Skeleton'
 import { Target, Map, BookOpen, TrendingUp, ArrowUpRight } from 'lucide-react'
 
-const container = {
+const containerVariants: Variants = {
   hidden: { opacity: 0 },
   show: { opacity: 1, transition: { staggerChildren: 0.08 } },
 }
 
-const item = {
+const itemVariants: Variants = {
   hidden: { opacity: 0, y: 20 },
   show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: 'easeOut' } },
 }
 
 function StatCard({ label, count, icon: Icon, color }: { label: string; count: number; icon: React.ElementType; color: string }) {
   return (
-    <motion.div variants={item} className="relative px-4 py-3 rounded-xl border border-border bg-surface overflow-hidden group">
+    <motion.div variants={itemVariants} className="relative px-4 py-3 rounded-xl border border-border bg-surface overflow-hidden group">
       <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" style={{ background: `linear-gradient(135deg, ${color}08, transparent)` }} />
       <div className="relative flex items-center justify-between">
         <div className="space-y-0.5">
@@ -42,14 +42,14 @@ function StatCard({ label, count, icon: Icon, color }: { label: string; count: n
 function PlanCard({ item }: { item: ContextItem }) {
   const navigate = useNavigate()
   const fm = item.frontmatter
-  const title = (fm?.title as string) || item.slug.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
-  const status = fm?.status as string | undefined
-  const prio = fm?.priority as number | undefined
-  const tldr = fm?.tldr as string | undefined
+  const title = fm?.title || item.slug.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+  const status = fm?.status
+  const prio = fm?.priority
+  const tldr = fm?.tldr
 
   return (
     <motion.button
-      variants={item}
+      variants={itemVariants}
       whileHover={{ scale: 1.01, x: 4 }}
       onClick={() => navigate({ to: '/plan/$slug', params: { slug: item.slug } })}
       className="w-full text-left px-3.5 py-2.5 rounded-xl border border-border bg-surface hover:border-accent/40 transition-colors group"
@@ -86,7 +86,7 @@ function PlanCard({ item }: { item: ContextItem }) {
 
 function TimelineItem({ label, date }: { label: string; date: string }) {
   return (
-    <motion.div variants={item} className="flex items-center gap-3">
+    <motion.div variants={itemVariants} className="flex items-center gap-3">
       <div className="w-2 h-2 rounded-full bg-accent/50 shrink-0" />
       <div className="flex-1 min-w-0">
         <p className="text-xs text-foreground truncate">{label}</p>
@@ -109,7 +109,7 @@ export function Dashboard() {
     if (!plans.data) return []
     const counts: Record<string, number> = { active: 0, paused: 0, done: 0, cancelled: 0 }
     for (const p of plans.data) {
-      const s = (p.frontmatter?.status as string) || 'other'
+      const s = p.frontmatter?.status || 'other'
       counts[s] = (counts[s] || 0) + 1
     }
     return [
@@ -137,7 +137,7 @@ export function Dashboard() {
   const topPlans = useMemo(() => {
     if (!plans.data) return []
     return [...plans.data]
-      .sort((a, b) => ((b.frontmatter?.priority as number) || 0) - ((a.frontmatter?.priority as number) || 0))
+      .sort((a, b) => (b.frontmatter?.priority || 0) - (a.frontmatter?.priority || 0))
       .slice(0, 5)
   }, [plans.data])
 
@@ -150,8 +150,8 @@ export function Dashboard() {
   if (error) return <div className="text-red text-sm">Error: {(error as Error).message}</div>
 
   return (
-    <motion.div variants={container} initial="hidden" animate="show" className="space-y-5 max-w-7xl">
-      <motion.div variants={item}>
+    <motion.div variants={containerVariants} initial="hidden" animate="show" className="space-y-5 max-w-7xl">
+      <motion.div variants={itemVariants}>
         <h1 className="text-xl font-bold text-foreground tracking-tight">Dashboard</h1>
         <p className="text-sm text-secondary mt-0.5">
           <AnimatedCounter to={(plans.data?.length ?? 0) + (roadmaps.data?.length ?? 0) + (references.data?.length ?? 0) + (progress.data?.length ?? 0)} /> items across 4 domains
@@ -166,7 +166,7 @@ export function Dashboard() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <motion.div variants={item} className="rounded-xl border border-border bg-surface p-4">
+        <motion.div variants={itemVariants} className="rounded-xl border border-border bg-surface p-4">
           <h3 className="text-xs font-semibold text-secondary uppercase tracking-wider mb-3">Status Distribution</h3>
           <div className="flex items-center gap-5">
             <DonutChart data={statusData.length > 0 ? statusData : [{ label: 'No data', value: 1, color: '#27272a' }]} />
@@ -182,7 +182,7 @@ export function Dashboard() {
           </div>
         </motion.div>
 
-        <motion.div variants={item} className="rounded-xl border border-border bg-surface p-4">
+        <motion.div variants={itemVariants} className="rounded-xl border border-border bg-surface p-4">
           <h3 className="text-xs font-semibold text-secondary uppercase tracking-wider mb-3">Weekly Activity</h3>
           {weekData.length > 0 ? (
             <BarChart data={weekData} color="#6366f1" />
@@ -193,7 +193,7 @@ export function Dashboard() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <motion.div variants={item} className="rounded-xl border border-border bg-surface p-4">
+        <motion.div variants={itemVariants} className="rounded-xl border border-border bg-surface p-4">
           <h3 className="text-xs font-semibold text-secondary uppercase tracking-wider mb-3">Top Plans</h3>
           <div className="space-y-1">
             {topPlans.map((p) => <PlanCard key={p.slug} item={p} />)}
@@ -201,7 +201,7 @@ export function Dashboard() {
           </div>
         </motion.div>
 
-        <motion.div variants={item} className="rounded-xl border border-border bg-surface p-4">
+        <motion.div variants={itemVariants} className="rounded-xl border border-border bg-surface p-4">
           <h3 className="text-xs font-semibold text-secondary uppercase tracking-wider mb-3">Recent Progress</h3>
           <div className="space-y-2">
             {recentProgress.map((p) => (

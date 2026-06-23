@@ -1,8 +1,4 @@
-interface Task {
-  id: string
-  title: string
-  status?: string
-}
+import type { Task } from '../types'
 
 interface TaskListProps {
   tasks: Task[]

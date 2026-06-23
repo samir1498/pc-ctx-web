@@ -1,11 +1,5 @@
-import type { Folder } from '../types'
-import { FOLDER_LABELS } from '../types'
 import { DashboardIcon, PlansIcon, RoadmapsIcon, ResearchIcon, ProgressIcon } from './Icons'
 import { Link } from '@tanstack/react-router'
-
-interface SidebarProps {
-  activeFolder: Folder | null
-}
 
 const nav = [
   { label: 'Dashboard', to: '/', icon: DashboardIcon },
@@ -15,7 +9,7 @@ const nav = [
   { label: 'Progress', to: '/progress', icon: ProgressIcon },
 ]
 
-export function Sidebar({ activeFolder }: SidebarProps) {
+export function Sidebar() {
   return (
     <aside className="w-56 border-r border-border bg-page flex flex-col shrink-0">
       <div className="px-5 py-5 border-b border-border">
