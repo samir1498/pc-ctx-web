@@ -63,7 +63,7 @@ function parseFrontmatter(raw: string): { frontmatter: Record<string, unknown>; 
   }
 }
 
-const FOLDERS = ['plans', 'roadmaps', 'references', 'progress', 'ideas', 'processes'] as const
+const FOLDERS = ['plans', 'roadmaps', 'references', 'progress', 'ideas', 'processes', 'handoffs', 'archive'] as const
 
 app.get('/api/:folder', async (c) => {
   const { folder } = c.req.param()
@@ -72,6 +72,11 @@ app.get('/api/:folder', async (c) => {
   }
 
   const res = await ghFetch(c.env, folder)
+  if (res.status === 404) {
+    // Folder not present in the context repo yet (e.g. handoffs/ or archive/
+    // not created). Treat as an empty domain rather than an error.
+    return c.json([])
+  }
   if (!res.ok) {
     return c.json({ error: `Failed to fetch ${folder}`, status: res.status }, 500)
   }

@@ -3,41 +3,130 @@
 @import "highlight.js/styles/github-dark.css";
 
 @theme {
-  --color-page: #0b0b12;
-  --color-surface: #111118;
-  --color-elevated: #181820;
-  --color-border: #222230;
-  --color-foreground: #ededef;
-  --color-secondary: #a1a1b5;
-  --color-accent: #6366f1;
-  --color-accent-subtle: rgba(99, 102, 241, 0.12);
+  /* surfaces */
+  --color-page: #0a0a0b;
+  --color-panel: #0c0c0f;
+  --color-input: #0d0d10;
+  --color-hover: #101012;
+  --color-elevated: #111116;
+
+  /* lines */
+  --color-border: #1b1b1f;
+  --color-line: #26262b;
+  --color-faintline: #161619;
+
+  /* text */
+  --color-foreground: #f3f2ee;
+  --color-secondary: #a9a9af;
+  --color-muted: #8d8d94;
+  --color-dim: #6b6b70;
+  --color-faint: #55555b;
+  --color-fainter: #3f3f45;
+
+  /* status / accents */
   --color-green: #22c55e;
-  --color-green-bg: rgba(34, 197, 94, 0.12);
-  --color-amber: #f59e0b;
-  --color-amber-bg: rgba(245, 158, 11, 0.12);
   --color-blue: #3b82f6;
-  --color-blue-bg: rgba(59, 130, 246, 0.12);
+  --color-amber: #f59e0b;
   --color-red: #ef4444;
-  --color-red-bg: rgba(239, 68, 68, 0.12);
+  --color-purple: #a78bfa;
+  --color-indigo: #6366f1;
+
+  /* fonts */
+  --font-display: "Space Grotesk", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* kill default radii — v2 is sharp-edged */
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
 }
 
+html,
 body {
   background-color: var(--color-page);
   color: var(--color-foreground);
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", sans-serif;
+  font-family: var(--font-display);
   -webkit-font-smoothing: antialiased;
 }
 
+/* faint horizontal scanline texture from the v2 mock */
+body {
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(255, 255, 255, 0.012) 2px,
+    rgba(255, 255, 255, 0.012) 3px
+  );
+}
+
+/* scrollbars */
+*::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+*::-webkit-scrollbar-thumb {
+  background: #222;
+  border: 3px solid var(--color-page);
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* row hover used across tables/lists */
+.v2row {
+  transition: background 0.15s;
+}
+.v2row:hover {
+  background: var(--color-hover);
+}
+
+@keyframes v2rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-rise {
+  animation: v2rise 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes v2blink {
+  0%,
+  45% {
+    opacity: 1;
+  }
+  50%,
+  95% {
+    opacity: 0.25;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+.animate-blink {
+  animation: v2blink 2.2s steps(1) infinite;
+}
+
+@keyframes v2draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
 @keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
-
 .animate-fade-in {
-  animation: fade-in 0.2s ease-out;
-}
-
-@keyframes donut-fill {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  animation: fade-in 0.25s ease-out;
 }

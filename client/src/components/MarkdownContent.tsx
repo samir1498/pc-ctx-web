@@ -23,7 +23,7 @@ export function MarkdownContent({ body }: MarkdownContentProps) {
 
   return (
     <div
-      className="prose prose-sm max-w-none prose-invert prose-headings:text-foreground prose-a:text-accent prose-strong:text-foreground prose-code:before:content-none prose-code:after:content-none prose-hr:border-border prose-code:font-normal"
+      className="prose prose-sm max-w-none prose-invert prose-headings:text-foreground prose-a:text-blue prose-strong:text-foreground prose-code:before:content-none prose-code:after:content-none prose-hr:border-border prose-code:font-normal"
       dangerouslySetInnerHTML={{ __html: html }}
     />
   )
