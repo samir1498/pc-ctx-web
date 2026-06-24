@@ -52,7 +52,6 @@ export function PlanDetailPage({ slug }: PlanDetailPageProps) {
 
   return (
     <div className="animate-fade-in">
-<<<<<<< HEAD
       <div className="px-10 pt-6">
         <button
           onClick={() => navigate({ to: '/plans' })}
@@ -118,51 +117,9 @@ export function PlanDetailPage({ slug }: PlanDetailPageProps) {
               ))
             ) : (
               <div className="py-2.5 font-mono text-[11px] text-faint">— none</div>
-=======
-      <button
-        onClick={() => navigate({ to: '/plans' })}
-        className="flex items-center gap-1 text-xs text-secondary hover:text-foreground mb-6 transition-colors"
-      >
-        <ChevronLeft />
-        Plans
-      </button>
-
-      <article>
-        <header className="mb-8">
-          <h1 className="text-xl font-semibold text-foreground mb-2">{fm.title}</h1>
-          {fm.tldr && (
-            <p className="text-sm text-secondary leading-relaxed">{fm.tldr}</p>
-          )}
-          <div className="flex items-center gap-2 mt-4">
-            {fm.status && (
-              <span className={`px-2 py-0.5 rounded text-xs font-medium border ${
-                fm.status === 'active' ? 'text-green bg-green-bg border-green/20' :
-                fm.status === 'paused' ? 'text-amber bg-amber-bg border-amber/20' :
-                fm.status === 'done' ? 'text-blue bg-blue-bg border-blue/20' :
-                'text-secondary bg-elevated border-border'
-              }`}>
-                {fm.status}
-              </span>
-            )}
-            {fm.category && (
-              <span className="px-2 py-0.5 rounded text-xs font-medium bg-elevated text-secondary border border-border">
-                {fm.category}
-              </span>
-            )}
-            {fm.priority !== undefined && (
-              <span className="px-2 py-0.5 rounded text-xs font-medium bg-elevated text-secondary border border-border">
-                P{fm.priority}
-              </span>
-            )}
-            {typeof fm.tasks === 'string' && (
-              <span className="text-xs text-secondary">
-                {fm.tasks} tasks
-              </span>
->>>>>>> origin/main
             )}
           </div>
 
-<<<<<<< HEAD
           <div className="mt-7 font-mono text-[11px] tracking-[0.12em] text-dim">BACKLINKS ↘</div>
           <div className="mt-3">
             {backlinks.length > 0 ? (
@@ -182,21 +139,6 @@ export function PlanDetailPage({ slug }: PlanDetailPageProps) {
           </div>
         </div>
       </div>
-=======
-        {Array.isArray(fm.tasks) && (
-          <section className="mb-8">
-            <h2 className="text-xs font-semibold text-foreground uppercase tracking-wider mb-3">Tasks</h2>
-            <TaskList tasks={fm.tasks} />
-          </section>
-        )}
-
-        {item.body && (
-          <section>
-            <MarkdownContent body={item.body} />
-          </section>
-        )}
-      </article>
->>>>>>> origin/main
     </div>
   )
 }

@@ -128,14 +128,5 @@ body {
   }
 }
 .animate-fade-in {
-<<<<<<< HEAD
   animation: fade-in 0.25s ease-out;
-=======
-  animation: fade-in 0.2s ease-out;
-}
-
-@keyframes donut-fill {
-  from { opacity: 0; }
-  to { opacity: 1; }
->>>>>>> origin/main
 }
