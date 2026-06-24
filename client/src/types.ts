@@ -1,8 +1,17 @@
-export type Folder = 'plans' | 'roadmaps' | 'references' | 'progress'
+export type Folder =
+  | 'plans'
+  | 'roadmaps'
+  | 'references'
+  | 'progress'
+  | 'ideas'
+  | 'processes'
+  | 'handoffs'
+  | 'archive'
 
 export interface Task {
   id: string
-  title: string
+  title?: string
+  desc?: string
   status?: string
 }
 
@@ -11,7 +20,7 @@ export interface Frontmatter {
   slug?: string
   status?: string
   category?: string
-  created?: string
+  created?: string | number
   tldr?: string
   priority?: number
   tags?: string[]
@@ -40,4 +49,8 @@ export const FOLDER_LABELS: Record<Folder, string> = {
   roadmaps: 'Roadmaps',
   references: 'References',
   progress: 'Progress',
+  ideas: 'Ideas',
+  processes: 'Processes',
+  handoffs: 'Handoffs',
+  archive: 'Archive',
 }

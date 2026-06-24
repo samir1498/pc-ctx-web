@@ -28,7 +28,7 @@ export function TaskList({ tasks }: TaskListProps) {
         return (
           <div key={task.id} className={`flex items-center gap-2.5 px-3 py-2 rounded-md border ${s}`}>
             <span className="text-xs w-4 text-center shrink-0">{statusIcons[task.status || 'pending'] || '○'}</span>
-            <span className="text-xs text-foreground">{task.title}</span>
+            <span className="text-xs text-foreground">{task.desc ?? task.title}</span>
           </div>
         )
       })}
