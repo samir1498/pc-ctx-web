@@ -1,5 +1,8 @@
 import type { Task } from '../types'
+<<<<<<< HEAD
 import { statusColor, taskMark } from '../lib/ui'
+=======
+>>>>>>> origin/main
 
 interface TaskListProps {
   tasks: Task[]

@@ -1,7 +1,12 @@
+<<<<<<< HEAD
+=======
+import { DashboardIcon, PlansIcon, RoadmapsIcon, ResearchIcon, ProgressIcon } from './Icons'
+>>>>>>> origin/main
 import { Link } from '@tanstack/react-router'
 import { useFolder } from '../hooks/useContext'
 import type { Folder } from '../types'
 
+<<<<<<< HEAD
 interface NavLeaf {
   label: string
   to: string
@@ -42,6 +47,17 @@ function NavRow({ item, idx }: { item: NavLeaf; idx: number }) {
   const counted = useFolder(item.folder ?? 'plans')
   const count = item.folder ? counted.data?.length : undefined
 
+=======
+const nav = [
+  { label: 'Dashboard', to: '/', icon: DashboardIcon },
+  { label: 'Plans', to: '/plans', icon: PlansIcon },
+  { label: 'Roadmaps', to: '/roadmaps', icon: RoadmapsIcon },
+  { label: 'References', to: '/references', icon: ResearchIcon },
+  { label: 'Progress', to: '/progress', icon: ProgressIcon },
+]
+
+export function Sidebar() {
+>>>>>>> origin/main
   return (
     <Link
       to={item.to}

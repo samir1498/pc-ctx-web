@@ -30,6 +30,28 @@ export interface Frontmatter {
   [key: string]: unknown
 }
 
+export interface Task {
+  id: string
+  title: string
+  status?: string
+}
+
+export interface Frontmatter {
+  title?: string
+  slug?: string
+  status?: string
+  category?: string
+  created?: string
+  tldr?: string
+  priority?: number
+  tags?: string[]
+  period?: string
+  tasks?: Task[] | string
+  entries?: unknown[]
+  references?: string[]
+  [key: string]: unknown
+}
+
 export interface ContextItem {
   slug: string
   name: string
