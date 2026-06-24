@@ -9,8 +9,6 @@ interface BarChartProps {
 
 export function BarChart({ data, max, color = 'var(--color-accent)', height = 120 }: BarChartProps) {
   const maxVal = max ?? Math.max(...data.map((d) => d.value), 1)
-  const barGap = 4
-  const barWidth = Math.max(8, Math.min(32, (height - barGap * (data.length - 1)) / data.length))
 
   return (
     <div className="flex items-end gap-1" style={{ height }}>

@@ -8,12 +8,12 @@ interface ItemCardProps {
 export function ItemCard({ item, onClick }: ItemCardProps) {
   const fm = item.frontmatter
   const title =
-    (fm?.title as string) ||
-    (fm?.tldr as string) ||
+    fm?.title ||
+    fm?.tldr ||
     item.slug.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
 
-  const status = fm?.status as string | undefined
-  const priority = fm?.priority as number | undefined
+  const status = fm?.status
+  const priority = fm?.priority
 
   return (
     <button
@@ -24,7 +24,7 @@ export function ItemCard({ item, onClick }: ItemCardProps) {
         <div className="min-w-0 flex-1">
           <h3 className="text-sm font-medium text-foreground truncate">{title}</h3>
           {fm?.tldr && (
-            <p className="text-xs text-secondary mt-1 line-clamp-2 leading-relaxed">{fm.tldr as string}</p>
+            <p className="text-xs text-secondary mt-1 line-clamp-2 leading-relaxed">{fm.tldr}</p>
           )}
         </div>
         <div className="flex items-center gap-2 shrink-0">

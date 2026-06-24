@@ -22,7 +22,7 @@ export function PlanDetailPage({ slug }: PlanDetailPageProps) {
   return (
     <div className="animate-fade-in">
       <button
-        onClick={() => navigate({ to: '/' })}
+        onClick={() => navigate({ to: '/plans' })}
         className="flex items-center gap-1 text-xs text-secondary hover:text-foreground mb-6 transition-colors"
       >
         <ChevronLeft />
@@ -31,9 +31,9 @@ export function PlanDetailPage({ slug }: PlanDetailPageProps) {
 
       <article>
         <header className="mb-8">
-          <h1 className="text-xl font-semibold text-foreground mb-2">{fm.title as string}</h1>
+          <h1 className="text-xl font-semibold text-foreground mb-2">{fm.title}</h1>
           {fm.tldr && (
-            <p className="text-sm text-secondary leading-relaxed">{fm.tldr as string}</p>
+            <p className="text-sm text-secondary leading-relaxed">{fm.tldr}</p>
           )}
           <div className="flex items-center gap-2 mt-4">
             {fm.status && (
@@ -43,22 +43,22 @@ export function PlanDetailPage({ slug }: PlanDetailPageProps) {
                 fm.status === 'done' ? 'text-blue bg-blue-bg border-blue/20' :
                 'text-secondary bg-elevated border-border'
               }`}>
-                {fm.status as string}
+                {fm.status}
               </span>
             )}
             {fm.category && (
               <span className="px-2 py-0.5 rounded text-xs font-medium bg-elevated text-secondary border border-border">
-                {fm.category as string}
+                {fm.category}
               </span>
             )}
             {fm.priority !== undefined && (
               <span className="px-2 py-0.5 rounded text-xs font-medium bg-elevated text-secondary border border-border">
-                P{fm.priority as number}
+                P{fm.priority}
               </span>
             )}
             {typeof fm.tasks === 'string' && (
               <span className="text-xs text-secondary">
-                {fm.tasks as string} tasks
+                {fm.tasks} tasks
               </span>
             )}
           </div>
@@ -67,7 +67,7 @@ export function PlanDetailPage({ slug }: PlanDetailPageProps) {
         {Array.isArray(fm.tasks) && (
           <section className="mb-8">
             <h2 className="text-xs font-semibold text-foreground uppercase tracking-wider mb-3">Tasks</h2>
-            <TaskList tasks={(fm.tasks as { id: string; title: string; status: string }[])} />
+            <TaskList tasks={fm.tasks} />
           </section>
         )}
 

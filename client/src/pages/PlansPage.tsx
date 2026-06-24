@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useFolder } from '../hooks/useContext'
 import type { ContextItem } from '../types'
-import { LoadingSpinner } from '../components/LoadingSpinner'
 import { PlansPageSkeleton } from '../components/Skeleton'
 import { HoverCard, HoverCardTrigger, HoverCardContent } from '../components/HoverCard'
 
@@ -10,10 +9,10 @@ const PAGE_SIZE = 10
 
 function PlanRow({ item }: { item: ContextItem }) {
   const fm = item.frontmatter
-  const title = (fm?.title as string) || item.slug.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
-  const status = fm?.status as string | undefined
-  const prio = fm?.priority as number | undefined
-  const tldr = fm?.tldr as string | undefined
+  const title = fm?.title || item.slug.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+  const status = fm?.status
+  const prio = fm?.priority
+  const tldr = fm?.tldr
 
   return (
     <div className="flex items-center gap-3 px-4 py-3 rounded-lg border border-border bg-surface hover:bg-elevated hover:border-accent/30 transition-all min-w-0">
@@ -26,7 +25,7 @@ function PlanRow({ item }: { item: ContextItem }) {
             <p className="text-sm font-semibold text-foreground leading-snug">{title}</p>
             {tldr && <p className="text-xs text-secondary leading-relaxed">{tldr}</p>}
             {Array.isArray(fm?.tasks) && (
-              <div className="text-xs text-secondary">{fm.tasks.length} tasks — {fm.tasks.filter((t: { status?: string }) => t.status === 'done').length} done</div>
+              <div className="text-xs text-secondary">{fm.tasks.length} tasks - {fm.tasks.filter((t) => t.status === 'done').length} done</div>
             )}
             {fm?.created && <div className="text-[10px] text-secondary">Created: {String(fm.created)}</div>}
           </div>
@@ -89,26 +88,26 @@ export function PlansPage() {
 
     if (search) {
       const q = search.toLowerCase()
-      result = result.filter((i) => ((i.frontmatter?.title as string) || i.slug).toLowerCase().includes(q))
+      result = result.filter((i) => (i.frontmatter?.title || i.slug).toLowerCase().includes(q))
     }
-    if (filterStatus !== 'all') result = result.filter((i) => (i.frontmatter?.status as string) === filterStatus)
+    if (filterStatus !== 'all') result = result.filter((i) => i.frontmatter?.status === filterStatus)
 
     result.sort((a, b) => {
-      if (sortBy === 'priority') return ((b.frontmatter?.priority as number) || 0) - ((a.frontmatter?.priority as number) || 0)
+      if (sortBy === 'priority') return (b.frontmatter?.priority || 0) - (a.frontmatter?.priority || 0)
       if (sortBy === 'date') {
-        const da = (a.frontmatter?.created as number) || 0
-        const db = (b.frontmatter?.created as number) || 0
+        const da = new Date(a.frontmatter?.created ?? 0).getTime()
+        const db = new Date(b.frontmatter?.created ?? 0).getTime()
         return db - da
       }
-      const ta = (a.frontmatter?.title as string) || a.slug
-      const tb = (b.frontmatter?.title as string) || b.slug
+      const ta = a.frontmatter?.title || a.slug
+      const tb = b.frontmatter?.title || b.slug
       return ta.localeCompare(tb)
     })
     return result
   }, [items, search, filterStatus, sortBy])
 
   const paginated = useMemo(() => filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE), [filtered, page])
-  const allStatuses = useMemo(() => Array.from(new Set(items?.map((i) => i.frontmatter?.status as string).filter(Boolean) ?? [])), [items])
+  const allStatuses = useMemo(() => Array.from(new Set(items?.map((i) => i.frontmatter?.status).filter((s): s is string => Boolean(s)) ?? [])), [items])
 
   if (isLoading) return <PlansPageSkeleton />
   if (error) return <div className="text-red text-sm">Error: {(error as Error).message}</div>
