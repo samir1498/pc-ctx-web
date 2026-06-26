@@ -10,8 +10,7 @@ export type Folder =
 
 export interface Task {
   id: string
-  title?: string
-  desc?: string
+  title: string
   status?: string
 }
 

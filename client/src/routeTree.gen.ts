@@ -12,7 +12,12 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as RoadmapsRouteImport } from './routes/roadmaps'
 import { Route as ReferencesRouteImport } from './routes/references'
 import { Route as ProgressRouteImport } from './routes/progress'
+import { Route as ProcessesRouteImport } from './routes/processes'
 import { Route as PlansRouteImport } from './routes/plans'
+import { Route as IdeasRouteImport } from './routes/ideas'
+import { Route as HandoffsRouteImport } from './routes/handoffs'
+import { Route as GraphRouteImport } from './routes/graph'
+import { Route as ArchiveRouteImport } from './routes/archive'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PlanSlugRouteImport } from './routes/plan.$slug'
 
@@ -31,9 +36,34 @@ const ProgressRoute = ProgressRouteImport.update({
   path: '/progress',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProcessesRoute = ProcessesRouteImport.update({
+  id: '/processes',
+  path: '/processes',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PlansRoute = PlansRouteImport.update({
   id: '/plans',
   path: '/plans',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IdeasRoute = IdeasRouteImport.update({
+  id: '/ideas',
+  path: '/ideas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HandoffsRoute = HandoffsRouteImport.update({
+  id: '/handoffs',
+  path: '/handoffs',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GraphRoute = GraphRouteImport.update({
+  id: '/graph',
+  path: '/graph',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ArchiveRoute = ArchiveRouteImport.update({
+  id: '/archive',
+  path: '/archive',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -49,7 +79,12 @@ const PlanSlugRoute = PlanSlugRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/archive': typeof ArchiveRoute
+  '/graph': typeof GraphRoute
+  '/handoffs': typeof HandoffsRoute
+  '/ideas': typeof IdeasRoute
   '/plans': typeof PlansRoute
+  '/processes': typeof ProcessesRoute
   '/progress': typeof ProgressRoute
   '/references': typeof ReferencesRoute
   '/roadmaps': typeof RoadmapsRoute
@@ -57,7 +92,12 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/archive': typeof ArchiveRoute
+  '/graph': typeof GraphRoute
+  '/handoffs': typeof HandoffsRoute
+  '/ideas': typeof IdeasRoute
   '/plans': typeof PlansRoute
+  '/processes': typeof ProcessesRoute
   '/progress': typeof ProgressRoute
   '/references': typeof ReferencesRoute
   '/roadmaps': typeof RoadmapsRoute
@@ -66,7 +106,12 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/archive': typeof ArchiveRoute
+  '/graph': typeof GraphRoute
+  '/handoffs': typeof HandoffsRoute
+  '/ideas': typeof IdeasRoute
   '/plans': typeof PlansRoute
+  '/processes': typeof ProcessesRoute
   '/progress': typeof ProgressRoute
   '/references': typeof ReferencesRoute
   '/roadmaps': typeof RoadmapsRoute
@@ -76,17 +121,38 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/archive'
+    | '/graph'
+    | '/handoffs'
+    | '/ideas'
     | '/plans'
+    | '/processes'
     | '/progress'
     | '/references'
     | '/roadmaps'
     | '/plan/$slug'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/plans' | '/progress' | '/references' | '/roadmaps' | '/plan/$slug'
+  to:
+    | '/'
+    | '/archive'
+    | '/graph'
+    | '/handoffs'
+    | '/ideas'
+    | '/plans'
+    | '/processes'
+    | '/progress'
+    | '/references'
+    | '/roadmaps'
+    | '/plan/$slug'
   id:
     | '__root__'
     | '/'
+    | '/archive'
+    | '/graph'
+    | '/handoffs'
+    | '/ideas'
     | '/plans'
+    | '/processes'
     | '/progress'
     | '/references'
     | '/roadmaps'
@@ -95,7 +161,12 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ArchiveRoute: typeof ArchiveRoute
+  GraphRoute: typeof GraphRoute
+  HandoffsRoute: typeof HandoffsRoute
+  IdeasRoute: typeof IdeasRoute
   PlansRoute: typeof PlansRoute
+  ProcessesRoute: typeof ProcessesRoute
   ProgressRoute: typeof ProgressRoute
   ReferencesRoute: typeof ReferencesRoute
   RoadmapsRoute: typeof RoadmapsRoute
@@ -125,11 +196,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProgressRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/processes': {
+      id: '/processes'
+      path: '/processes'
+      fullPath: '/processes'
+      preLoaderRoute: typeof ProcessesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/plans': {
       id: '/plans'
       path: '/plans'
       fullPath: '/plans'
       preLoaderRoute: typeof PlansRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ideas': {
+      id: '/ideas'
+      path: '/ideas'
+      fullPath: '/ideas'
+      preLoaderRoute: typeof IdeasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/handoffs': {
+      id: '/handoffs'
+      path: '/handoffs'
+      fullPath: '/handoffs'
+      preLoaderRoute: typeof HandoffsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/graph': {
+      id: '/graph'
+      path: '/graph'
+      fullPath: '/graph'
+      preLoaderRoute: typeof GraphRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/archive': {
+      id: '/archive'
+      path: '/archive'
+      fullPath: '/archive'
+      preLoaderRoute: typeof ArchiveRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -151,7 +257,12 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ArchiveRoute: ArchiveRoute,
+  GraphRoute: GraphRoute,
+  HandoffsRoute: HandoffsRoute,
+  IdeasRoute: IdeasRoute,
   PlansRoute: PlansRoute,
+  ProcessesRoute: ProcessesRoute,
   ProgressRoute: ProgressRoute,
   ReferencesRoute: ReferencesRoute,
   RoadmapsRoute: RoadmapsRoute,

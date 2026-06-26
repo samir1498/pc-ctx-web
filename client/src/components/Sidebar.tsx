@@ -1,46 +1,124 @@
-import { DashboardIcon, PlansIcon, RoadmapsIcon, ResearchIcon, ProgressIcon } from './Icons'
 import { Link } from '@tanstack/react-router'
+import { useFolder } from '../hooks/useContext'
+import type { Folder } from '../types'
 
-const nav = [
-  { label: 'Dashboard', to: '/', icon: DashboardIcon },
-  { label: 'Plans', to: '/plans', icon: PlansIcon },
-  { label: 'Roadmaps', to: '/roadmaps', icon: RoadmapsIcon },
-  { label: 'References', to: '/references', icon: ResearchIcon },
-  { label: 'Progress', to: '/progress', icon: ProgressIcon },
+interface NavLeaf {
+  label: string
+  to: string
+  folder?: Folder
+  glyph?: string
+}
+
+const GROUPS: { title: string; items: NavLeaf[] }[] = [
+  {
+    title: 'PLANNING',
+    items: [
+      { label: 'Dashboard', to: '/' },
+      { label: 'Plans', to: '/plans', folder: 'plans' },
+      { label: 'Roadmaps', to: '/roadmaps', folder: 'roadmaps' },
+      { label: 'Graph', to: '/graph', glyph: '◳' },
+    ],
+  },
+  {
+    title: 'SESSIONS',
+    items: [
+      { label: 'Handoffs', to: '/handoffs', folder: 'handoffs' },
+      { label: 'Progress', to: '/progress', folder: 'progress' },
+    ],
+  },
+  {
+    title: 'LIBRARY',
+    items: [
+      { label: 'References', to: '/references', folder: 'references' },
+      { label: 'Ideas', to: '/ideas', folder: 'ideas' },
+      { label: 'Processes', to: '/processes', folder: 'processes' },
+      { label: 'Archive', to: '/archive', folder: 'archive' },
+    ],
+  },
 ]
 
-export function Sidebar() {
+function NavRow({ item, idx }: { item: NavLeaf; idx: number }) {
+  // Each counted row owns its own query; react-query dedupes with the pages.
+  const counted = useFolder(item.folder ?? 'plans')
+  const count = item.folder ? counted.data?.length : undefined
+
   return (
-    <aside className="w-56 border-r border-border bg-page flex flex-col shrink-0">
-      <div className="px-5 py-5 border-b border-border">
-        <h1 className="text-sm font-semibold text-foreground">pc-ctx</h1>
-        <p className="text-xs text-secondary leading-tight">Context Browser</p>
-      </div>
-      <nav className="flex-1 p-2 space-y-0.5">
-        {nav.map(({ label, to, icon: Icon }) => (
-          <Link
-            key={to}
-            to={to}
-            activeProps={{ className: 'bg-elevated text-foreground font-medium' }}
-            inactiveProps={{ className: 'text-secondary hover:text-foreground hover:bg-elevated/50' }}
-            className="flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors"
+    <Link
+      to={item.to}
+      activeOptions={{ exact: item.to === '/' }}
+      className="group flex items-center gap-2 px-1.5 py-2 text-[13px] no-underline transition-colors"
+    >
+      {({ isActive }: { isActive: boolean }) => (
+        <>
+          <span
+            className="w-[5px] text-sm leading-none"
+            style={{ color: isActive ? '#f3f2ee' : 'transparent' }}
           >
-            <Icon />
-            {label}
-          </Link>
+            ▍
+          </span>
+          <span className="w-3.5 font-mono text-[10px] text-faint">
+            {String(idx).padStart(2, '0')}
+          </span>
+          <span
+            className="flex-1 tracking-[0.01em]"
+            style={{
+              color: isActive ? '#f3f2ee' : '#8d8d94',
+              fontWeight: isActive ? 600 : 400,
+            }}
+          >
+            {item.label}
+          </span>
+          {item.glyph ? (
+            <span className="font-mono text-[11px] text-dim">{item.glyph}</span>
+          ) : count !== undefined ? (
+            <span
+              className="font-mono text-[11px]"
+              style={{ color: isActive ? '#9a9aa0' : '#4b4b50' }}
+            >
+              {count}
+            </span>
+          ) : null}
+        </>
+      )}
+    </Link>
+  )
+}
+
+export function Sidebar() {
+  let idx = 0
+  return (
+    <aside className="flex w-[222px] shrink-0 flex-col border-r border-border bg-page">
+      <div className="border-b border-border px-5 pb-[18px] pt-[22px]">
+        <div className="flex items-center gap-2 text-[17px] font-bold tracking-[-0.02em]">
+          <span className="inline-block h-[9px] w-[9px] bg-foreground" />
+          pc&#8209;ctx
+        </div>
+        <div className="mt-2 font-mono text-[10px] tracking-[0.04em] text-faint">
+          CONTEXT&nbsp;BROWSER
+        </div>
+      </div>
+
+      <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-2.5 py-2">
+        {GROUPS.map((g) => (
+          <div key={g.title}>
+            <div className="px-3 pb-1.5 pt-3.5 font-mono text-[9px] tracking-[0.16em] text-fainter">
+              {g.title}
+            </div>
+            {g.items.map((item) => (
+              <NavRow key={item.to} item={item} idx={idx++} />
+            ))}
+          </div>
         ))}
       </nav>
-      <div className="px-4 py-3 border-t border-border space-y-1.5">
-        <a
-          href="https://github.com/samir1498/personal-context"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-2 text-xs text-secondary hover:text-foreground transition-colors"
-        >
-          <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-current"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-          samir1498/personal-context
-        </a>
-        <p className="text-[10px] text-secondary/60 select-none">{__APP_VERSION__} ({__GIT_HASH__})</p>
+
+      <div className="border-t border-border px-[18px] py-3.5 font-mono text-[10px] leading-[1.9] text-dim">
+        <div className="flex items-center gap-[7px]">
+          <span className="inline-block h-1.5 w-1.5 animate-blink bg-green" />
+          SCHEMA&nbsp;VALID
+        </div>
+        <div className="mt-[3px] text-[#444449]">
+          {__APP_VERSION__} / {__GIT_HASH__}
+        </div>
       </div>
     </aside>
   )
