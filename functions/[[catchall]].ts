@@ -63,7 +63,7 @@ function parseFrontmatter(raw: string): { frontmatter: Record<string, unknown>; 
   }
 }
 
-const FOLDERS = ['plans', 'roadmaps', 'references', 'progress', 'ideas', 'processes'] as const
+const FOLDERS = ['plans', 'roadmaps', 'references', 'progress', 'ideas', 'processes', 'handoffs', 'archive'] as const
 
 app.get('/api/:folder', async (c) => {
   const { folder } = c.req.param()
@@ -71,12 +71,30 @@ app.get('/api/:folder', async (c) => {
     return c.notFound()
   }
 
-  const res = await ghFetch(c.env, folder)
-  if (!res.ok) {
-    return c.json({ error: `Failed to fetch ${folder}`, status: res.status }, 500)
+  let res: Response
+  try {
+    res = await ghFetch(c.env, folder)
+  } catch (err) {
+    return c.json({ error: `Failed to fetch ${folder}: ${err instanceof Error ? err.message : err}`, status: 502 }, 502)
   }
 
-  const items = await res.json<GhContent[]>()
+  if (res.status === 404) {
+    // Folder not present in the context repo yet (e.g. handoffs/ or archive/
+    // not created yet). Treat as an empty domain rather than an error.
+    return c.json([])
+  }
+  if (!res.ok) {
+    const body = await res.text().catch(() => '')
+    return c.json({ error: `Failed to fetch ${folder}`, status: res.status, body }, 500)
+  }
+
+  let items: GhContent[]
+  try {
+    items = await res.json<GhContent[]>()
+  } catch (err) {
+    return c.json({ error: `Invalid response from GitHub for ${folder}: ${err instanceof Error ? err.message : err}`, status: 502 }, 502)
+  }
+
   const results = []
 
   for (const item of items) {
@@ -95,22 +113,43 @@ app.get('/api/:folder', async (c) => {
   return c.json(results)
 })
 
+app.onError((err, c) => {
+  console.error('Unhandled error:', err)
+  return c.json({ error: 'Internal server error', message: err instanceof Error ? err.message : String(err) }, 500)
+})
+
 app.get('/api/:folder/:slug', async (c) => {
   const { folder, slug } = c.req.param()
   if (!FOLDERS.includes(folder as typeof FOLDERS[number])) {
     return c.notFound()
   }
 
-  const res = await ghFetch(c.env, `${folder}`)
+  let res: Response
+  try {
+    res = await ghFetch(c.env, folder)
+  } catch (err) {
+    return c.json({ error: `Failed to fetch ${folder}: ${err instanceof Error ? err.message : err}`, status: 502 }, 502)
+  }
   if (!res.ok) return c.json({ error: 'Folder not found' }, 404)
 
-  const items = await res.json<GhContent[]>()
+  let items: GhContent[]
+  try {
+    items = await res.json<GhContent[]>()
+  } catch (err) {
+    return c.json({ error: `Invalid response from GitHub for ${folder}: ${err instanceof Error ? err.message : err}`, status: 502 }, 502)
+  }
+
   const file = items.find(
     (i) => i.type === 'file' && i.name.replace(/\.\w+$/, '') === slug
   )
   if (!file) return c.json({ error: 'Not found' }, 404)
 
-  const raw = await ghFetchRaw(c.env, file.path)
+  let raw: string | null
+  try {
+    raw = await ghFetchRaw(c.env, file.path)
+  } catch (err) {
+    return c.json({ error: `Failed to read ${file.path}: ${err instanceof Error ? err.message : err}`, status: 502 }, 502)
+  }
   if (!raw) return c.json({ error: 'Failed to read file' }, 500)
 
   const parsed = parseFrontmatter(raw)

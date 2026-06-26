@@ -1,34 +1,27 @@
 import type { Task } from '../types'
+import { statusColor, taskMark } from '../lib/ui'
 
 interface TaskListProps {
   tasks: Task[]
-}
-
-const statusStyles: Record<string, string> = {
-  done: 'text-green bg-green-bg border-green/20',
-  'in-progress': 'text-blue bg-blue-bg border-blue/20',
-  pending: 'text-secondary bg-elevated border-border',
-  blocked: 'text-red bg-red-bg border-red/20',
-}
-
-const statusIcons: Record<string, string> = {
-  done: '✓',
-  'in-progress': '◷',
-  pending: '○',
-  blocked: '⊗',
 }
 
 export function TaskList({ tasks }: TaskListProps) {
   if (!tasks.length) return null
 
   return (
-    <div className="space-y-1">
+    <div>
       {tasks.map((task) => {
-        const s = statusStyles[task.status || 'pending'] || statusStyles.pending
+        const color = statusColor(task.status)
         return (
-          <div key={task.id} className={`flex items-center gap-2.5 px-3 py-2 rounded-md border ${s}`}>
-            <span className="text-xs w-4 text-center shrink-0">{statusIcons[task.status || 'pending'] || '○'}</span>
-            <span className="text-xs text-foreground">{task.desc ?? task.title}</span>
+          <div key={task.id} className="flex items-start gap-3 border-b border-faintline py-3">
+            <span className="w-[26px] pt-px font-mono text-[11px] text-faint">{task.id}</span>
+            <span className="w-3.5 font-mono text-[13px]" style={{ color }}>
+              {taskMark(task.status)}
+            </span>
+            <span className="flex-1 text-sm text-secondary">{task.title}</span>
+            <span className="font-mono text-[10px] tracking-[0.03em]" style={{ color }}>
+              {task.status ?? 'pending'}
+            </span>
           </div>
         )
       })}

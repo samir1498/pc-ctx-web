@@ -1,5 +1,12 @@
-import { FolderPage } from '../components/FolderPage'
+import { DocsPage } from '../components/DocsPage'
 
 export function ProgressPage() {
-  return <FolderPage folder="progress" />
+  return (
+    <DocsPage
+      folder="progress"
+      kicker="DOMAIN / PROGRESS"
+      title="Progress"
+      subtitle="weekly + intraday work logs"
+    />
+  )
 }
