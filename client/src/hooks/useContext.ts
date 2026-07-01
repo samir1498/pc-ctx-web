@@ -7,6 +7,7 @@ export function useFolder(folder: Folder) {
     queryKey: ['folder', folder],
     queryFn: () => fetchFolder(folder),
     staleTime: 30_000,
+    retry: false,
   })
 }
 
