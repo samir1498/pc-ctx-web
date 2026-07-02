@@ -14,6 +14,7 @@
   --color-border: #1b1b1f;
   --color-line: #26262b;
   --color-faintline: #161619;
+  --color-outline: #3a3a40;
 
   /* text */
   --color-foreground: #f3f2ee;
@@ -34,6 +35,10 @@
   /* fonts */
   --font-display: "Space Grotesk", -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* micro text sizes below text-xs (0.75rem) — generates text-2xs / text-3xs */
+  --text-2xs: 0.6875rem;
+  --text-3xs: 0.625rem;
 
   /* kill default radii — v2 is sharp-edged */
   --radius-sm: 0px;

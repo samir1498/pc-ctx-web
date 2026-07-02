@@ -48,34 +48,28 @@ function NavRow({
       to={item.to}
       activeOptions={{ exact: item.to === '/' }}
       onClick={onNavigate}
-      className="group flex items-center gap-2 px-1.5 py-2 text-[0.8125rem] no-underline transition-colors"
+      className="group flex items-center gap-2 px-1.5 py-2 text-sm no-underline transition-colors"
     >
       {({ isActive }: { isActive: boolean }) => (
         <>
           <span
-            className="w-[0.3125rem] text-sm leading-none"
-            style={{ color: isActive ? '#f3f2ee' : 'transparent' }}
+            className={`w-1.5 text-sm leading-none ${isActive ? 'text-foreground' : 'text-transparent'}`}
           >
             ▍
           </span>
-          <span className="w-3.5 font-mono text-[0.625rem] text-faint">
+          <span className="w-3.5 font-mono text-3xs text-faint">
             {String(idx).padStart(2, '0')}
           </span>
           <span
-            className="flex-1 tracking-[0.01em]"
-            style={{
-              color: isActive ? '#f3f2ee' : '#b2b2b9',
-              fontWeight: isActive ? 600 : 400,
-            }}
+            className={`flex-1 tracking-[0.01em] ${isActive ? 'font-semibold text-foreground' : 'font-normal text-muted'}`}
           >
             {item.label}
           </span>
           {item.glyph ? (
-            <span className="font-mono text-[0.6875rem] text-dim">{item.glyph}</span>
+            <span className="font-mono text-2xs text-dim">{item.glyph}</span>
           ) : count !== undefined ? (
             <span
-              className="font-mono text-[0.6875rem]"
-              style={{ color: isActive ? '#b0b0b6' : '#89898f' }}
+              className={`font-mono text-2xs ${isActive ? 'text-muted' : 'text-dim'}`}
             >
               {count}
             </span>
@@ -92,16 +86,16 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
   let idx = 0
   return (
     <aside
-      className={`fixed inset-y-0 left-0 z-40 flex w-[13.875rem] shrink-0 flex-col border-r border-border bg-page transition-transform duration-200 md:static md:z-auto md:translate-x-0 ${
+      className={`fixed inset-y-0 left-0 z-40 flex w-56 shrink-0 flex-col border-r border-border bg-page transition-transform duration-200 md:static md:z-auto md:translate-x-0 ${
         open ? 'translate-x-0' : '-translate-x-full'
       }`}
     >
-      <div className="border-b border-border px-5 pb-[1.125rem] pt-[1.375rem]">
-        <div className="flex items-center gap-2 text-[1.0625rem] font-bold tracking-[-0.02em]">
-          <span className="inline-block h-[0.5625rem] w-[0.5625rem] bg-foreground" />
+      <div className="border-b border-border px-5 pb-5 pt-6">
+        <div className="flex items-center gap-2 text-lg font-bold tracking-[-0.02em]">
+          <span className="inline-block h-2.5 w-2.5 bg-foreground" />
           pc&#8209;ctx
         </div>
-        <div className="mt-2 font-mono text-[0.625rem] tracking-[0.04em] text-faint">
+        <div className="mt-2 font-mono text-3xs tracking-[0.04em] text-faint">
           CONTEXT&nbsp;BROWSER
         </div>
       </div>
@@ -109,7 +103,7 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
       <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-2.5 py-2">
         {GROUPS.map((g) => (
           <div key={g.title}>
-            <div className="px-3 pb-1.5 pt-3.5 font-mono text-[0.5625rem] tracking-[0.16em] text-fainter">
+            <div className="px-3 pb-1.5 pt-3.5 font-mono text-3xs tracking-[0.16em] text-fainter">
               {g.title}
             </div>
             {g.items.map((item) => (
@@ -125,12 +119,12 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
         ))}
       </nav>
 
-      <div className="border-t border-border px-[1.125rem] py-3.5 font-mono text-[0.625rem] leading-[1.9] text-dim">
-        <div className="flex items-center gap-[0.4375rem]">
+      <div className="border-t border-border px-5 py-3.5 font-mono text-3xs leading-[1.9] text-dim">
+        <div className="flex items-center gap-2">
           <span className="inline-block h-1.5 w-1.5 animate-blink bg-green" />
           SCHEMA&nbsp;VALID
         </div>
-        <div className="mt-[0.1875rem] text-[#78787e]">
+        <div className="mt-1 text-faint">
           {__APP_VERSION__} / {__GIT_HASH__}
         </div>
       </div>

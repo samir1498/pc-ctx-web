@@ -42,7 +42,7 @@ export function PlansPage() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="search plans…"
-          className="w-60 border border-line bg-input px-3 py-2 font-mono text-xs text-foreground placeholder:text-faint focus:border-[#3a3a40] focus:outline-none"
+          className="w-60 border border-line bg-input px-3 py-2 font-mono text-xs text-foreground placeholder:text-faint focus:border-outline focus:outline-none"
         />
         <div className="flex gap-1.5">
           {FILTERS.map((f) => {
@@ -51,8 +51,7 @@ export function PlansPage() {
               <button
                 key={f}
                 onClick={() => setFilter(f)}
-                className="border border-[#1f1f24] px-2.5 py-[0.4375rem] font-mono text-[0.65625rem] tracking-[0.06em]"
-                style={{ color: on ? '#f3f2ee' : '#7d7d84', fontWeight: on ? 600 : 400 }}
+                className={`border border-border px-2.5 py-2 font-mono text-2xs tracking-[0.06em] ${on ? 'font-semibold text-foreground' : 'font-normal text-faint'}`}
               >
                 {on ? '▍ ' : ''}
                 {f.toUpperCase()}
@@ -64,7 +63,7 @@ export function PlansPage() {
 
       {/* table — scrolls horizontally on narrow screens (fixed-column data table) */}
       <div className="overflow-x-auto pad-x">
-        <div className="grid min-w-[44rem] grid-cols-[56px_1fr_130px_90px_110px] gap-4 border-b border-border py-2.5 pt-4 font-mono text-[0.625rem] tracking-[0.08em] text-faint">
+        <div className="grid min-w-[44rem] grid-cols-[56px_1fr_130px_90px_110px] gap-4 border-b border-border py-2.5 pt-4 font-mono text-3xs tracking-[0.08em] text-faint">
           <span>PRIO</span>
           <span>PLAN</span>
           <span>CATEGORY</span>
@@ -78,18 +77,18 @@ export function PlansPage() {
             <button
               key={p.slug}
               onClick={() => navigate({ to: '/plan/$slug', params: { slug: p.slug } })}
-              className="v2row grid w-full min-w-[44rem] cursor-pointer grid-cols-[56px_1fr_130px_90px_110px] items-center gap-4 border-b border-[#141417] py-[0.9375rem] text-left"
+              className="v2row grid w-full min-w-[44rem] cursor-pointer grid-cols-[56px_1fr_130px_90px_110px] items-center gap-4 border-b border-faintline py-4 text-left"
             >
-              <span className="font-mono text-[0.8125rem] font-semibold" style={{ color: priorityColor(fm.priority) }}>
+              <span className="font-mono text-sm font-semibold" style={{ color: priorityColor(fm.priority) }}>
                 P{fm.priority ?? '—'}
               </span>
               <div className="min-w-0">
-                <div className="text-[0.90625rem] font-medium tracking-[-0.01em]">{fm.title ?? p.slug}</div>
-                {fm.tldr && <div className="mt-0.5 truncate font-mono text-[0.6875rem] text-dim">{fm.tldr}</div>}
+                <div className="text-sm font-medium tracking-[-0.01em]">{fm.title ?? p.slug}</div>
+                {fm.tldr && <div className="mt-0.5 truncate font-mono text-2xs text-dim">{fm.tldr}</div>}
               </div>
-              <span className="truncate font-mono text-[0.6875rem] text-muted">{fm.category ?? '—'}</span>
+              <span className="truncate font-mono text-2xs text-muted">{fm.category ?? '—'}</span>
               <span className="font-mono text-xs text-secondary">{tc ? `${tc.done}/${tc.total}` : '—'}</span>
-              <span className="font-mono text-[0.6875rem]" style={{ color: statusColor(fm.status) }}>
+              <span className="font-mono text-2xs" style={{ color: statusColor(fm.status) }}>
                 [{fm.status ?? '—'}]
               </span>
             </button>

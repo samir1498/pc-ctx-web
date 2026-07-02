@@ -143,11 +143,11 @@ export function GraphPage() {
 
       <div className="pad-x py-7">
         {nodes.length === 0 ? (
-          <p className="border border-border bg-[#0c0c0f] py-16 text-center font-mono text-xs text-faint">
+          <p className="border border-border bg-panel py-16 text-center font-mono text-xs text-faint">
             no references between plans yet
           </p>
         ) : (
-          <div className="border border-border bg-[#0c0c0f]">
+          <div className="border border-border bg-panel">
             <svg viewBox={`0 0 ${VIEW_W} ${height}`} className="block w-full" preserveAspectRatio="xMidYMid meet">
               <defs>
                 <pattern id="v2grid" width="30" height="30" patternUnits="userSpaceOnUse">
@@ -190,12 +190,12 @@ export function GraphPage() {
           </div>
         )}
 
-        <div className="mt-[1.125rem] flex flex-wrap gap-6 font-mono text-[0.6875rem] text-muted">
-          <span className="flex items-center gap-[0.4375rem]"><span className="inline-block h-2.5 w-2.5 border-[1.5px] border-indigo" />plan</span>
-          <span className="flex items-center gap-[0.4375rem]"><span className="inline-block h-2.5 w-2.5 border-[1.5px] border-amber" />roadmap</span>
-          <span className="flex items-center gap-[0.4375rem]"><span className="inline-block h-2.5 w-2.5 border-[1.5px] border-green" />research</span>
-          <span className="flex items-center gap-[0.4375rem]"><span className="inline-block w-3.5 border-t-[1.5px] border-[#3a3a40]" />reference</span>
-          <span className="flex items-center gap-[0.4375rem]"><span className="inline-block w-3.5 border-t-[1.5px] border-dashed border-[#3a3a40]" />roadmap link</span>
+        <div className="mt-5 flex flex-wrap gap-6 font-mono text-2xs text-muted">
+          <span className="flex items-center gap-2"><span className="inline-block h-2.5 w-2.5 border-[1.5px] border-indigo" />plan</span>
+          <span className="flex items-center gap-2"><span className="inline-block h-2.5 w-2.5 border-[1.5px] border-amber" />roadmap</span>
+          <span className="flex items-center gap-2"><span className="inline-block h-2.5 w-2.5 border-[1.5px] border-green" />research</span>
+          <span className="flex items-center gap-2"><span className="inline-block w-3.5 border-t-[1.5px] border-outline" />reference</span>
+          <span className="flex items-center gap-2"><span className="inline-block w-3.5 border-t-[1.5px] border-dashed border-outline" />roadmap link</span>
         </div>
       </div>
     </div>

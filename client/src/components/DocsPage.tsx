@@ -51,16 +51,16 @@ export function DocsPage({ folder, kicker, title, subtitle, meta = defaultMeta }
                 <button
                   key={item.slug}
                   onClick={() => setSelected(i)}
-                  className="v2row flex w-full items-start gap-2.5 border-b border-[#141417] px-4 py-3.5 pl-4 text-left"
+                  className="v2row flex w-full items-start gap-2.5 border-b border-faintline px-4 py-3.5 pl-4 text-left"
                 >
-                  <span className="w-[0.3125rem] flex-shrink-0 text-[0.9375rem] leading-[1.3]" style={{ color: on ? '#f3f2ee' : 'transparent' }}>
+                  <span className={`w-1.5 flex-shrink-0 text-base leading-[1.3] ${on ? 'text-foreground' : 'text-transparent'}`}>
                     ▍
                   </span>
                   <div className="min-w-0">
-                    <div className="truncate text-[0.84375rem] font-medium" style={{ color: on ? '#f3f2ee' : '#bcbcc2' }}>
+                    <div className={`truncate text-sm font-medium ${on ? 'text-foreground' : 'text-secondary'}`}>
                       {fm.title ?? item.slug}
                     </div>
-                    <div className="mt-1 font-mono text-[0.65625rem] text-faint">{meta(item)}</div>
+                    <div className="mt-1 font-mono text-2xs text-faint">{meta(item)}</div>
                   </div>
                 </button>
               )
@@ -71,14 +71,14 @@ export function DocsPage({ folder, kicker, title, subtitle, meta = defaultMeta }
           <div className="flex-[999_1_0] min-w-[min(100%,30rem)] overflow-y-auto pad-x pb-10 pt-7">
             {current && (
               <>
-                <div className="font-mono text-[0.6875rem] text-dim">
+                <div className="font-mono text-2xs text-dim">
                   {title.toUpperCase()} / {current.slug}
                   {current.frontmatter?.created ? ` · ${String(current.frontmatter.created)}` : ''}
                 </div>
-                <h2 className="mt-2.5 text-[1.625rem] font-bold tracking-[-0.025em]">
+                <h2 className="mt-2.5 text-2xl font-bold tracking-[-0.025em]">
                   {current.frontmatter?.title ?? current.slug}
                 </h2>
-                <div className="mt-[1.125rem] max-w-[45rem]">
+                <div className="mt-5 max-w-3xl">
                   {current.body ? (
                     <MarkdownContent body={current.body} />
                   ) : (
