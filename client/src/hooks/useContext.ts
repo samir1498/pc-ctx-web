@@ -1,11 +1,22 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import type { Folder } from '../types'
-import { fetchCounts, fetchFolder, fetchFolderPage, fetchItem } from '../api/client'
+import { fetchCounts, fetchFolder, fetchFolderList, fetchFolderPage, fetchItem } from '../api/client'
 
 export function useFolder(folder: Folder, meta = false) {
   return useQuery({
     queryKey: ['folder', folder, meta ? 'meta' : 'full'],
     queryFn: () => fetchFolder(folder, meta),
+    retry: false,
+  })
+}
+
+// Every slug in a folder (names only), for folder-wide search. Only fires once
+// enabled (i.e. the user has started searching), so it costs nothing otherwise.
+export function useFolderList(folder: Folder, enabled: boolean) {
+  return useQuery({
+    queryKey: ['folder-list', folder],
+    queryFn: () => fetchFolderList(folder),
+    enabled,
     retry: false,
   })
 }

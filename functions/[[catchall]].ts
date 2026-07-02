@@ -366,6 +366,16 @@ app.get('/api/:folder', async (c) => {
   const wantMeta = !!c.req.query('meta')
   const pageParam = c.req.query('page')
 
+  // List path: filenames/slugs only, no blobs — cheap regardless of folder size.
+  // Powers client-side search over the whole folder without downloading bodies.
+  if (c.req.query('list')) {
+    try {
+      return c.json((await listFolder(c.env, folder)) ?? [])
+    } catch (err) {
+      return c.json({ error: `Failed to list ${folder}: ${err instanceof Error ? err.message : err}`, status: 502 }, 502)
+    }
+  }
+
   // Paginated path: list filenames cheaply (no bodies), then fetch only the
   // current page's blobs. Keeps large folders (e.g. archive) fast — cost scales
   // with page size, not folder size. Returns { total, page, size, items }.

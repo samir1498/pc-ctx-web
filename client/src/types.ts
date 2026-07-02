@@ -50,6 +50,13 @@ export interface PagedResponse<T = ContextItem> {
   items: T[]
 }
 
+// Names-only listing entry (no frontmatter/body) — used for folder-wide search.
+export interface ListEntry {
+  slug: string
+  name: string
+  path: string
+}
+
 export const FOLDER_LABELS: Record<Folder, string> = {
   plans: 'Plans',
   roadmaps: 'Roadmaps',
