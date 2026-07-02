@@ -17,40 +17,11 @@ interface PagesContext {
 
 const app = new Hono<{ Bindings: Env }>()
 
-function ghHeaders(env: Env): Record<string, string> {
-  const h: Record<string, string> = {
-    Accept: 'application/vnd.github.v3+json',
-    'User-Agent': 'personal-context/1.0',
-  }
-  if (env.GITHUB_TOKEN) h.Authorization = `Bearer ${env.GITHUB_TOKEN}`
-  return h
-}
-
 const OWNER = 'samir1498'
 const REPO = 'personal-context'
 const BRANCH = 'main'
 
-interface GhContent {
-  name: string
-  path: string
-  sha: string
-  type: 'file' | 'dir'
-  download_url: string | null
-}
-
-async function ghFetch(env: Env, path: string): Promise<Response> {
-  const url = `https://api.github.com/repos/${env.GITHUB_OWNER || OWNER}/${env.GITHUB_REPO || REPO}/contents/${path}?ref=${BRANCH}`
-  return fetch(url, { headers: ghHeaders(env) })
-}
-
-async function ghFetchRaw(env: Env, path: string): Promise<string | null> {
-  const url = `https://api.github.com/repos/${env.GITHUB_OWNER || OWNER}/${env.GITHUB_REPO || REPO}/contents/${path}?ref=${BRANCH}`
-  const res = await fetch(url, {
-    headers: { ...ghHeaders(env), Accept: 'application/vnd.github.raw+json' },
-  })
-  if (!res.ok) return null
-  return res.text()
-}
+const FOLDERS = ['plans', 'roadmaps', 'references', 'progress', 'ideas', 'processes', 'handoffs', 'archive'] as const
 
 function parseFrontmatter(raw: string): { frontmatter: Record<string, unknown>; body?: string } | null {
   const match = raw.match(/^---\n([\s\S]*?)\n---(?:\n([\s\S]*))?$/)
@@ -63,7 +34,81 @@ function parseFrontmatter(raw: string): { frontmatter: Record<string, unknown>; 
   }
 }
 
-const FOLDERS = ['plans', 'roadmaps', 'references', 'progress', 'ideas', 'processes', 'handoffs', 'archive'] as const
+interface FolderEntry {
+  slug: string
+  name: string
+  path: string
+  frontmatter?: Record<string, unknown>
+  body?: string
+}
+
+// One GraphQL request returns the folder listing AND every file's content —
+// replaces an N+1 REST fan-out that blew Cloudflare's per-invocation subrequest limit.
+const TREE_QUERY = `
+  query($owner: String!, $repo: String!, $expr: String!) {
+    repository(owner: $owner, name: $repo) {
+      object(expression: $expr) {
+        ... on Tree {
+          entries {
+            name
+            type
+            object {
+              ... on Blob {
+                text
+                isBinary
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+`
+
+interface GqlTreeEntry {
+  name: string
+  type: string
+  object: { text: string | null; isBinary: boolean } | null
+}
+
+interface GqlResponse {
+  data?: { repository?: { object: { entries: GqlTreeEntry[] } | null } }
+  errors?: { message: string }[]
+}
+
+async function fetchFolder(env: Env, folder: string): Promise<FolderEntry[] | null> {
+  const owner = env.GITHUB_OWNER || OWNER
+  const repo = env.GITHUB_REPO || REPO
+  const res = await fetch('https://api.github.com/graphql', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${env.GITHUB_TOKEN || ''}`,
+      'Content-Type': 'application/json',
+      'User-Agent': 'pc-ctx-web/1.0',
+    },
+    body: JSON.stringify({ query: TREE_QUERY, variables: { owner, repo, expr: `${BRANCH}:${folder}` } }),
+  })
+  if (!res.ok) throw new Error(`GitHub GraphQL request failed: ${res.status}`)
+  const json = await res.json<GqlResponse>()
+  if (json.errors?.length) throw new Error(`GitHub GraphQL error: ${json.errors.map((e) => e.message).join('; ')}`)
+
+  const tree = json.data?.repository?.object
+  if (!tree) return null // folder doesn't exist in the repo yet
+
+  const results: FolderEntry[] = []
+  for (const entry of tree.entries) {
+    if (entry.type !== 'blob' || !entry.object || entry.object.isBinary || entry.object.text == null) continue
+    const slug = entry.name.replace(/\.\w+$/, '')
+    const parsed = parseFrontmatter(entry.object.text)
+    results.push({
+      slug,
+      name: entry.name,
+      path: `${folder}/${entry.name}`,
+      ...(parsed ? { frontmatter: parsed.frontmatter, body: parsed.body } : { body: entry.object.text }),
+    })
+  }
+  return results
+}
 
 app.get('/api/:folder', async (c) => {
   const { folder } = c.req.param()
@@ -71,33 +116,14 @@ app.get('/api/:folder', async (c) => {
     return c.notFound()
   }
 
-  const res = await ghFetch(c.env, folder)
-  if (res.status === 404) {
+  try {
+    const entries = await fetchFolder(c.env, folder)
     // Folder not present in the context repo yet (e.g. handoffs/ or archive/
     // not created). Treat as an empty domain rather than an error.
-    return c.json([])
+    return c.json(entries ?? [])
+  } catch (err) {
+    return c.json({ error: `Failed to fetch ${folder}`, message: (err as Error).message }, 500)
   }
-  if (!res.ok) {
-    return c.json({ error: `Failed to fetch ${folder}`, status: res.status }, 500)
-  }
-
-  const items = await res.json<GhContent[]>()
-  const results = []
-
-  for (const item of items) {
-    if (item.type !== 'file') continue
-    const raw = await ghFetchRaw(c.env, item.path)
-    if (!raw) continue
-    const parsed = parseFrontmatter(raw)
-    results.push({
-      slug: item.name.replace(/\.\w+$/, ''),
-      name: item.name,
-      path: item.path,
-      ...(parsed ? { frontmatter: parsed.frontmatter, body: parsed.body } : { body: raw }),
-    })
-  }
-
-  return c.json(results)
 })
 
 app.get('/api/:folder/:slug', async (c) => {
@@ -106,32 +132,14 @@ app.get('/api/:folder/:slug', async (c) => {
     return c.notFound()
   }
 
-  const res = await ghFetch(c.env, `${folder}`)
-  if (!res.ok) return c.json({ error: 'Folder not found' }, 404)
-
-  const items = await res.json<GhContent[]>()
-  const file = items.find(
-    (i) => i.type === 'file' && i.name.replace(/\.\w+$/, '') === slug
-  )
-  if (!file) return c.json({ error: 'Not found' }, 404)
-
-  const raw = await ghFetchRaw(c.env, file.path)
-  if (!raw) return c.json({ error: 'Failed to read file' }, 500)
-
-  const parsed = parseFrontmatter(raw)
-  const result: Record<string, unknown> = {
-    slug,
-    name: file.name,
-    path: file.path,
+  try {
+    const entries = await fetchFolder(c.env, folder)
+    const file = entries?.find((e) => e.slug === slug)
+    if (!file) return c.json({ error: 'Not found' }, 404)
+    return c.json(file)
+  } catch (err) {
+    return c.json({ error: 'Failed to read file', message: (err as Error).message }, 500)
   }
-  if (parsed) {
-    result.frontmatter = parsed.frontmatter
-    result.body = parsed.body
-  } else {
-    result.body = raw
-  }
-
-  return c.json(result)
 })
 
 app.all('*', async (c) => {
