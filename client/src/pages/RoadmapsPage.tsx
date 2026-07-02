@@ -14,8 +14,8 @@ export function RoadmapsPage() {
   const navigate = useNavigate()
   const { data: items, isLoading, error } = useFolder('roadmaps')
 
-  if (isLoading) return <div className="px-10 py-6"><LoadingSpinner /></div>
-  if (error) return <div className="px-10 py-6 text-sm text-red">Error: {(error as Error).message}</div>
+  if (isLoading) return <div className="pad-x py-6"><LoadingSpinner /></div>
+  if (error) return <div className="pad-x py-6 text-sm text-red">Error: {(error as Error).message}</div>
 
   return (
     <div className="animate-fade-in">
@@ -25,7 +25,7 @@ export function RoadmapsPage() {
         subtitle="initiatives by period · entries link to plans"
       />
 
-      <div className="px-10 pb-10 pt-2">
+      <div className="pad-x pb-10 pt-2">
         {(items ?? []).map((r) => {
           const fm = r.frontmatter ?? {}
           const entries = (Array.isArray(fm.entries) ? fm.entries : []) as RoadmapEntry[]

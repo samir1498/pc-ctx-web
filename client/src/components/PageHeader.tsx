@@ -7,7 +7,7 @@ interface PageHeaderProps {
 
 export function PageHeader({ kicker, title, subtitle, isNew }: PageHeaderProps) {
   return (
-    <div className="border-b border-border px-10 pb-[22px] pt-[26px]">
+    <div className="border-b border-border pad-x pb-[22px] pt-[26px]">
       <div className="font-mono text-[11px] tracking-[0.1em] text-dim">
         {kicker}
         {isNew && <span className="ml-2 text-green">NEW</span>}

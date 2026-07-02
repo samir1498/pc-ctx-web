@@ -124,8 +124,8 @@ export function Dashboard() {
     return n
   }, [plans.data, progress.data, roadmaps.data, updated])
 
-  if (isLoading) return <div className="px-10 py-6"><DashboardSkeleton /></div>
-  if (error) return <div className="px-10 py-6 text-sm text-red">Error: {(error as Error).message}</div>
+  if (isLoading) return <div className="pad-x py-6"><DashboardSkeleton /></div>
+  if (error) return <div className="pad-x py-6 text-sm text-red">Error: {(error as Error).message}</div>
 
   const kpis = [
     { label: 'PLANS', count: planTotal, delta: `+${activePlans} active`, color: '#22c55e' },
@@ -137,7 +137,7 @@ export function Dashboard() {
   return (
     <div className="animate-fade-in">
       {/* header */}
-      <div className="px-10 pt-[26px]">
+      <div className="pad-x pt-[26px]">
         <div className="flex flex-wrap gap-x-3.5 gap-y-1 border-b border-border pb-4 font-mono text-[11px] text-dim">
           <span>REPO <span className="text-secondary">samir1498/personal-context</span></span>
           <span className="text-[#2c2c30]">│</span>
@@ -145,9 +145,9 @@ export function Dashboard() {
           <span className="text-[#2c2c30]">│</span>
           <span>UPDATED <span className="text-secondary">{updatedLabel}</span></span>
         </div>
-        <div className="flex items-end justify-between gap-6 py-6">
+        <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4 py-6">
           <div>
-            <h1 className="m-0 text-[52px] font-bold leading-[0.95] tracking-[-0.035em]">Dashboard</h1>
+            <h1 className="m-0 text-[clamp(2.25rem,8vw,3.25rem)] font-bold leading-[0.95] tracking-[-0.035em]">Dashboard</h1>
             <p className="mt-3.5 font-mono text-sm text-muted">
               <span className="text-foreground">{totalItems}</span> items · {domainCount} domains · {newThisWeek} new this week
             </p>
@@ -160,9 +160,9 @@ export function Dashboard() {
       </div>
 
       {/* KPI grid */}
-      <div className="grid grid-cols-4 border-y border-border">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,9rem),1fr))] gap-px border-y border-border bg-border">
         {kpis.map((k, i) => (
-          <div key={k.label} className={`v2row px-6 pb-6 pt-[22px] ${i > 0 ? 'border-l border-border' : ''}`}>
+          <div key={k.label} className="v2row bg-page px-6 pb-6 pt-[22px]">
             <div className="flex items-center justify-between">
               <span className="font-mono text-[10px] tracking-[0.12em] text-dim">
                 {String(i + 1).padStart(2, '0')} — {k.label}
@@ -178,10 +178,10 @@ export function Dashboard() {
       </div>
 
       {/* two-column body */}
-      <div className="grid grid-cols-[1fr_1px_1fr] px-10">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,26rem),1fr))] gap-x-10 pad-x">
         <div>
           {/* plan status */}
-          <section className="border-b border-border py-[26px] pr-8">
+          <section className="border-b border-border py-[26px]">
             <SectionLabel>01 / PLAN STATUS</SectionLabel>
             <div className="mt-[18px] flex items-end gap-2.5">
               <span className="text-[40px] font-semibold leading-none tracking-[-0.04em] tabular-nums">{planTotal}</span>
@@ -212,7 +212,7 @@ export function Dashboard() {
           </section>
 
           {/* top plans */}
-          <section className="py-[26px] pr-8">
+          <section className="py-[26px]">
             <div className="flex items-center justify-between">
               <SectionLabel>03 / TOP PLANS BY PRIORITY</SectionLabel>
               <button
@@ -251,11 +251,9 @@ export function Dashboard() {
           </section>
         </div>
 
-        <div className="bg-border" />
-
         <div>
           {/* weekly activity */}
-          <section className="border-b border-border py-[26px] pl-8">
+          <section className="border-b border-border py-[26px]">
             <div className="flex items-center justify-between">
               <SectionLabel>02 / WEEKLY ACTIVITY</SectionLabel>
               <span className="font-mono text-[10px] text-faint">ENTRIES / WK</span>
@@ -293,7 +291,7 @@ export function Dashboard() {
           </section>
 
           {/* progress log */}
-          <section className="py-[26px] pl-8">
+          <section className="py-[26px]">
             <SectionLabel>04 / PROGRESS LOG</SectionLabel>
             <div className="mt-4">
               {progressLog.map((p) => {

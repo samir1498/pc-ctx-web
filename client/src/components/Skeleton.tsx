@@ -28,7 +28,7 @@ export function DashboardSkeleton() {
         <Skeleton className="h-7 w-48" />
         <Skeleton className="h-4 w-36" />
       </div>
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,9rem),1fr))] gap-3">
         {[1, 2, 3, 4].map((i) => (
           <div key={i} className="px-4 py-3 rounded-xl border border-border bg-panel space-y-2">
             <Skeleton className="h-3 w-16" />
