@@ -23,7 +23,7 @@ export function BarChart({ data, max, color = 'var(--color-accent)', height = 12
               animate={{ height: `${pct}%` }}
               transition={{ duration: 0.6, delay: i * 0.05, ease: 'easeOut' }}
             />
-            <span className="text-[8px] text-secondary/60">{d.label}</span>
+            <span className="text-[0.5rem] text-secondary/60">{d.label}</span>
           </div>
         )
       })}

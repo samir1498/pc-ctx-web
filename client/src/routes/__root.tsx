@@ -30,14 +30,14 @@ function RootLayout() {
             type="button"
             aria-label="Open navigation"
             onClick={() => setNavOpen(true)}
-            className="flex h-8 w-8 flex-col items-center justify-center gap-[5px] border border-line"
+            className="flex h-8 w-8 flex-col items-center justify-center gap-[0.3125rem] border border-line"
           >
             <span className="h-px w-4 bg-foreground" />
             <span className="h-px w-4 bg-foreground" />
             <span className="h-px w-4 bg-foreground" />
           </button>
-          <span className="flex items-center gap-2 text-[15px] font-bold tracking-[-0.02em]">
-            <span className="inline-block h-[8px] w-[8px] bg-foreground" />
+          <span className="flex items-center gap-2 text-[0.9375rem] font-bold tracking-[-0.02em]">
+            <span className="inline-block h-[0.5rem] w-[0.5rem] bg-foreground" />
             pc&#8209;ctx
           </span>
         </header>

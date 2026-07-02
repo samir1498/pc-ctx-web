@@ -53,14 +53,14 @@ export function DocsPage({ folder, kicker, title, subtitle, meta = defaultMeta }
                   onClick={() => setSelected(i)}
                   className="v2row flex w-full items-start gap-2.5 border-b border-[#141417] px-4 py-3.5 pl-4 text-left"
                 >
-                  <span className="w-[5px] flex-shrink-0 text-[15px] leading-[1.3]" style={{ color: on ? '#f3f2ee' : 'transparent' }}>
+                  <span className="w-[0.3125rem] flex-shrink-0 text-[0.9375rem] leading-[1.3]" style={{ color: on ? '#f3f2ee' : 'transparent' }}>
                     ▍
                   </span>
                   <div className="min-w-0">
-                    <div className="truncate text-[13.5px] font-medium" style={{ color: on ? '#f3f2ee' : '#bcbcc2' }}>
+                    <div className="truncate text-[0.84375rem] font-medium" style={{ color: on ? '#f3f2ee' : '#bcbcc2' }}>
                       {fm.title ?? item.slug}
                     </div>
-                    <div className="mt-1 font-mono text-[10.5px] text-faint">{meta(item)}</div>
+                    <div className="mt-1 font-mono text-[0.65625rem] text-faint">{meta(item)}</div>
                   </div>
                 </button>
               )
@@ -71,14 +71,14 @@ export function DocsPage({ folder, kicker, title, subtitle, meta = defaultMeta }
           <div className="flex-[999_1_0] min-w-[min(100%,30rem)] overflow-y-auto pad-x pb-10 pt-7">
             {current && (
               <>
-                <div className="font-mono text-[11px] text-dim">
+                <div className="font-mono text-[0.6875rem] text-dim">
                   {title.toUpperCase()} / {current.slug}
                   {current.frontmatter?.created ? ` · ${String(current.frontmatter.created)}` : ''}
                 </div>
-                <h2 className="mt-2.5 text-[26px] font-bold tracking-[-0.025em]">
+                <h2 className="mt-2.5 text-[1.625rem] font-bold tracking-[-0.025em]">
                   {current.frontmatter?.title ?? current.slug}
                 </h2>
-                <div className="mt-[18px] max-w-[720px]">
+                <div className="mt-[1.125rem] max-w-[45rem]">
                   {current.body ? (
                     <MarkdownContent body={current.body} />
                   ) : (
