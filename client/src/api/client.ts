@@ -1,10 +1,35 @@
-import type { ContextItem, ContextItemDetail, Folder } from '../types'
+import type { ContextItem, ContextItemDetail, Folder, ListEntry, PagedResponse } from '../types'
 
 const BASE = '/api'
+
+// Every slug in a folder, names only (no bodies) — cheap enough to search the
+// whole folder client-side. Fetched lazily, only when the user starts a search.
+export async function fetchFolderList(folder: Folder): Promise<ListEntry[]> {
+  const res = await fetch(`${BASE}/${folder}?list=1`)
+  if (res.status === 404) return []
+  if (!res.ok) throw new Error(`Failed to list ${folder}: ${res.status}`)
+  return res.json()
+}
 
 export async function fetchFolder(folder: Folder, meta = false): Promise<ContextItem[]> {
   const res = await fetch(`${BASE}/${folder}${meta ? '?meta=1' : ''}`)
   if (res.status === 404) return []
+  if (!res.ok) throw new Error(`Failed to fetch ${folder}: ${res.status}`)
+  return res.json()
+}
+
+// One page of a folder. The server lists filenames cheaply, then fetches only
+// this page's bodies — so large folders stay fast. meta=true drops bodies.
+export async function fetchFolderPage(
+  folder: Folder,
+  page: number,
+  size: number,
+  meta = true,
+): Promise<PagedResponse> {
+  const params = new URLSearchParams({ page: String(page), size: String(size) })
+  if (meta) params.set('meta', '1')
+  const res = await fetch(`${BASE}/${folder}?${params}`)
+  if (res.status === 404) return { total: 0, page, size, items: [] }
   if (!res.ok) throw new Error(`Failed to fetch ${folder}: ${res.status}`)
   return res.json()
 }

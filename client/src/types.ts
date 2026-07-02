@@ -43,6 +43,20 @@ export interface ContextItemDetail extends ContextItem {
   body: string
 }
 
+export interface PagedResponse<T = ContextItem> {
+  total: number
+  page: number
+  size: number
+  items: T[]
+}
+
+// Names-only listing entry (no frontmatter/body) — used for folder-wide search.
+export interface ListEntry {
+  slug: string
+  name: string
+  path: string
+}
+
 export const FOLDER_LABELS: Record<Folder, string> = {
   plans: 'Plans',
   roadmaps: 'Roadmaps',

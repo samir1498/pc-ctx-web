@@ -161,6 +161,135 @@ async function fetchFolder(env: Env, folder: string): Promise<FolderEntry[] | nu
   return results
 }
 
+interface ListEntry {
+  slug: string
+  name: string
+  path: string
+}
+
+// Parse a leading YYYY-MM-DD / YYYYMMDD off a filename into a timestamp, or null
+// if it doesn't start with a real calendar date. Uses the built-in Date parser
+// (Temporal isn't exposed in the Workers runtime) and rejects rollovers like
+// 2026-13-40. Lets the listing sort dated files newest-first without a regex
+// guess at validity.
+function leadingDateMs(name: string): number | null {
+  const m = name.match(/^(\d{4})-?(\d{2})-?(\d{2})/)
+  if (!m) return null
+  const [, y, mo, d] = m
+  const dt = new Date(`${y}-${mo}-${d}T00:00:00Z`)
+  const ms = dt.getTime()
+  if (Number.isNaN(ms)) return null
+  if (dt.getUTCFullYear() !== Number(y) || dt.getUTCMonth() + 1 !== Number(mo) || dt.getUTCDate() !== Number(d)) {
+    return null
+  }
+  return ms
+}
+
+// Names-only listing for one folder — no blob text, so it stays cheap no matter
+// how many files the folder holds. Powers pagination: list the page's filenames
+// first, then fetch only that page's bodies. Sorted name-descending so
+// date-prefixed files (e.g. archive) come back newest-first.
+const LIST_QUERY = `
+  query($owner: String!, $repo: String!, $expr: String!) {
+    repository(owner: $owner, name: $repo) {
+      object(expression: $expr) {
+        ... on Tree { entries { name type } }
+      }
+    }
+  }
+`
+
+async function listFolder(env: Env, folder: string): Promise<ListEntry[] | null> {
+  const owner = env.GITHUB_OWNER || OWNER
+  const repo = env.GITHUB_REPO || REPO
+
+  const res = await fetch('https://api.github.com/graphql', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${env.GITHUB_TOKEN || ''}`,
+      'Content-Type': 'application/json',
+      'User-Agent': 'pc-ctx-web/1.0',
+    },
+    body: JSON.stringify({ query: LIST_QUERY, variables: { owner, repo, expr: `${BRANCH}:${folder}` } }),
+  })
+  if (!res.ok) {
+    const body = await res.text().catch(() => '')
+    throw new Error(`GitHub GraphQL request failed: ${res.status} ${body}`)
+  }
+
+  const json = await res.json<GqlResponse>()
+  if (json.errors?.length) {
+    throw new Error(`GitHub GraphQL error: ${json.errors.map((e) => e.message).join('; ')}`)
+  }
+
+  const tree = json.data?.repository?.object
+  if (!tree) return null
+  // Newest dated files first (progress, dated archive entries), then topic-named
+  // files alphabetically. Ordering comes from the filenames alone, so no blob is
+  // ever opened just to sort a page.
+  return tree.entries
+    .filter((e) => e.type === 'blob' && isMarkdown(e.name))
+    .map((e) => ({ slug: e.name.replace(/\.\w+$/, ''), name: e.name, path: `${folder}/${e.name}`, date: leadingDateMs(e.name) }))
+    .sort((a, b) => {
+      if (a.date !== null && b.date !== null) return b.date - a.date
+      if (a.date !== null) return -1
+      if (b.date !== null) return 1
+      return a.name.localeCompare(b.name)
+    })
+    .map(({ date: _date, ...rest }) => rest)
+}
+
+// Fetch the blob text for a specific set of files in ONE aliased GraphQL request,
+// then parse frontmatter. Lets a paginated list pull only the current page's
+// bodies instead of the whole folder.
+async function fetchBlobsByName(env: Env, folder: string, names: string[]): Promise<FolderEntry[]> {
+  if (names.length === 0) return []
+  const owner = env.GITHUB_OWNER || OWNER
+  const repo = env.GITHUB_REPO || REPO
+
+  const aliases = names
+    .map((name, i) => `f${i}: object(expression: ${JSON.stringify(`${BRANCH}:${folder}/${name}`)}) { ... on Blob { text isBinary } }`)
+    .join('\n')
+  const query = `query($owner: String!, $repo: String!) { repository(owner: $owner, name: $repo) { ${aliases} } }`
+
+  const res = await fetch('https://api.github.com/graphql', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${env.GITHUB_TOKEN || ''}`,
+      'Content-Type': 'application/json',
+      'User-Agent': 'pc-ctx-web/1.0',
+    },
+    body: JSON.stringify({ query, variables: { owner, repo } }),
+  })
+  if (!res.ok) {
+    const body = await res.text().catch(() => '')
+    throw new Error(`GitHub GraphQL request failed: ${res.status} ${body}`)
+  }
+
+  const json = await res.json<{
+    data?: { repository?: Record<string, { text: string | null; isBinary: boolean } | null> }
+    errors?: { message: string }[]
+  }>()
+  if (json.errors?.length) {
+    throw new Error(`GitHub GraphQL error: ${json.errors.map((e) => e.message).join('; ')}`)
+  }
+
+  const repoData = json.data?.repository ?? {}
+  const out: FolderEntry[] = []
+  names.forEach((name, i) => {
+    const blob = repoData[`f${i}`]
+    if (!blob || blob.isBinary || blob.text == null) return
+    const parsed = parseFrontmatter(blob.text)
+    out.push({
+      slug: name.replace(/\.\w+$/, ''),
+      name,
+      path: `${folder}/${name}`,
+      ...(parsed ? { frontmatter: parsed.frontmatter, body: parsed.body } : { body: blob.text }),
+    })
+  })
+  return out
+}
+
 // Count-only query: one request, aliased tree per folder, entry names only (no
 // blob text) — so counting a folder never downloads its file bodies.
 const COUNTS_QUERY = `
@@ -234,6 +363,45 @@ app.get('/api/:folder', async (c) => {
     return c.notFound()
   }
 
+  const wantMeta = !!c.req.query('meta')
+  const pageParam = c.req.query('page')
+
+  // List path: filenames/slugs only, no blobs — cheap regardless of folder size.
+  // Powers client-side search over the whole folder without downloading bodies.
+  if (c.req.query('list')) {
+    try {
+      return c.json((await listFolder(c.env, folder)) ?? [])
+    } catch (err) {
+      return c.json({ error: `Failed to list ${folder}: ${err instanceof Error ? err.message : err}`, status: 502 }, 502)
+    }
+  }
+
+  // Paginated path: list filenames cheaply (no bodies), then fetch only the
+  // current page's blobs. Keeps large folders (e.g. archive) fast — cost scales
+  // with page size, not folder size. Returns { total, page, size, items }.
+  if (pageParam != null) {
+    const page = Math.max(0, Number.parseInt(pageParam, 10) || 0)
+    const size = Math.min(100, Math.max(1, Number.parseInt(c.req.query('size') || '30', 10)))
+    let names: ListEntry[] | null
+    try {
+      names = await listFolder(c.env, folder)
+    } catch (err) {
+      return c.json({ error: `Failed to list ${folder}: ${err instanceof Error ? err.message : err}`, status: 502 }, 502)
+    }
+    const all = names ?? []
+    const slice = all.slice(page * size, page * size + size)
+    let items: FolderEntry[]
+    try {
+      items = await fetchBlobsByName(c.env, folder, slice.map((e) => e.name))
+    } catch (err) {
+      return c.json({ error: `Failed to fetch ${folder}: ${err instanceof Error ? err.message : err}`, status: 502 }, 502)
+    }
+    const payload = wantMeta ? items.map(({ body: _body, ...rest }) => rest) : items
+    return c.json({ total: all.length, page, size, items: payload })
+  }
+
+  // Full path (unchanged shape): every entry at once, used by the graph and
+  // dashboard which need the whole set to resolve references/counts.
   let entries: FolderEntry[] | null
   try {
     entries = await fetchFolder(c.env, folder)
@@ -246,7 +414,7 @@ app.get('/api/:folder', async (c) => {
   // ?meta=1 drops the body from each entry — list/dashboard views only need
   // frontmatter, and bodies are the bulk of the payload.
   const list = entries ?? []
-  if (c.req.query('meta')) {
+  if (wantMeta) {
     return c.json(list.map(({ body: _body, ...rest }) => rest))
   }
   return c.json(list)
@@ -263,14 +431,26 @@ app.get('/api/:folder/:slug', async (c) => {
     return c.notFound()
   }
 
-  let entries: FolderEntry[] | null
+  // Resolve the slug to a filename via the cheap listing, then fetch just that
+  // one blob — avoids downloading the whole folder to return a single item.
+  let names: ListEntry[] | null
   try {
-    entries = await fetchFolder(c.env, folder)
+    names = await listFolder(c.env, folder)
   } catch (err) {
     return c.json({ error: `Failed to fetch ${folder}: ${err instanceof Error ? err.message : err}`, status: 502 }, 502)
   }
 
-  const file = entries?.find((e) => e.slug === slug)
+  const entry = names?.find((e) => e.slug === slug)
+  if (!entry) return c.json({ error: 'Not found' }, 404)
+
+  let blobs: FolderEntry[]
+  try {
+    blobs = await fetchBlobsByName(c.env, folder, [entry.name])
+  } catch (err) {
+    return c.json({ error: `Failed to fetch ${folder}/${slug}: ${err instanceof Error ? err.message : err}`, status: 502 }, 502)
+  }
+
+  const file = blobs[0]
   if (!file) return c.json({ error: 'Not found' }, 404)
 
   return c.json(file)

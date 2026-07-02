@@ -19,6 +19,7 @@ interface GNode {
   label: string
   type: keyof typeof TYPE_COLOR
   isPlan: boolean
+  href?: string
   x: number
   y: number
   w: number
@@ -26,15 +27,17 @@ interface GNode {
   cy: number
 }
 
-// Two wide columns: plans on the left, everything they reference on the right.
-const PLAN_COL = { x: 40, w: 380 }
-const REF_COL = { x: 480, w: 380 }
+// Left column = plans. Right column = everything they reference, grouped. The
+// left margin (0..PLAN_COL.x) is reserved for plan→plan dependency arcs.
+const PLAN_COL = { x: 70, w: 350 }
+const REF_COL = { x: 496, w: 350 }
 const VIEW_W = 900
 const NODE_H = 34
 const ROW_STEP = 46
 const TOP = 36
-// JetBrains Mono at 11px is ~6.6px/char; keep labels inside the box (14px left
-// inset + a little right breathing room) with an ellipsis instead of overflowing.
+const LEFT_BOW = 14
+// JetBrains Mono at 11px is ~6.6px/char; keep labels inside the box with an
+// ellipsis instead of overflowing.
 const CHAR_W = 6.6
 const LABEL_PAD = 22
 
@@ -47,11 +50,60 @@ function refsOf(p: ContextItem): string[] {
   return Array.isArray(p.frontmatter?.references) ? (p.frontmatter.references as string[]) : []
 }
 
+interface Target {
+  id: string
+  slug: string
+  label: string
+  type: keyof typeof TYPE_COLOR
+  isPlan: boolean
+  href?: string
+}
+
+// Resolve a `scheme:value` reference to a graph node. URLs collapse to one node
+// per GitHub repo (owner/repo) or per host, so dozens of PR/commit links don't
+// each spawn their own box.
+function resolveTarget(ref: string): Target {
+  const idx = ref.indexOf(':')
+  const scheme = idx === -1 ? 'ref' : ref.slice(0, idx)
+  const rest = idx === -1 ? ref : ref.slice(idx + 1)
+
+  if (scheme === 'plan') {
+    return { id: `plan:${rest}`, slug: rest, label: rest, type: 'plan', isPlan: true }
+  }
+  if (scheme === 'research') {
+    const leaf = rest.split('/').pop() ?? rest
+    return { id: `research:${rest}`, slug: rest, label: leaf, type: 'research', isPlan: false }
+  }
+  if (scheme === 'url') {
+    try {
+      const u = new URL(rest)
+      const host = u.hostname.replace(/^www\./, '')
+      const parts = u.pathname.split('/').filter(Boolean)
+      if (host.endsWith('github.com') && parts.length >= 2) {
+        const key = `${parts[0]}/${parts[1]}`
+        return {
+          id: `repo:${key}`,
+          slug: key,
+          label: parts[1] as string,
+          type: 'url',
+          isPlan: false,
+          href: `https://github.com/${key}`,
+        }
+      }
+      return { id: `host:${host}`, slug: host, label: host, type: 'url', isPlan: false, href: u.origin }
+    } catch {
+      return { id: `url:${rest}`, slug: rest, label: rest.slice(0, 46), type: 'url', isPlan: false }
+    }
+  }
+  const type: keyof typeof TYPE_COLOR = TYPE_COLOR[scheme] ? (scheme as keyof typeof TYPE_COLOR) : 'ref'
+  return { id: `${scheme}:${rest}`, slug: rest, label: rest, type, isPlan: false }
+}
+
 export function GraphPage() {
   const navigate = useNavigate()
   const { data: plans, isLoading, error } = useFolder('plans', true)
 
-  const { nodes, edges, height } = useMemo(() => {
+  const { nodes, external, internal, height } = useMemo(() => {
     const list = plans ?? []
 
     // Only graph plans that participate: they reference something, or another
@@ -68,63 +120,75 @@ export function GraphPage() {
     let planRow = 0
     let refRow = 0
 
-    const place = (id: string, slug: string, rawLabel: string, type: keyof typeof TYPE_COLOR, isPlan: boolean) => {
-      const existing = nodeMap.get(id)
+    const place = (t: Target): GNode => {
+      const existing = nodeMap.get(t.id)
       if (existing) return existing
-      const col = isPlan ? PLAN_COL : REF_COL
-      const row = isPlan ? planRow++ : refRow++
+      const col = t.isPlan ? PLAN_COL : REF_COL
+      const row = t.isPlan ? planRow++ : refRow++
       const y = TOP + row * ROW_STEP
       const node: GNode = {
-        id,
-        slug,
-        label: fit(rawLabel, col.w),
-        type,
-        isPlan,
+        id: t.id,
+        slug: t.slug,
+        label: fit(t.label, col.w),
+        type: t.type,
+        isPlan: t.isPlan,
+        href: t.href,
         x: col.x,
         y,
         w: col.w,
         cx: col.x + col.w / 2,
         cy: y + NODE_H / 2,
       }
-      nodeMap.set(id, node)
+      nodeMap.set(t.id, node)
       return node
     }
 
     // plans first (left column), so referenced plans keep a stable position
     for (const p of connected) {
-      place(`plan:${p.slug}`, p.slug, (p.frontmatter?.title as string) ?? p.slug, 'plan', true)
+      place({
+        id: `plan:${p.slug}`,
+        slug: p.slug,
+        label: (p.frontmatter?.title as string) ?? p.slug,
+        type: 'plan',
+        isPlan: true,
+      })
     }
 
-    const rawEdges: { from: string; to: string; kind: 'solid' | 'dash' }[] = []
+    const seen = new Set<string>()
+    const rawEdges: { from: string; to: string; kind: 'solid' | 'dash'; internal: boolean }[] = []
     for (const p of connected) {
+      const fromId = `plan:${p.slug}`
       for (const r of refsOf(p)) {
-        const idx = r.indexOf(':')
-        const type = (idx === -1 ? 'ref' : r.slice(0, idx)) as keyof typeof TYPE_COLOR
-        const target = idx === -1 ? r : r.slice(idx + 1)
-        const isPlanTarget = type === 'plan'
-        const toId = isPlanTarget ? `plan:${target}` : `${type}:${target}`
-        if (!nodeMap.has(toId)) {
-          const rawLabel = isPlanTarget ? target : target.replace(/^https?:\/\//, '')
-          place(toId, target, rawLabel, TYPE_COLOR[type] ? type : 'ref', isPlanTarget)
-        }
-        rawEdges.push({ from: `plan:${p.slug}`, to: toId, kind: type === 'roadmap' ? 'dash' : 'solid' })
+        const t = resolveTarget(r)
+        if (t.id === fromId) continue // self-reference
+        place(t)
+        const key = `${fromId}|${t.id}`
+        if (seen.has(key)) continue
+        seen.add(key)
+        rawEdges.push({ from: fromId, to: t.id, kind: t.type === 'roadmap' ? 'dash' : 'solid', internal: t.isPlan })
       }
     }
 
-    const edges = rawEdges
-      .map((e) => {
-        const a = nodeMap.get(e.from)
-        const b = nodeMap.get(e.to)
-        if (!a || !b) return null
-        const toRight = b.cx >= a.cx
-        const x1 = toRight ? a.x + a.w : a.x
-        const x2 = toRight ? b.x : b.x + b.w
-        return { x1, y1: a.cy, x2, y2: b.cy, kind: e.kind }
-      })
-      .filter((e): e is NonNullable<typeof e> => e !== null)
+    // plan→plan dependencies: both endpoints sit in the left column, so route
+    // them as an arc that bows into the left margin instead of a line dragged
+    // backwards across the whole canvas.
+    const internal: { d: string; kind: 'solid' | 'dash' }[] = []
+    // plan→reference: a straight line from the plan's right edge to the ref's left edge.
+    const external: { x1: number; y1: number; x2: number; y2: number; kind: 'solid' | 'dash' }[] = []
+    for (const e of rawEdges) {
+      const a = nodeMap.get(e.from)
+      const b = nodeMap.get(e.to)
+      if (!a || !b) continue
+      if (e.internal) {
+        const midY = (a.cy + b.cy) / 2
+        internal.push({ d: `M ${a.x} ${a.cy} Q ${LEFT_BOW} ${midY} ${b.x} ${b.cy}`, kind: e.kind })
+      } else {
+        external.push({ x1: a.x + a.w, y1: a.cy, x2: b.x, y2: b.cy, kind: e.kind })
+      }
+    }
 
     const maxRow = Math.max(planRow, refRow, 1)
-    return { nodes: [...nodeMap.values()], edges, height: Math.max(300, TOP + maxRow * ROW_STEP + 20) }
+    return { nodes: [...nodeMap.values()], external, internal, height: Math.max(300, TOP + maxRow * ROW_STEP + 20) }
   }, [plans])
 
   if (isLoading) return <div className="pad-x py-6"><LoadingSpinner /></div>
@@ -136,7 +200,7 @@ export function GraphPage() {
         kicker="VIEW / DEPENDENCY GRAPH"
         title="Graph"
         subtitle={
-          <>resolves <span className="text-secondary">plan:</span> · <span className="text-secondary">research:</span> · <span className="text-secondary">url:</span> refs + backlinks · maps the <span className="text-secondary">ctx graph</span> command</>
+          <>plan dependencies arc on the left · external <span className="text-secondary">research:</span> · <span className="text-secondary">url:</span> refs group by repo/host on the right</>
         }
         isNew
       />
@@ -155,9 +219,9 @@ export function GraphPage() {
                 </pattern>
               </defs>
               <rect width={VIEW_W} height={height} fill="url(#v2grid)" />
-              {edges.map((e, i) => (
+              {external.map((e, i) => (
                 <line
-                  key={i}
+                  key={`e${i}`}
                   x1={e.x1}
                   y1={e.y1}
                   x2={e.x2}
@@ -167,13 +231,28 @@ export function GraphPage() {
                   strokeDasharray={e.kind === 'dash' ? '4 4' : undefined}
                 />
               ))}
+              {internal.map((e, i) => (
+                <path
+                  key={`i${i}`}
+                  d={e.d}
+                  fill="none"
+                  stroke="#6366f1"
+                  strokeOpacity="0.5"
+                  strokeWidth="1.5"
+                  strokeDasharray={e.kind === 'dash' ? '4 4' : undefined}
+                />
+              ))}
               {nodes.map((n) => {
                 const color = TYPE_COLOR[n.type] ?? '#3a3a40'
+                const clickable = n.isPlan || Boolean(n.href)
                 return (
                   <g
                     key={n.id}
-                    style={{ cursor: n.isPlan ? 'pointer' : 'default' }}
-                    onClick={() => n.isPlan && navigate({ to: '/plan/$slug', params: { slug: n.slug } })}
+                    style={{ cursor: clickable ? 'pointer' : 'default' }}
+                    onClick={() => {
+                      if (n.isPlan) navigate({ to: '/plan/$slug', params: { slug: n.slug } })
+                      else if (n.href) window.open(n.href, '_blank', 'noopener')
+                    }}
                   >
                     <rect x={n.x} y={n.y} width={n.w} height={NODE_H} fill="#111116" stroke={color} strokeWidth="1.5" />
                     <rect x={n.x} y={n.y} width="4" height={NODE_H} fill={color} />
@@ -192,10 +271,10 @@ export function GraphPage() {
 
         <div className="mt-5 flex flex-wrap gap-6 font-mono text-2xs text-muted">
           <span className="flex items-center gap-2"><span className="inline-block h-2.5 w-2.5 border-[1.5px] border-indigo" />plan</span>
-          <span className="flex items-center gap-2"><span className="inline-block h-2.5 w-2.5 border-[1.5px] border-amber" />roadmap</span>
           <span className="flex items-center gap-2"><span className="inline-block h-2.5 w-2.5 border-[1.5px] border-green" />research</span>
+          <span className="flex items-center gap-2"><span className="inline-block h-2.5 w-2.5 border-[1.5px] border-outline" />repo / host</span>
+          <span className="flex items-center gap-2"><span className="inline-block w-3.5 border-t-[1.5px] border-indigo" />plan dependency</span>
           <span className="flex items-center gap-2"><span className="inline-block w-3.5 border-t-[1.5px] border-outline" />reference</span>
-          <span className="flex items-center gap-2"><span className="inline-block w-3.5 border-t-[1.5px] border-dashed border-outline" />roadmap link</span>
         </div>
       </div>
     </div>
