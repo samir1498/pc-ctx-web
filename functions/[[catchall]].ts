@@ -5,7 +5,38 @@ type Env = {
   GITHUB_TOKEN?: string
   GITHUB_OWNER?: string
   GITHUB_REPO?: string
+  // Optional access gate. Unset/empty → no auth (local, CLI, default deploys stay
+  // open). Set to a comma-separated list of `user:pass` to require Basic Auth.
+  AUTH_GATE?: string
   ASSETS: { fetch: (req: Request) => Response | Promise<Response> }
+}
+
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false
+  let diff = 0
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i)
+  return diff === 0
+}
+
+// Returns true when the request is allowed through. When AUTH_GATE is unset the
+// gate is disabled entirely, so this is opt-in per deploy.
+function isAuthorized(req: Request, env: Env): boolean {
+  const gate = env.AUTH_GATE?.trim()
+  if (!gate) return true
+  const header = req.headers.get('Authorization') ?? ''
+  const [scheme, encoded] = header.split(' ')
+  if (scheme !== 'Basic' || !encoded) return false
+  let decoded: string
+  try {
+    decoded = atob(encoded)
+  } catch {
+    return false
+  }
+  return gate
+    .split(',')
+    .map((p) => p.trim())
+    .filter(Boolean)
+    .some((pair) => timingSafeEqual(pair, decoded))
 }
 
 interface PagesContext {
@@ -16,6 +47,17 @@ interface PagesContext {
 }
 
 const app = new Hono<{ Bindings: Env }>()
+
+// Optional Basic Auth gate in front of everything (assets + API). No-op unless
+// AUTH_GATE is set on the deploy.
+app.use('*', async (c, next) => {
+  if (!isAuthorized(c.req.raw, c.env)) {
+    return c.body('Authentication required', 401, {
+      'WWW-Authenticate': 'Basic realm="pc-ctx", charset="UTF-8"',
+    })
+  }
+  await next()
+})
 
 const OWNER = 'samir1498'
 const REPO = 'personal-context'
