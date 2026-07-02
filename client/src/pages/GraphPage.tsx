@@ -190,12 +190,12 @@ export function GraphPage() {
           </div>
         )}
 
-        <div className="mt-[18px] flex flex-wrap gap-6 font-mono text-[11px] text-muted">
-          <span className="flex items-center gap-[7px]"><span className="inline-block h-2.5 w-2.5 border-[1.5px] border-indigo" />plan</span>
-          <span className="flex items-center gap-[7px]"><span className="inline-block h-2.5 w-2.5 border-[1.5px] border-amber" />roadmap</span>
-          <span className="flex items-center gap-[7px]"><span className="inline-block h-2.5 w-2.5 border-[1.5px] border-green" />research</span>
-          <span className="flex items-center gap-[7px]"><span className="inline-block w-3.5 border-t-[1.5px] border-[#3a3a40]" />reference</span>
-          <span className="flex items-center gap-[7px]"><span className="inline-block w-3.5 border-t-[1.5px] border-dashed border-[#3a3a40]" />roadmap link</span>
+        <div className="mt-[1.125rem] flex flex-wrap gap-6 font-mono text-[0.6875rem] text-muted">
+          <span className="flex items-center gap-[0.4375rem]"><span className="inline-block h-2.5 w-2.5 border-[1.5px] border-indigo" />plan</span>
+          <span className="flex items-center gap-[0.4375rem]"><span className="inline-block h-2.5 w-2.5 border-[1.5px] border-amber" />roadmap</span>
+          <span className="flex items-center gap-[0.4375rem]"><span className="inline-block h-2.5 w-2.5 border-[1.5px] border-green" />research</span>
+          <span className="flex items-center gap-[0.4375rem]"><span className="inline-block w-3.5 border-t-[1.5px] border-[#3a3a40]" />reference</span>
+          <span className="flex items-center gap-[0.4375rem]"><span className="inline-block w-3.5 border-t-[1.5px] border-dashed border-[#3a3a40]" />roadmap link</span>
         </div>
       </div>
     </div>

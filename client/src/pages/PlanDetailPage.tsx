@@ -55,14 +55,14 @@ export function PlanDetailPage({ slug }: PlanDetailPageProps) {
       <div className="pad-x pt-6">
         <button
           onClick={() => navigate({ to: '/plans' })}
-          className="cursor-pointer font-mono text-[11px] tracking-[0.04em] text-muted hover:text-foreground"
+          className="cursor-pointer font-mono text-[0.6875rem] tracking-[0.04em] text-muted hover:text-foreground"
         >
           ← PLANS
         </button>
       </div>
 
       <div className="border-b border-border pad-x pb-6 pt-5">
-        <div className="flex flex-wrap items-center gap-2.5 font-mono text-[11px]">
+        <div className="flex flex-wrap items-center gap-2.5 font-mono text-[0.6875rem]">
           <span className="font-semibold" style={{ color: priorityColor(fm.priority) }}>P{fm.priority ?? '—'}</span>
           <span className="text-fainter">/</span>
           <span className="text-muted">{fm.category ?? 'uncategorized'}</span>
@@ -75,17 +75,17 @@ export function PlanDetailPage({ slug }: PlanDetailPageProps) {
             </>
           )}
         </div>
-        <h1 className="mt-4 max-w-[760px] text-[34px] font-bold tracking-[-0.03em]">{fm.title ?? slug}</h1>
-        {fm.tldr && <p className="mt-3 max-w-[680px] text-[15px] leading-relaxed text-secondary">{fm.tldr}</p>}
+        <h1 className="mt-4 max-w-[47.5rem] text-[2.125rem] font-bold tracking-[-0.03em]">{fm.title ?? slug}</h1>
+        {fm.tldr && <p className="mt-3 max-w-[42.5rem] text-[0.9375rem] leading-relaxed text-secondary">{fm.tldr}</p>}
       </div>
 
       <div className="flex flex-wrap gap-x-8 pad-x">
-        <div className="flex-[999_1_0] min-w-[min(100%,50%)] py-[26px]">
+        <div className="flex-[999_1_0] min-w-[min(100%,50%)] py-[1.625rem]">
           {item.body && <MarkdownContent body={item.body} />}
 
           {tasks.length > 0 && (
             <>
-              <div className="mb-1 mt-8 font-mono text-[11px] tracking-[0.12em] text-dim">
+              <div className="mb-1 mt-8 font-mono text-[0.6875rem] tracking-[0.12em] text-dim">
                 TASKS{tc ? ` · ${tc.done}/${tc.total}` : ''}
               </div>
               <TaskList tasks={tasks} />
@@ -93,8 +93,8 @@ export function PlanDetailPage({ slug }: PlanDetailPageProps) {
           )}
         </div>
 
-        <div className="flex-[1_1_18rem] py-[26px]">
-          <div className="font-mono text-[11px] tracking-[0.12em] text-dim">REFERENCES ↗</div>
+        <div className="flex-[1_1_18rem] py-[1.625rem]">
+          <div className="font-mono text-[0.6875rem] tracking-[0.12em] text-dim">REFERENCES ↗</div>
           <div className="mt-3">
             {outbound.length > 0 ? (
               outbound.map((r) => (
@@ -105,20 +105,20 @@ export function PlanDetailPage({ slug }: PlanDetailPageProps) {
                   className={`block w-full border-t border-faintline py-2.5 text-left ${r.isPlan ? 'v2row cursor-pointer' : ''}`}
                 >
                   <div className="flex items-center gap-2">
-                    <span className="border px-[5px] py-0.5 font-mono text-[9px] tracking-[0.06em]" style={{ color: r.color, borderColor: r.color }}>
+                    <span className="border px-[0.3125rem] py-0.5 font-mono text-[0.5625rem] tracking-[0.06em]" style={{ color: r.color, borderColor: r.color }}>
                       {r.type.toUpperCase()}
                     </span>
                     <span className="font-mono text-xs text-secondary">{r.target}</span>
                   </div>
-                  <div className="mt-1 truncate text-[11.5px] text-dim">{r.desc}</div>
+                  <div className="mt-1 truncate text-[0.71875rem] text-dim">{r.desc}</div>
                 </button>
               ))
             ) : (
-              <div className="py-2.5 font-mono text-[11px] text-faint">— none</div>
+              <div className="py-2.5 font-mono text-[0.6875rem] text-faint">— none</div>
             )}
           </div>
 
-          <div className="mt-7 font-mono text-[11px] tracking-[0.12em] text-dim">BACKLINKS ↘</div>
+          <div className="mt-7 font-mono text-[0.6875rem] tracking-[0.12em] text-dim">BACKLINKS ↘</div>
           <div className="mt-3">
             {backlinks.length > 0 ? (
               backlinks.map((b) => (
@@ -127,12 +127,12 @@ export function PlanDetailPage({ slug }: PlanDetailPageProps) {
                   onClick={() => navigate({ to: '/plan/$slug', params: { slug: b.slug } })}
                   className="v2row block w-full cursor-pointer border-t border-faintline py-2.5 text-left"
                 >
-                  <div className="text-[13px] text-secondary">{b.frontmatter?.title ?? b.slug}</div>
-                  {b.frontmatter?.tldr && <div className="mt-0.5 truncate font-mono text-[11px] text-dim">{b.frontmatter.tldr}</div>}
+                  <div className="text-[0.8125rem] text-secondary">{b.frontmatter?.title ?? b.slug}</div>
+                  {b.frontmatter?.tldr && <div className="mt-0.5 truncate font-mono text-[0.6875rem] text-dim">{b.frontmatter.tldr}</div>}
                 </button>
               ))
             ) : (
-              <div className="py-2.5 font-mono text-[11px] text-faint">— none</div>
+              <div className="py-2.5 font-mono text-[0.6875rem] text-faint">— none</div>
             )}
           </div>
         </div>
