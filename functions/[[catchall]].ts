@@ -167,6 +167,24 @@ interface ListEntry {
   path: string
 }
 
+// Parse a leading YYYY-MM-DD / YYYYMMDD off a filename into a timestamp, or null
+// if it doesn't start with a real calendar date. Uses the built-in Date parser
+// (Temporal isn't exposed in the Workers runtime) and rejects rollovers like
+// 2026-13-40. Lets the listing sort dated files newest-first without a regex
+// guess at validity.
+function leadingDateMs(name: string): number | null {
+  const m = name.match(/^(\d{4})-?(\d{2})-?(\d{2})/)
+  if (!m) return null
+  const [, y, mo, d] = m
+  const dt = new Date(`${y}-${mo}-${d}T00:00:00Z`)
+  const ms = dt.getTime()
+  if (Number.isNaN(ms)) return null
+  if (dt.getUTCFullYear() !== Number(y) || dt.getUTCMonth() + 1 !== Number(mo) || dt.getUTCDate() !== Number(d)) {
+    return null
+  }
+  return ms
+}
+
 // Names-only listing for one folder — no blob text, so it stays cheap no matter
 // how many files the folder holds. Powers pagination: list the page's filenames
 // first, then fetch only that page's bodies. Sorted name-descending so
@@ -206,17 +224,19 @@ async function listFolder(env: Env, folder: string): Promise<ListEntry[] | null>
 
   const tree = json.data?.repository?.object
   if (!tree) return null
-  const entries = tree.entries
+  // Newest dated files first (progress, dated archive entries), then topic-named
+  // files alphabetically. Ordering comes from the filenames alone, so no blob is
+  // ever opened just to sort a page.
+  return tree.entries
     .filter((e) => e.type === 'blob' && isMarkdown(e.name))
-    .map((e) => ({ slug: e.name.replace(/\.\w+$/, ''), name: e.name, path: `${folder}/${e.name}` }))
-
-  // Date-prefixed folders (e.g. progress: 20260702-…) read best newest-first;
-  // topic-named folders (archive, ideas, …) read best alphabetically. Decide
-  // from the filenames themselves so we never need to open a blob to sort.
-  const isDated = (name: string) => /^(\d{8}|\d{4}-\d{2}-\d{2})/.test(name)
-  const datePrefixed = entries.length > 0 && entries.filter((e) => isDated(e.name)).length > entries.length / 2
-  entries.sort((a, b) => (datePrefixed ? b.name.localeCompare(a.name) : a.name.localeCompare(b.name)))
-  return entries
+    .map((e) => ({ slug: e.name.replace(/\.\w+$/, ''), name: e.name, path: `${folder}/${e.name}`, date: leadingDateMs(e.name) }))
+    .sort((a, b) => {
+      if (a.date !== null && b.date !== null) return b.date - a.date
+      if (a.date !== null) return -1
+      if (b.date !== null) return 1
+      return a.name.localeCompare(b.name)
+    })
+    .map(({ date: _date, ...rest }) => rest)
 }
 
 // Fetch the blob text for a specific set of files in ONE aliased GraphQL request,

@@ -4,3 +4,6 @@ dist/
 *.tar.gz
 *.zip
 *:Zone.Identifier
+
+# local Pages Functions secrets (never commit)
+.dev.vars
