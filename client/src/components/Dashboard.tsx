@@ -141,9 +141,9 @@ export function Dashboard() {
       <div className="pad-x pt-[1.625rem]">
         <div className="flex flex-wrap gap-x-3.5 gap-y-1 border-b border-border pb-4 font-mono text-[0.6875rem] text-dim">
           <span>REPO <span className="text-secondary">samir1498/personal-context</span></span>
-          <span className="text-[#2c2c30]">│</span>
+          <span className="text-[#4d4d53]">│</span>
           <span>BRANCH <span className="text-secondary">main</span></span>
-          <span className="text-[#2c2c30]">│</span>
+          <span className="text-[#4d4d53]">│</span>
           <span>UPDATED <span className="text-secondary">{updatedLabel}</span></span>
         </div>
         <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4 py-6">
