@@ -64,7 +64,7 @@ function NavRow({
           <span
             className="flex-1 tracking-[0.01em]"
             style={{
-              color: isActive ? '#f3f2ee' : '#8d8d94',
+              color: isActive ? '#f3f2ee' : '#b2b2b9',
               fontWeight: isActive ? 600 : 400,
             }}
           >
@@ -75,7 +75,7 @@ function NavRow({
           ) : count !== undefined ? (
             <span
               className="font-mono text-[0.6875rem]"
-              style={{ color: isActive ? '#9a9aa0' : '#4b4b50' }}
+              style={{ color: isActive ? '#b0b0b6' : '#89898f' }}
             >
               {count}
             </span>
@@ -130,7 +130,7 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
           <span className="inline-block h-1.5 w-1.5 animate-blink bg-green" />
           SCHEMA&nbsp;VALID
         </div>
-        <div className="mt-[0.1875rem] text-[#444449]">
+        <div className="mt-[0.1875rem] text-[#78787e]">
           {__APP_VERSION__} / {__GIT_HASH__}
         </div>
       </div>
