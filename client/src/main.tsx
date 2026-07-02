@@ -5,7 +5,17 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { routeTree } from './routeTree.gen'
 import './index.css'
 
-const queryClient = new QueryClient()
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // Context changes infrequently; keep data fresh for the session and don't
+      // refetch on every focus/remount. In-memory only (no persistence).
+      staleTime: 5 * 60_000,
+      gcTime: 30 * 60_000,
+      refetchOnWindowFocus: false,
+    },
+  },
+})
 const router = createRouter({ routeTree })
 
 declare module '@tanstack/react-router' {

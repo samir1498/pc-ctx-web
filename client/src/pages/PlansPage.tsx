@@ -9,7 +9,7 @@ const FILTERS = ['all', 'active', 'paused', 'done', 'cancelled'] as const
 
 export function PlansPage() {
   const navigate = useNavigate()
-  const { data: items, isLoading, error } = useFolder('plans')
+  const { data: items, isLoading, error } = useFolder('plans', true)
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>('all')
 
