@@ -37,7 +37,7 @@ const GROUPS: { title: string; items: NavLeaf[] }[] = [
   },
 ]
 
-function NavRow({ item, idx }: { item: NavLeaf; idx: number }) {
+function NavRow({ item, idx, onNavigate }: { item: NavLeaf; idx: number; onNavigate: () => void }) {
   // Each counted row owns its own query; react-query dedupes with the pages.
   const counted = useFolder(item.folder ?? 'plans')
   const count = item.folder ? counted.data?.length : undefined
@@ -46,6 +46,7 @@ function NavRow({ item, idx }: { item: NavLeaf; idx: number }) {
     <Link
       to={item.to}
       activeOptions={{ exact: item.to === '/' }}
+      onClick={onNavigate}
       className="group flex items-center gap-2 px-1.5 py-2 text-[13px] no-underline transition-colors"
     >
       {({ isActive }: { isActive: boolean }) => (
@@ -84,10 +85,14 @@ function NavRow({ item, idx }: { item: NavLeaf; idx: number }) {
   )
 }
 
-export function Sidebar() {
+export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   let idx = 0
   return (
-    <aside className="flex w-[222px] shrink-0 flex-col border-r border-border bg-page">
+    <aside
+      className={`fixed inset-y-0 left-0 z-40 flex w-[222px] shrink-0 flex-col border-r border-border bg-page transition-transform duration-200 md:static md:z-auto md:translate-x-0 ${
+        open ? 'translate-x-0' : '-translate-x-full'
+      }`}
+    >
       <div className="border-b border-border px-5 pb-[18px] pt-[22px]">
         <div className="flex items-center gap-2 text-[17px] font-bold tracking-[-0.02em]">
           <span className="inline-block h-[9px] w-[9px] bg-foreground" />
@@ -105,7 +110,7 @@ export function Sidebar() {
               {g.title}
             </div>
             {g.items.map((item) => (
-              <NavRow key={item.to} item={item} idx={idx++} />
+              <NavRow key={item.to} item={item} idx={idx++} onNavigate={onClose} />
             ))}
           </div>
         ))}

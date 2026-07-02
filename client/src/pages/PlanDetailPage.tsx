@@ -21,9 +21,9 @@ export function PlanDetailPage({ slug }: PlanDetailPageProps) {
   const { data: item, isLoading, error } = useItem('plans', slug)
   const { data: allPlans } = useFolder('plans')
 
-  if (isLoading) return <div className="px-10 py-6"><LoadingSpinner /></div>
-  if (error) return <div className="px-10 py-6 text-sm text-red">Error: {(error as Error).message}</div>
-  if (!item) return <div className="px-10 py-6 text-sm text-muted">Not found.</div>
+  if (isLoading) return <div className="pad-x py-6"><LoadingSpinner /></div>
+  if (error) return <div className="pad-x py-6 text-sm text-red">Error: {(error as Error).message}</div>
+  if (!item) return <div className="pad-x py-6 text-sm text-muted">Not found.</div>
 
   const fm = item.frontmatter
   const tc = taskCounts(item)
@@ -52,7 +52,7 @@ export function PlanDetailPage({ slug }: PlanDetailPageProps) {
 
   return (
     <div className="animate-fade-in">
-      <div className="px-10 pt-6">
+      <div className="pad-x pt-6">
         <button
           onClick={() => navigate({ to: '/plans' })}
           className="cursor-pointer font-mono text-[11px] tracking-[0.04em] text-muted hover:text-foreground"
@@ -61,7 +61,7 @@ export function PlanDetailPage({ slug }: PlanDetailPageProps) {
         </button>
       </div>
 
-      <div className="border-b border-border px-10 pb-6 pt-5">
+      <div className="border-b border-border pad-x pb-6 pt-5">
         <div className="flex flex-wrap items-center gap-2.5 font-mono text-[11px]">
           <span className="font-semibold" style={{ color: priorityColor(fm.priority) }}>P{fm.priority ?? '—'}</span>
           <span className="text-fainter">/</span>
@@ -79,8 +79,8 @@ export function PlanDetailPage({ slug }: PlanDetailPageProps) {
         {fm.tldr && <p className="mt-3 max-w-[680px] text-[15px] leading-relaxed text-secondary">{fm.tldr}</p>}
       </div>
 
-      <div className="grid grid-cols-[1fr_1px_320px] px-10">
-        <div className="py-[26px] pr-9">
+      <div className="flex flex-wrap gap-x-8 pad-x">
+        <div className="flex-[999_1_0] min-w-[min(100%,50%)] py-[26px]">
           {item.body && <MarkdownContent body={item.body} />}
 
           {tasks.length > 0 && (
@@ -93,9 +93,7 @@ export function PlanDetailPage({ slug }: PlanDetailPageProps) {
           )}
         </div>
 
-        <div className="bg-border" />
-
-        <div className="py-[26px] pl-8">
+        <div className="flex-[1_1_18rem] py-[26px]">
           <div className="font-mono text-[11px] tracking-[0.12em] text-dim">REFERENCES ↗</div>
           <div className="mt-3">
             {outbound.length > 0 ? (

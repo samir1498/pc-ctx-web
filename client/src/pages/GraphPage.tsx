@@ -89,8 +89,8 @@ export function GraphPage() {
     return { nodes: [...nodeMap.values()], edges, height: Math.max(460, TOP + maxRow * ROW_STEP + 20) }
   }, [plans])
 
-  if (isLoading) return <div className="px-10 py-6"><LoadingSpinner /></div>
-  if (error) return <div className="px-10 py-6 text-sm text-red">Error: {(error as Error).message}</div>
+  if (isLoading) return <div className="pad-x py-6"><LoadingSpinner /></div>
+  if (error) return <div className="pad-x py-6 text-sm text-red">Error: {(error as Error).message}</div>
 
   return (
     <div className="animate-fade-in">
@@ -103,7 +103,7 @@ export function GraphPage() {
         isNew
       />
 
-      <div className="px-10 py-7">
+      <div className="pad-x py-7">
         <div className="border border-border bg-[#0c0c0f]">
           <svg viewBox={`0 0 900 ${height}`} className="block w-full" preserveAspectRatio="xMidYMid meet">
             <defs>

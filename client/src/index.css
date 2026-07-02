@@ -42,6 +42,11 @@
   --radius-xl: 0px;
 }
 
+/* fluid horizontal page padding — scales 16px→40px with the viewport, no breakpoints */
+@utility pad-x {
+  padding-inline: clamp(1rem, 4vw, 2.5rem);
+}
+
 html,
 body {
   background-color: var(--color-page);

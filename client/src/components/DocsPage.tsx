@@ -31,19 +31,19 @@ export function DocsPage({ folder, kicker, title, subtitle, meta = defaultMeta }
   const list = useMemo(() => items ?? [], [items])
   const current = list[selected] ?? list[0]
 
-  if (isLoading) return <div className="px-10 py-6"><LoadingSpinner /></div>
-  if (error) return <div className="px-10 py-6 text-sm text-red">Error: {(error as Error).message}</div>
+  if (isLoading) return <div className="pad-x py-6"><LoadingSpinner /></div>
+  if (error) return <div className="pad-x py-6 text-sm text-red">Error: {(error as Error).message}</div>
 
   return (
     <div className="animate-fade-in">
       <PageHeader kicker={kicker} title={title} subtitle={subtitle} />
 
       {list.length === 0 ? (
-        <p className="px-10 py-16 text-center font-mono text-xs text-faint">no entries</p>
+        <p className="pad-x py-16 text-center font-mono text-xs text-faint">no entries</p>
       ) : (
-        <div className="grid grid-cols-[300px_1px_1fr]" style={{ minHeight: 'calc(100vh - 150px)' }}>
+        <div className="flex flex-wrap md:h-[calc(100vh-150px)]">
           {/* master list */}
-          <div className="overflow-y-auto">
+          <div className="flex-[1_1_18rem] overflow-y-auto border-b border-border md:border-b-0 md:border-r">
             {list.map((item, i) => {
               const on = i === selected
               const fm = item.frontmatter ?? {}
@@ -67,10 +67,8 @@ export function DocsPage({ folder, kicker, title, subtitle, meta = defaultMeta }
             })}
           </div>
 
-          <div className="bg-border" />
-
           {/* detail */}
-          <div className="overflow-y-auto px-10 pb-10 pt-7">
+          <div className="flex-[999_1_0] min-w-[min(100%,30rem)] overflow-y-auto pad-x pb-10 pt-7">
             {current && (
               <>
                 <div className="font-mono text-[11px] text-dim">

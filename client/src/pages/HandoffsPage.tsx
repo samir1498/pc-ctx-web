@@ -7,8 +7,8 @@ import { statusColor } from '../lib/ui'
 export function HandoffsPage() {
   const { data: items, isLoading, error } = useFolder('handoffs')
 
-  if (isLoading) return <div className="px-10 py-6"><LoadingSpinner /></div>
-  if (error) return <div className="px-10 py-6 text-sm text-red">Error: {(error as Error).message}</div>
+  if (isLoading) return <div className="pad-x py-6"><LoadingSpinner /></div>
+  if (error) return <div className="pad-x py-6 text-sm text-red">Error: {(error as Error).message}</div>
 
   const sorted = [...(items ?? [])].sort(
     (a, b) => Number(b.frontmatter?.created ?? 0) - Number(a.frontmatter?.created ?? 0),
@@ -23,7 +23,7 @@ export function HandoffsPage() {
         isNew
       />
 
-      <div className="px-10 pb-10 pt-2">
+      <div className="pad-x pb-10 pt-2">
         {sorted.map((h) => {
           const fm = h.frontmatter ?? {}
           return (

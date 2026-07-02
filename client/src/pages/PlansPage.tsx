@@ -25,8 +25,8 @@ export function PlansPage() {
       })
   }, [items, query, filter])
 
-  if (isLoading) return <div className="px-10 py-6"><PlansPageSkeleton /></div>
-  if (error) return <div className="px-10 py-6 text-sm text-red">Error: {(error as Error).message}</div>
+  if (isLoading) return <div className="pad-x py-6"><PlansPageSkeleton /></div>
+  if (error) return <div className="pad-x py-6 text-sm text-red">Error: {(error as Error).message}</div>
 
   return (
     <div className="animate-fade-in">
@@ -37,7 +37,7 @@ export function PlansPage() {
       />
 
       {/* controls */}
-      <div className="flex flex-wrap items-center gap-3.5 border-b border-border px-10 py-4">
+      <div className="flex flex-wrap items-center gap-3.5 border-b border-border pad-x py-4">
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
@@ -62,9 +62,9 @@ export function PlansPage() {
         </div>
       </div>
 
-      {/* table */}
-      <div className="px-10">
-        <div className="grid grid-cols-[56px_1fr_130px_90px_110px] gap-4 border-b border-border py-2.5 pt-4 font-mono text-[10px] tracking-[0.08em] text-faint">
+      {/* table — scrolls horizontally on narrow screens (fixed-column data table) */}
+      <div className="overflow-x-auto pad-x">
+        <div className="grid min-w-[44rem] grid-cols-[56px_1fr_130px_90px_110px] gap-4 border-b border-border py-2.5 pt-4 font-mono text-[10px] tracking-[0.08em] text-faint">
           <span>PRIO</span>
           <span>PLAN</span>
           <span>CATEGORY</span>
@@ -78,7 +78,7 @@ export function PlansPage() {
             <button
               key={p.slug}
               onClick={() => navigate({ to: '/plan/$slug', params: { slug: p.slug } })}
-              className="v2row grid w-full cursor-pointer grid-cols-[56px_1fr_130px_90px_110px] items-center gap-4 border-b border-[#141417] py-[15px] text-left"
+              className="v2row grid w-full min-w-[44rem] cursor-pointer grid-cols-[56px_1fr_130px_90px_110px] items-center gap-4 border-b border-[#141417] py-[15px] text-left"
             >
               <span className="font-mono text-[13px] font-semibold" style={{ color: priorityColor(fm.priority) }}>
                 P{fm.priority ?? '—'}
