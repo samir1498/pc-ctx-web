@@ -1,11 +1,22 @@
-import { useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import type { Folder } from '../types'
-import { fetchCounts, fetchFolder, fetchItem } from '../api/client'
+import { fetchCounts, fetchFolder, fetchFolderPage, fetchItem } from '../api/client'
 
 export function useFolder(folder: Folder, meta = false) {
   return useQuery({
     queryKey: ['folder', folder, meta ? 'meta' : 'full'],
     queryFn: () => fetchFolder(folder, meta),
+    retry: false,
+  })
+}
+
+// One page of a folder (frontmatter only by default). keepPreviousData holds the
+// current page on screen while the next one loads, so paging doesn't flash.
+export function useFolderPage(folder: Folder, page: number, size: number, meta = true) {
+  return useQuery({
+    queryKey: ['folder-page', folder, page, size, meta ? 'meta' : 'full'],
+    queryFn: () => fetchFolderPage(folder, page, size, meta),
+    placeholderData: keepPreviousData,
     retry: false,
   })
 }

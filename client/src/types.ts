@@ -43,6 +43,13 @@ export interface ContextItemDetail extends ContextItem {
   body: string
 }
 
+export interface PagedResponse<T = ContextItem> {
+  total: number
+  page: number
+  size: number
+  items: T[]
+}
+
 export const FOLDER_LABELS: Record<Folder, string> = {
   plans: 'Plans',
   roadmaps: 'Roadmaps',
