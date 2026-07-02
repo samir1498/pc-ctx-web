@@ -12,7 +12,7 @@ interface RoadmapEntry {
 
 export function RoadmapsPage() {
   const navigate = useNavigate()
-  const { data: items, isLoading, error } = useFolder('roadmaps')
+  const { data: items, isLoading, error } = useFolder('roadmaps', true)
 
   if (isLoading) return <div className="pad-x py-6"><LoadingSpinner /></div>
   if (error) return <div className="pad-x py-6 text-sm text-red">Error: {(error as Error).message}</div>

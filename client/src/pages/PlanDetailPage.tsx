@@ -19,7 +19,7 @@ const REF_COLOR: Record<string, string> = {
 export function PlanDetailPage({ slug }: PlanDetailPageProps) {
   const navigate = useNavigate()
   const { data: item, isLoading, error } = useItem('plans', slug)
-  const { data: allPlans } = useFolder('plans')
+  const { data: allPlans } = useFolder('plans', true)
 
   if (isLoading) return <div className="pad-x py-6"><LoadingSpinner /></div>
   if (error) return <div className="pad-x py-6 text-sm text-red">Error: {(error as Error).message}</div>

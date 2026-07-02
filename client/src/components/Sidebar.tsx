@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { useFolder } from '../hooks/useContext'
+import { useCounts } from '../hooks/useContext'
 import type { Folder } from '../types'
 
 interface NavLeaf {
@@ -37,11 +37,12 @@ const GROUPS: { title: string; items: NavLeaf[] }[] = [
   },
 ]
 
-function NavRow({ item, idx, onNavigate }: { item: NavLeaf; idx: number; onNavigate: () => void }) {
-  // Each counted row owns its own query; react-query dedupes with the pages.
-  const counted = useFolder(item.folder ?? 'plans')
-  const count = item.folder ? counted.data?.length : undefined
-
+function NavRow({
+  item,
+  idx,
+  count,
+  onNavigate,
+}: { item: NavLeaf; idx: number; count?: number; onNavigate: () => void }) {
   return (
     <Link
       to={item.to}
@@ -86,6 +87,8 @@ function NavRow({ item, idx, onNavigate }: { item: NavLeaf; idx: number; onNavig
 }
 
 export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
+  // One request for all folder counts — no file bodies fetched.
+  const { data: counts } = useCounts()
   let idx = 0
   return (
     <aside
@@ -110,7 +113,13 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
               {g.title}
             </div>
             {g.items.map((item) => (
-              <NavRow key={item.to} item={item} idx={idx++} onNavigate={onClose} />
+              <NavRow
+                key={item.to}
+                item={item}
+                idx={idx++}
+                count={item.folder ? counts?.[item.folder] : undefined}
+                onNavigate={onClose}
+              />
             ))}
           </div>
         ))}

@@ -35,7 +35,7 @@ const TOP = 36
 
 export function GraphPage() {
   const navigate = useNavigate()
-  const { data: plans, isLoading, error } = useFolder('plans')
+  const { data: plans, isLoading, error } = useFolder('plans', true)
 
   const { nodes, edges, height } = useMemo(() => {
     const nodeMap = new Map<string, GNode>()

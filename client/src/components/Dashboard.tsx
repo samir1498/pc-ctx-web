@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useNavigate } from '@tanstack/react-router'
-import { useFolder } from '../hooks/useContext'
+import { useCounts, useFolder } from '../hooks/useContext'
 import type { ContextItem } from '../types'
 import { DashboardSkeleton } from './Skeleton'
 import { statusColor, priorityColor, parseCreated, isoWeek, weeklyActivity } from '../lib/ui'
@@ -26,16 +26,18 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 
 export function Dashboard() {
   const navigate = useNavigate()
-  const plans = useFolder('plans')
-  const roadmaps = useFolder('roadmaps')
-  const references = useFolder('references')
-  const ideas = useFolder('ideas')
-  const processes = useFolder('processes')
-  const handoffs = useFolder('handoffs')
+  // Lists we read frontmatter from → meta (no bodies). Progress needs bodies
+  // (weekly activity counts markdown bullets). Library folders are counts-only.
+  const plans = useFolder('plans', true)
+  const roadmaps = useFolder('roadmaps', true)
+  const handoffs = useFolder('handoffs', true)
   const progress = useFolder('progress')
+  const countsQuery = useCounts()
+  const folderCounts = countsQuery.data
 
-  const isLoading = plans.isLoading || roadmaps.isLoading || progress.isLoading
-  const error = plans.error || roadmaps.error || progress.error
+  // Paint as soon as the light queries are in; heavier sections fill in after.
+  const isLoading = plans.isLoading || countsQuery.isLoading
+  const error = plans.error
 
   const statusBreakdown = useMemo(() => {
     const counts: Record<string, number> = { active: 0, done: 0, paused: 0, cancelled: 0 }
@@ -82,27 +84,26 @@ export function Dashboard() {
   )
 
   const libraryCount =
-    (references.data?.length ?? 0) + (ideas.data?.length ?? 0) + (processes.data?.length ?? 0)
+    (folderCounts?.references ?? 0) + (folderCounts?.ideas ?? 0) + (folderCounts?.processes ?? 0)
   const activePlans = statusBreakdown.active
   const activeRoadmaps = (roadmaps.data ?? []).filter((r) => r.frontmatter?.status === 'active').length
   const openHandoffs = (handoffs.data ?? []).filter((h) => h.frontmatter?.status === 'active').length
 
-  const totalItems =
-    planTotal +
-    (roadmaps.data?.length ?? 0) +
-    libraryCount +
-    (handoffs.data?.length ?? 0) +
-    (progress.data?.length ?? 0)
+  const roadmapsTotal = roadmaps.data?.length ?? folderCounts?.roadmaps ?? 0
+  const handoffsTotal = handoffs.data?.length ?? folderCounts?.handoffs ?? 0
+  const progressTotal = progress.data?.length ?? folderCounts?.progress ?? 0
+
+  const totalItems = planTotal + roadmapsTotal + libraryCount + handoffsTotal + progressTotal
 
   const domainCount = [
-    plans.data,
-    roadmaps.data,
-    references.data,
-    ideas.data,
-    processes.data,
-    handoffs.data,
-    progress.data,
-  ].filter((d) => (d?.length ?? 0) > 0).length
+    planTotal,
+    roadmapsTotal,
+    folderCounts?.references ?? 0,
+    folderCounts?.ideas ?? 0,
+    folderCounts?.processes ?? 0,
+    handoffsTotal,
+    progressTotal,
+  ].filter((n) => n > 0).length
 
   const updated = latestDate([plans.data, progress.data, roadmaps.data])
   const updatedLabel = updated
@@ -129,8 +130,8 @@ export function Dashboard() {
 
   const kpis = [
     { label: 'PLANS', count: planTotal, delta: `+${activePlans} active`, color: '#22c55e' },
-    { label: 'ROADMAPS', count: roadmaps.data?.length ?? 0, delta: `${activeRoadmaps} in flight`, color: '#3b82f6' },
-    { label: 'HANDOFFS', count: handoffs.data?.length ?? 0, delta: `${openHandoffs} open`, color: '#a78bfa' },
+    { label: 'ROADMAPS', count: roadmapsTotal, delta: `${activeRoadmaps} in flight`, color: '#3b82f6' },
+    { label: 'HANDOFFS', count: handoffsTotal, delta: `${openHandoffs} open`, color: '#a78bfa' },
     { label: 'LIBRARY', count: libraryCount, delta: 'refs+ideas+procs', color: '#f59e0b' },
   ]
 
