@@ -27,8 +27,8 @@ export function HandoffsPage() {
         {sorted.map((h) => {
           const fm = h.frontmatter ?? {}
           return (
-            <div key={h.slug} className="mt-[1.125rem] border border-border bg-panel px-[1.375rem] py-5">
-              <div className="flex flex-wrap items-center gap-3 font-mono text-[0.6875rem] text-dim">
+            <div key={h.slug} className="mt-5 border border-border bg-panel px-6 py-5">
+              <div className="flex flex-wrap items-center gap-3 font-mono text-2xs text-dim">
                 <span style={{ color: statusColor(fm.status) }}>[{fm.status ?? '—'}]</span>
                 <span className="text-fainter">/</span>
                 <span>SESSION {String(fm.created ?? '—')}</span>
@@ -39,14 +39,14 @@ export function HandoffsPage() {
                   </>
                 )}
               </div>
-              <h2 className="mt-3 text-[1.25rem] font-semibold tracking-[-0.02em]">{fm.title ?? h.slug}</h2>
-              {fm.tldr && <p className="mt-1.5 text-[0.84375rem] text-muted">{fm.tldr}</p>}
+              <h2 className="mt-3 text-xl font-semibold tracking-[-0.02em]">{fm.title ?? h.slug}</h2>
+              {fm.tldr && <p className="mt-1.5 text-sm text-muted">{fm.tldr}</p>}
               {h.body && (
                 <details className="mt-4 group">
-                  <summary className="cursor-pointer list-none font-mono text-[0.625rem] tracking-[0.12em] text-faint hover:text-secondary">
+                  <summary className="cursor-pointer list-none font-mono text-3xs tracking-[0.12em] text-faint hover:text-secondary">
                     ▸ FULL HANDOFF
                   </summary>
-                  <div className="mt-4 max-w-[47.5rem] border-t border-faintline pt-4">
+                  <div className="mt-4 max-w-3xl border-t border-faintline pt-4">
                     <MarkdownContent body={h.body} />
                   </div>
                 </details>

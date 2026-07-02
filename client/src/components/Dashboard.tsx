@@ -20,7 +20,7 @@ function latestDate(items: (ContextItem[] | undefined)[]): Date | null {
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="font-mono text-[0.6875rem] tracking-[0.12em] text-dim">{children}</div>
+    <div className="font-mono text-2xs tracking-[0.12em] text-dim">{children}</div>
   )
 }
 
@@ -138,12 +138,12 @@ export function Dashboard() {
   return (
     <div className="animate-fade-in">
       {/* header */}
-      <div className="pad-x pt-[1.625rem]">
-        <div className="flex flex-wrap gap-x-3.5 gap-y-1 border-b border-border pb-4 font-mono text-[0.6875rem] text-dim">
+      <div className="pad-x pt-7">
+        <div className="flex flex-wrap gap-x-3.5 gap-y-1 border-b border-border pb-4 font-mono text-2xs text-dim">
           <span>REPO <span className="text-secondary">samir1498/personal-context</span></span>
-          <span className="text-[#4d4d53]">│</span>
+          <span className="text-fainter">│</span>
           <span>BRANCH <span className="text-secondary">main</span></span>
-          <span className="text-[#4d4d53]">│</span>
+          <span className="text-fainter">│</span>
           <span>UPDATED <span className="text-secondary">{updatedLabel}</span></span>
         </div>
         <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4 py-6">
@@ -154,7 +154,7 @@ export function Dashboard() {
             </p>
           </div>
           <div className="flex select-none gap-2.5 font-mono text-xs">
-            <span className="cursor-default border border-line px-[0.9375rem] py-2.5 tracking-[0.03em] text-secondary">SEARCH /</span>
+            <span className="cursor-default border border-line px-4 py-2.5 tracking-[0.03em] text-secondary">SEARCH /</span>
             <span className="cursor-default bg-foreground px-4 py-2.5 font-semibold tracking-[0.03em] text-page">+ NEW PLAN</span>
           </div>
         </div>
@@ -163,17 +163,17 @@ export function Dashboard() {
       {/* KPI grid */}
       <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,9rem),1fr))] gap-px border-y border-border bg-border">
         {kpis.map((k, i) => (
-          <div key={k.label} className="v2row bg-page px-6 pb-6 pt-[1.375rem]">
+          <div key={k.label} className="v2row bg-page px-6 pb-6 pt-6">
             <div className="flex items-center justify-between">
-              <span className="font-mono text-[0.625rem] tracking-[0.12em] text-dim">
+              <span className="font-mono text-3xs tracking-[0.12em] text-dim">
                 {String(i + 1).padStart(2, '0')} — {k.label}
               </span>
-              <span className="inline-block h-[0.4375rem] w-[0.4375rem]" style={{ background: k.color }} />
+              <span className="inline-block h-2 w-2" style={{ background: k.color }} />
             </div>
-            <div className="mt-[1.125rem] text-[2.875rem] font-semibold leading-none tracking-[-0.04em] tabular-nums">
+            <div className="mt-5 text-5xl font-semibold leading-none tracking-[-0.04em] tabular-nums">
               {k.count}
             </div>
-            <div className="mt-2.5 font-mono text-[0.6875rem] text-dim">{k.delta}</div>
+            <div className="mt-2.5 font-mono text-2xs text-dim">{k.delta}</div>
           </div>
         ))}
       </div>
@@ -182,13 +182,13 @@ export function Dashboard() {
       <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,26rem),1fr))] gap-x-10 pad-x">
         <div>
           {/* plan status */}
-          <section className="border-b border-border py-[1.625rem]">
+          <section className="border-b border-border py-7">
             <SectionLabel>01 / PLAN STATUS</SectionLabel>
-            <div className="mt-[1.125rem] flex items-end gap-2.5">
-              <span className="text-[2.5rem] font-semibold leading-none tracking-[-0.04em] tabular-nums">{planTotal}</span>
-              <span className="pb-1.5 font-mono text-[0.6875rem] text-dim">TOTAL PLANS</span>
+            <div className="mt-5 flex items-end gap-2.5">
+              <span className="text-4xl font-semibold leading-none tracking-[-0.04em] tabular-nums">{planTotal}</span>
+              <span className="pb-1.5 font-mono text-2xs text-dim">TOTAL PLANS</span>
             </div>
-            <div className="mt-[1.125rem] flex h-2 gap-0.5">
+            <div className="mt-5 flex h-2 gap-0.5">
               {segments.map((s) => (
                 <div
                   key={s.label}
@@ -197,7 +197,7 @@ export function Dashboard() {
                 />
               ))}
             </div>
-            <div className="mt-[1.375rem]">
+            <div className="mt-6">
               {segments.map((s) => (
                 <div
                   key={s.label}
@@ -205,7 +205,7 @@ export function Dashboard() {
                 >
                   <span className="inline-block h-2 w-2" style={{ background: s.color }} />
                   <span className="flex-1 tracking-[0.02em] text-secondary">{s.label}</span>
-                  <span className="w-[2.875rem] text-right text-dim">{s.pct}%</span>
+                  <span className="w-12 text-right text-dim">{s.pct}%</span>
                   <span className="w-7 text-right font-semibold text-foreground">{s.value}</span>
                 </div>
               ))}
@@ -213,17 +213,17 @@ export function Dashboard() {
           </section>
 
           {/* top plans */}
-          <section className="py-[1.625rem]">
+          <section className="py-7">
             <div className="flex items-center justify-between">
               <SectionLabel>03 / TOP PLANS BY PRIORITY</SectionLabel>
               <button
                 onClick={() => navigate({ to: '/plans' })}
-                className="cursor-pointer font-mono text-[0.6875rem] text-secondary hover:text-foreground"
+                className="cursor-pointer font-mono text-2xs text-secondary hover:text-foreground"
               >
                 ALL →
               </button>
             </div>
-            <div className="grid grid-cols-[52px_1fr_auto] gap-3.5 py-2 pt-4 font-mono text-[0.625rem] tracking-[0.08em] text-faint">
+            <div className="grid grid-cols-[52px_1fr_auto] gap-3.5 py-2 pt-4 font-mono text-3xs tracking-[0.08em] text-faint">
               <span>PRIO</span>
               <span>PLAN</span>
               <span>STATUS</span>
@@ -236,14 +236,14 @@ export function Dashboard() {
                   onClick={() => navigate({ to: '/plan/$slug', params: { slug: p.slug } })}
                   className="v2row grid w-full cursor-pointer grid-cols-[52px_1fr_auto] items-center gap-3.5 border-t border-faintline py-3 text-left"
                 >
-                  <span className="font-mono text-[0.8125rem] font-semibold" style={{ color: priorityColor(fm.priority) }}>
+                  <span className="font-mono text-sm font-semibold" style={{ color: priorityColor(fm.priority) }}>
                     P{fm.priority ?? '—'}
                   </span>
                   <div className="min-w-0">
                     <div className="truncate text-sm font-medium tracking-[-0.01em]">{fm.title ?? p.slug}</div>
-                    {fm.tldr && <div className="mt-0.5 truncate font-mono text-[0.6875rem] text-dim">{fm.tldr}</div>}
+                    {fm.tldr && <div className="mt-0.5 truncate font-mono text-2xs text-dim">{fm.tldr}</div>}
                   </div>
-                  <span className="font-mono text-[0.6875rem]" style={{ color: statusColor(fm.status) }}>
+                  <span className="font-mono text-2xs" style={{ color: statusColor(fm.status) }}>
                     [{fm.status ?? '—'}]
                   </span>
                 </button>
@@ -254,45 +254,45 @@ export function Dashboard() {
 
         <div>
           {/* weekly activity */}
-          <section className="border-b border-border py-[1.625rem]">
+          <section className="border-b border-border py-7">
             <div className="flex items-center justify-between">
               <SectionLabel>02 / WEEKLY ACTIVITY</SectionLabel>
-              <span className="font-mono text-[0.625rem] text-faint">ENTRIES / WK</span>
+              <span className="font-mono text-3xs text-faint">ENTRIES / WK</span>
             </div>
             {bars.length > 0 ? (
               <>
-                <div className="relative mt-[1.375rem] h-[10.625rem]">
+                <div className="relative mt-6 h-44">
                   <div className="absolute inset-0 flex flex-col justify-between">
-                    <div className="border-t border-dotted border-[#1c1c20]" />
-                    <div className="border-t border-dotted border-[#1c1c20]" />
-                    <div className="border-t border-dotted border-[#1c1c20]" />
-                    <div className="border-t border-[#232328]" />
+                    <div className="border-t border-dotted border-border" />
+                    <div className="border-t border-dotted border-border" />
+                    <div className="border-t border-dotted border-border" />
+                    <div className="border-t border-line" />
                   </div>
-                  <div className="relative flex h-full items-end gap-[0.5625rem]">
+                  <div className="relative flex h-full items-end gap-2.5">
                     {bars.map((b, i) => (
-                      <div key={b.label + i} className="flex h-full flex-1 flex-col items-center justify-end gap-[0.4375rem]">
-                        <span className="font-mono text-[0.625rem] text-muted">{b.value}</span>
+                      <div key={b.label + i} className="flex h-full flex-1 flex-col items-center justify-end gap-2">
+                        <span className="font-mono text-3xs text-muted">{b.value}</span>
                         <div
-                          className="w-full transition-[height] duration-700"
-                          style={{ height: `${(b.value / barMax) * 100}%`, background: i === bars.length - 1 ? '#f3f2ee' : '#3a3a40' }}
+                          className={`w-full transition-[height] duration-700 ${i === bars.length - 1 ? 'bg-foreground' : 'bg-outline'}`}
+                          style={{ height: `${(b.value / barMax) * 100}%` }}
                         />
                       </div>
                     ))}
                   </div>
                 </div>
-                <div className="mt-2 flex gap-[0.5625rem]">
+                <div className="mt-2 flex gap-2.5">
                   {bars.map((b, i) => (
-                    <span key={b.label + i} className="flex-1 text-center font-mono text-[0.5625rem] text-faint">{b.label}</span>
+                    <span key={b.label + i} className="flex-1 text-center font-mono text-3xs text-faint">{b.label}</span>
                   ))}
                 </div>
               </>
             ) : (
-              <p className="py-10 text-center font-mono text-[0.6875rem] text-faint">no progress entries</p>
+              <p className="py-10 text-center font-mono text-2xs text-faint">no progress entries</p>
             )}
           </section>
 
           {/* progress log */}
-          <section className="py-[1.625rem]">
+          <section className="py-7">
             <SectionLabel>04 / PROGRESS LOG</SectionLabel>
             <div className="mt-4">
               {progressLog.map((p) => {
@@ -301,16 +301,16 @@ export function Dashboard() {
                 const dateLabel = d ? `${d.getFullYear()}-W${String(isoWeek(d)[1]).padStart(2, '0')} · ${MONTHS[d.getMonth()]} ${String(d.getDate()).padStart(2, '0')}` : '—'
                 return (
                   <div key={p.slug} className="grid grid-cols-[130px_1fr] items-baseline gap-4 border-t border-faintline py-3.5">
-                    <span className="font-mono text-[0.6875rem] text-dim">{dateLabel}</span>
+                    <span className="font-mono text-2xs text-dim">{dateLabel}</span>
                     <div className="flex items-baseline gap-2.5">
-                      <span className="inline-block h-[0.4375rem] w-[0.4375rem] flex-shrink-0 translate-y-px" style={{ background: statusColor(fm.status) }} />
-                      <span className="text-[0.84375rem] tracking-[-0.01em] text-secondary">{fm.title ?? p.slug}</span>
+                      <span className="inline-block h-2 w-2 flex-shrink-0 translate-y-px" style={{ background: statusColor(fm.status) }} />
+                      <span className="text-sm tracking-[-0.01em] text-secondary">{fm.title ?? p.slug}</span>
                     </div>
                   </div>
                 )
               })}
               {progressLog.length === 0 && (
-                <p className="py-10 text-center font-mono text-[0.6875rem] text-faint">no progress entries</p>
+                <p className="py-10 text-center font-mono text-2xs text-faint">no progress entries</p>
               )}
             </div>
           </section>
