@@ -17,40 +17,11 @@ interface PagesContext {
 
 const app = new Hono<{ Bindings: Env }>()
 
-function ghHeaders(env: Env): Record<string, string> {
-  const h: Record<string, string> = {
-    Accept: 'application/vnd.github.v3+json',
-    'User-Agent': 'personal-context/1.0',
-  }
-  if (env.GITHUB_TOKEN) h.Authorization = `Bearer ${env.GITHUB_TOKEN}`
-  return h
-}
-
 const OWNER = 'samir1498'
 const REPO = 'personal-context'
 const BRANCH = 'main'
 
-interface GhContent {
-  name: string
-  path: string
-  sha: string
-  type: 'file' | 'dir'
-  download_url: string | null
-}
-
-async function ghFetch(env: Env, path: string): Promise<Response> {
-  const url = `https://api.github.com/repos/${env.GITHUB_OWNER || OWNER}/${env.GITHUB_REPO || REPO}/contents/${path}?ref=${BRANCH}`
-  return fetch(url, { headers: ghHeaders(env) })
-}
-
-async function ghFetchRaw(env: Env, path: string): Promise<string | null> {
-  const url = `https://api.github.com/repos/${env.GITHUB_OWNER || OWNER}/${env.GITHUB_REPO || REPO}/contents/${path}?ref=${BRANCH}`
-  const res = await fetch(url, {
-    headers: { ...ghHeaders(env), Accept: 'application/vnd.github.raw+json' },
-  })
-  if (!res.ok) return null
-  return res.text()
-}
+const FOLDERS = ['plans', 'roadmaps', 'references', 'progress', 'ideas', 'processes', 'handoffs', 'archive'] as const
 
 function parseFrontmatter(raw: string): { frontmatter: Record<string, unknown>; body?: string } | null {
   const match = raw.match(/^---\n([\s\S]*?)\n---(?:\n([\s\S]*))?$/)
@@ -63,7 +34,90 @@ function parseFrontmatter(raw: string): { frontmatter: Record<string, unknown>; 
   }
 }
 
-const FOLDERS = ['plans', 'roadmaps', 'references', 'progress', 'ideas', 'processes', 'handoffs', 'archive'] as const
+interface FolderEntry {
+  slug: string
+  name: string
+  path: string
+  frontmatter?: Record<string, unknown>
+  body?: string
+}
+
+// One GraphQL request returns the folder listing AND every file's content.
+// This replaces an N+1 REST fan-out (1 list call + 1 call per file) that blew
+// Cloudflare's 50-subrequest-per-invocation limit once a folder held ~50+ files.
+const TREE_QUERY = `
+  query($owner: String!, $repo: String!, $expr: String!) {
+    repository(owner: $owner, name: $repo) {
+      object(expression: $expr) {
+        ... on Tree {
+          entries {
+            name
+            type
+            object {
+              ... on Blob {
+                text
+                isBinary
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+`
+
+interface GqlTreeEntry {
+  name: string
+  type: string
+  object: { text: string | null; isBinary: boolean } | null
+}
+
+interface GqlResponse {
+  data?: { repository?: { object: { entries: GqlTreeEntry[] } | null } }
+  errors?: { message: string }[]
+}
+
+// Returns the parsed entries for a folder, or null if the folder does not
+// exist in the repo (so callers can treat that as an empty domain).
+async function fetchFolder(env: Env, folder: string): Promise<FolderEntry[] | null> {
+  const owner = env.GITHUB_OWNER || OWNER
+  const repo = env.GITHUB_REPO || REPO
+
+  const res = await fetch('https://api.github.com/graphql', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${env.GITHUB_TOKEN || ''}`,
+      'Content-Type': 'application/json',
+      'User-Agent': 'pc-ctx-web/1.0',
+    },
+    body: JSON.stringify({ query: TREE_QUERY, variables: { owner, repo, expr: `${BRANCH}:${folder}` } }),
+  })
+  if (!res.ok) {
+    const body = await res.text().catch(() => '')
+    throw new Error(`GitHub GraphQL request failed: ${res.status} ${body}`)
+  }
+
+  const json = await res.json<GqlResponse>()
+  if (json.errors?.length) {
+    throw new Error(`GitHub GraphQL error: ${json.errors.map((e) => e.message).join('; ')}`)
+  }
+
+  const tree = json.data?.repository?.object
+  if (!tree) return null // folder not present in the repo yet
+
+  const results: FolderEntry[] = []
+  for (const entry of tree.entries) {
+    if (entry.type !== 'blob' || !entry.object || entry.object.isBinary || entry.object.text == null) continue
+    const parsed = parseFrontmatter(entry.object.text)
+    results.push({
+      slug: entry.name.replace(/\.\w+$/, ''),
+      name: entry.name,
+      path: `${folder}/${entry.name}`,
+      ...(parsed ? { frontmatter: parsed.frontmatter, body: parsed.body } : { body: entry.object.text }),
+    })
+  }
+  return results
+}
 
 app.get('/api/:folder', async (c) => {
   const { folder } = c.req.param()
@@ -71,46 +125,16 @@ app.get('/api/:folder', async (c) => {
     return c.notFound()
   }
 
-  let res: Response
+  let entries: FolderEntry[] | null
   try {
-    res = await ghFetch(c.env, folder)
+    entries = await fetchFolder(c.env, folder)
   } catch (err) {
     return c.json({ error: `Failed to fetch ${folder}: ${err instanceof Error ? err.message : err}`, status: 502 }, 502)
   }
 
-  if (res.status === 404) {
-    // Folder not present in the context repo yet (e.g. handoffs/ or archive/
-    // not created yet). Treat as an empty domain rather than an error.
-    return c.json([])
-  }
-  if (!res.ok) {
-    const body = await res.text().catch(() => '')
-    return c.json({ error: `Failed to fetch ${folder}`, status: res.status, body }, 500)
-  }
-
-  let items: GhContent[]
-  try {
-    items = await res.json<GhContent[]>()
-  } catch (err) {
-    return c.json({ error: `Invalid response from GitHub for ${folder}: ${err instanceof Error ? err.message : err}`, status: 502 }, 502)
-  }
-
-  const results = []
-
-  for (const item of items) {
-    if (item.type !== 'file') continue
-    const raw = await ghFetchRaw(c.env, item.path)
-    if (!raw) continue
-    const parsed = parseFrontmatter(raw)
-    results.push({
-      slug: item.name.replace(/\.\w+$/, ''),
-      name: item.name,
-      path: item.path,
-      ...(parsed ? { frontmatter: parsed.frontmatter, body: parsed.body } : { body: raw }),
-    })
-  }
-
-  return c.json(results)
+  // Folder not present in the context repo yet (e.g. handoffs/ or archive/
+  // not created yet). Treat as an empty domain rather than an error.
+  return c.json(entries ?? [])
 })
 
 app.onError((err, c) => {
@@ -124,48 +148,17 @@ app.get('/api/:folder/:slug', async (c) => {
     return c.notFound()
   }
 
-  let res: Response
+  let entries: FolderEntry[] | null
   try {
-    res = await ghFetch(c.env, folder)
+    entries = await fetchFolder(c.env, folder)
   } catch (err) {
     return c.json({ error: `Failed to fetch ${folder}: ${err instanceof Error ? err.message : err}`, status: 502 }, 502)
   }
-  if (!res.ok) return c.json({ error: 'Folder not found' }, 404)
 
-  let items: GhContent[]
-  try {
-    items = await res.json<GhContent[]>()
-  } catch (err) {
-    return c.json({ error: `Invalid response from GitHub for ${folder}: ${err instanceof Error ? err.message : err}`, status: 502 }, 502)
-  }
-
-  const file = items.find(
-    (i) => i.type === 'file' && i.name.replace(/\.\w+$/, '') === slug
-  )
+  const file = entries?.find((e) => e.slug === slug)
   if (!file) return c.json({ error: 'Not found' }, 404)
 
-  let raw: string | null
-  try {
-    raw = await ghFetchRaw(c.env, file.path)
-  } catch (err) {
-    return c.json({ error: `Failed to read ${file.path}: ${err instanceof Error ? err.message : err}`, status: 502 }, 502)
-  }
-  if (!raw) return c.json({ error: 'Failed to read file' }, 500)
-
-  const parsed = parseFrontmatter(raw)
-  const result: Record<string, unknown> = {
-    slug,
-    name: file.name,
-    path: file.path,
-  }
-  if (parsed) {
-    result.frontmatter = parsed.frontmatter
-    result.body = parsed.body
-  } else {
-    result.body = raw
-  }
-
-  return c.json(result)
+  return c.json(file)
 })
 
 app.all('*', async (c) => {
