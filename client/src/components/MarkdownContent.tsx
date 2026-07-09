@@ -53,9 +53,11 @@ export function MarkdownContent({ body }: MarkdownContentProps) {
     void import('mermaid').then(({ default: mermaid }) => {
       if (cancelled) return
       if (!mermaidReady) {
-        // Diagram source comes from repo markdown, so keep the strict sandbox —
-        // labels can't inject script. startOnLoad off: we drive rendering here.
-        mermaid.initialize({ startOnLoad: false, securityLevel: 'strict', theme: 'dark' })
+        // securityLevel 'sandbox' renders each diagram inside a sandboxed
+        // <iframe>, fully isolating mermaid's post-DOMPurify SVG from the page
+        // (defense in depth; diagram source is repo markdown). startOnLoad off:
+        // we drive rendering here.
+        mermaid.initialize({ startOnLoad: false, securityLevel: 'sandbox', theme: 'dark' })
         mermaidReady = true
       }
       return mermaid.run({ nodes: targets })
