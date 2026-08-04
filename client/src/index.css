@@ -2,6 +2,12 @@
 @plugin "@tailwindcss/typography";
 @import "highlight.js/styles/github-dark.css";
 
+/* mermaid renders diagrams into a sandboxed iframe (securityLevel: 'sandbox') */
+.mermaid iframe {
+  width: 100%;
+  border: 0;
+}
+
 @theme {
   /* surfaces */
   --color-page: #0a0a0b;
