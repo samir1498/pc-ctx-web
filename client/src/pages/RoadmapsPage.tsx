@@ -17,11 +17,16 @@ const OPEN_ORDER = ['active', 'next', 'in-progress', 'planned', 'paused', 'block
 /** Live roadmaps first, archived last. */
 const group = (s?: string) => (s && ARCHIVED.has(s) ? 1 : 0)
 
-/** Slugs are the only per-entry title we have — make them readable. */
-const titleOf = (ref: string) => {
+/**
+ * Prefer the plan's own frontmatter title. Roadmap slugs are auto-generated from
+ * sentences and hard-truncated ("...when-the-update-stream-di"), so de-slugging
+ * them produces garbage; only fall back to that when the plan is missing.
+ */
+const titleOf = (ref: string, planTitles: Map<string, string>) => {
   if (!ref) return 'untitled'
-  const words = ref.replace(/^\d+-/, '').split('-')
-  const s = words.join(' ')
+  const real = planTitles.get(ref)
+  if (real) return real
+  const s = ref.replace(/^\d+-/, '').split('-').join(' ')
   return s.charAt(0).toUpperCase() + s.slice(1)
 }
 
@@ -79,7 +84,14 @@ function StatusBar({ counts, total }: Readonly<{ counts: Map<string, number>; to
 export function RoadmapsPage() {
   const navigate = useNavigate()
   const { data: items, isLoading, error } = useFolder('roadmaps', true)
+  const { data: plans } = useFolder('plans', true)
   const [showArchived, setShowArchived] = useState(false)
+
+  const planTitles = new Map<string, string>()
+  for (const p of plans ?? []) {
+    const t = p.frontmatter?.title
+    if (typeof t === 'string' && t) planTitles.set(p.slug, t)
+  }
   const [open, setOpen] = useState<Set<string>>(new Set())
 
   const toggle = (slug: string) =>
@@ -153,7 +165,7 @@ export function RoadmapsPage() {
 
           return (
             <div key={r.slug} id={r.slug} className="scroll-mt-20 border-b border-border">
-              <div className="flex items-center gap-3 py-3.5">
+              <div className="group flex items-center gap-3 py-3.5">
                 <button
                   className="flex flex-1 items-center gap-3 text-left"
                   onClick={() => toggle(r.slug)}
@@ -208,7 +220,7 @@ export function RoadmapsPage() {
                                 [{e.status ?? '—'}]
                               </span>
                               <span className="min-w-0 flex-1">
-                                <span className="block truncate text-sm text-foreground">{titleOf(ref)}</span>
+                                <span className="block truncate text-sm text-foreground">{titleOf(ref, planTitles)}</span>
                                 {e.note && (
                                   <span className="mt-0.5 line-clamp-1 block text-2xs text-dim">
                                     {stripPhase(e.note)}
