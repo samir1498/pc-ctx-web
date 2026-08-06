@@ -13,9 +13,17 @@ interface RoadmapEntry {
 
 const ARCHIVED = new Set(['archived', 'done', 'cancelled', 'superseded'])
 
-// active first, then by how much is still open, archived last
-const RANK: Record<string, number> = { active: 0, next: 1, 'in-progress': 1, planned: 2, paused: 3 }
-const rank = (s?: string) => (s && ARCHIVED.has(s) ? 9 : (RANK[s ?? ''] ?? 4))
+// Live roadmaps first, archived last; newest first within each group.
+const rank = (s?: string) => (s && ARCHIVED.has(s) ? 1 : 0)
+
+// `created` is a YYYYMMDD number in frontmatter; fall back to the date prefix
+// on the filename/slug so an entry missing it still sorts sanely.
+const createdAt = (fm: Record<string, unknown>, slug: string) => {
+  const c = Number(fm.created)
+  if (Number.isFinite(c) && c > 0) return c
+  const m = /(\d{4})-(\d{2})-(\d{2})/.exec(slug)
+  return m ? Number(`${m[1]}${m[2]}${m[3]}`) : 0
+}
 
 function AnchorLink({ id }: Readonly<{ id: string }>) {
   const [copied, setCopied] = useState(false)
@@ -58,7 +66,11 @@ export function RoadmapsPage() {
   const archivedCount = all.filter((r) => ARCHIVED.has(String(r.frontmatter?.status ?? ''))).length
   const visible = all
     .filter((r) => showArchived || !ARCHIVED.has(String(r.frontmatter?.status ?? '')))
-    .sort((a, b) => rank(a.frontmatter?.status as string) - rank(b.frontmatter?.status as string))
+    .sort((a, b) => {
+      const byGroup = rank(a.frontmatter?.status as string) - rank(b.frontmatter?.status as string)
+      if (byGroup !== 0) return byGroup
+      return createdAt(b.frontmatter ?? {}, b.slug) - createdAt(a.frontmatter ?? {}, a.slug)
+    })
 
   return (
     <div className="animate-fade-in">
