@@ -7,3 +7,6 @@ dist/
 
 # local Pages Functions secrets (never commit)
 .dev.vars
+
+# repo installs with bun (see package.json build script) — keep pnpm out
+pnpm-lock.yaml
