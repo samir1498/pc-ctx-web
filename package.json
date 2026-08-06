@@ -6,7 +6,7 @@
     "dev": "wrangler pages dev --port 8788",
     "build": "cd client && bun install --frozen-lockfile && bun run build",
     "bundle": "npm run build && tar czf web-ui.tar.gz -C client/dist .",
-    "deploy": "npm run build && wrangler pages deploy client/dist --project-name pc-ctx-web",
+    "deploy": "npm run build && wrangler pages deploy client/dist --project-name observeone-ctx --branch main",
     "typecheck": "cd client && npx tsc --noEmit"
   },
   "devDependencies": {
