@@ -20,7 +20,8 @@ const SENTENCE_SPLIT_RE = /(?<=[.!?])\s+/
 // inline formatting to plain text. Runs per line so paragraph breaks, list
 // markers and headings survive for the markdown renderer downstream.
 function stripLine(line: string): string {
-  let out = line.replace(CODE_PAREN_RE, '').replace(BARE_REF_RE, '').replace(BARE_PR_RE, '').replace(TASK_ID_RE, '')
+  // Unbold first: "done.** The" would otherwise hide the sentence boundary.
+  let out = line.replace(/\*\*([^*]+)\*\*/g, '$1').replace(CODE_PAREN_RE, '').replace(BARE_REF_RE, '').replace(BARE_PR_RE, '').replace(TASK_ID_RE, '')
 
   out = out
     .split(SENTENCE_SPLIT_RE)
@@ -37,7 +38,7 @@ function stripLine(line: string): string {
 
 // Stores hard-wrap prose at ~80 columns, so a sentence (and its path) spans lines;
 // rejoin plain paragraphs before the per-line pass. Lists and headings keep their breaks.
-const STRUCTURED_LINE_RE = /^\s*(?:[-*+]\s|\d+[.)]\s|#|>|\|)/
+const STRUCTURED_LINE_RE = /^\s*(?:[-*+]\s|\d+[.)]\s|#{1,6}\s|>|\|)/
 function unwrapParagraphs(text: string): string {
   return text
     .split(/\n{2,}/)

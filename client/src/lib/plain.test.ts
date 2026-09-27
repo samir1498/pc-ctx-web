@@ -37,6 +37,12 @@ describe('stripCodes', () => {
     expect(stripCodes(wrapped)).toBe('The till is done. Next is printing.')
   })
 
+  it('handles a wrapped status paragraph: bold lead, a path sentence, and a PR range split across lines', () => {
+    const t =
+      "**2026-01-02 08:45: the first module is merged.** The live loop is\n`context/loops/x.md`; its\nhandoff `context/handoffs/y.md`\nsays where to pick up. Merged since then: the split (#155 to\n#162), the screens and more."
+    expect(stripCodes(t)).toBe('2026-01-02 08:45: the first module is merged. Merged since then: the split, the screens and more.')
+  })
+
   it('flattens inline code, links and bold to plain text', () => {
     expect(stripCodes('Run `npm test` and read [the doc](https://example.com), it is **important**.')).toBe(
       'Run npm test and read the doc, it is important.',
