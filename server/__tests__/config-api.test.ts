@@ -33,7 +33,7 @@ function memoryConfigStore(initial: { projects?: ProjectConfig[]; tokens?: Recor
 }
 
 function stubGithubFetch(payload: unknown, status = 200): typeof fetch {
-  return (async () => new Response(JSON.stringify(payload), { status })) as typeof fetch
+  return async () => new Response(JSON.stringify(payload), { status })
 }
 
 const LOCAL_HEADERS = { origin: 'http://127.0.0.1:4780', host: '127.0.0.1:4780', 'content-type': 'application/json' }
@@ -152,6 +152,13 @@ describe('createConfigApi — local mode CSRF guard', () => {
     expect(res.status).toBe(403)
   })
 
+  it('rejects a GET whose Host is not loopback (DNS rebinding)', async () => {
+    const store = memoryConfigStore({ tokens: { samir1498: SECRET_TOKEN } })
+    const app = createConfigApi({ store, mode: 'local', github: stubGithubFetch([]) })
+    const res = await app.request('http://rebind.example.com:4780/api/config', { headers: { host: 'rebind.example.com:4780' } })
+    expect(res.status).toBe(403)
+  })
+
   it('accepts a PUT with a matching loopback Origin and Host', async () => {
     const store = memoryConfigStore()
     const app = createConfigApi({ store, mode: 'local', github: stubGithubFetch([]) })
@@ -185,8 +192,14 @@ describe('createConfigApi — GitHub listing', () => {
     const github: typeof fetch = (async (_input, init) => {
       const headers = new Headers(init?.headers)
       capturedAuth = headers.get('Authorization')
-      return new Response(JSON.stringify([{ name: 'ctx', default_branch: 'main' }]), { status: 200 })
-    }) as typeof fetch
+      return new Response(
+        JSON.stringify([
+          { name: 'ctx', default_branch: 'main', owner: { login: 'samir1498' } },
+          { name: 'someone-elses', default_branch: 'main', owner: { login: 'other-org' } },
+        ]),
+        { status: 200 },
+      )
+    })
     const store = memoryConfigStore({ tokens: { samir1498: SECRET_TOKEN } })
     const app = createConfigApi({ store, mode: 'local', github })
     const res = await app.request('/api/config/github/samir1498/repos')

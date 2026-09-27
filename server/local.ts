@@ -4,7 +4,7 @@ import { join, resolve, sep } from 'node:path'
 import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
 import { createApi } from './api.js'
-import { createConfigApi } from './config-api.js'
+import { createConfigApi, isLoopbackRequest } from './config-api.js'
 import type { ConfigStore } from './config-store.js'
 import { diskSource } from './disk.js'
 import { fileConfigStore } from './file-config-store.js'
@@ -46,6 +46,11 @@ function main(): void {
   const staticDir = resolve(process.cwd(), 'client/dist')
 
   const app = new Hono()
+
+  app.use('*', async (c, next) => {
+    if (!isLoopbackRequest(c)) return c.text('forbidden', 403)
+    await next()
+  })
 
   app.route('/', createConfigApi({ store, mode: 'local', github: fetch, listLocalDirectories: listDirectories }))
 

@@ -60,11 +60,10 @@ function parseHostPort(value: string): { hostname: string; port: string | null }
 
 const LOOPBACK_HOSTS = new Set(['127.0.0.1', 'localhost'])
 
-// CSRF guard for the local server: a random website's browser JS could otherwise PUT/DELETE
-// against 127.0.0.1. Host must be loopback; a present Origin must match it exactly.
-function isLoopbackRequest(c: Context): boolean {
-  const hostHeader = c.req.header('host')
-  if (!hostHeader) return false
+// Local-server guard against CSRF and DNS rebinding: a random website's JS could otherwise
+// reach 127.0.0.1. Host must be loopback; a present Origin must match it exactly.
+export function isLoopbackRequest(c: Context): boolean {
+  const hostHeader = c.req.header('host') || new URL(c.req.url).host
   const host = parseHostPort(hostHeader)
   if (!host || !LOOPBACK_HOSTS.has(host.hostname)) return false
 
@@ -103,13 +102,13 @@ export function createConfigApi(options: CreateConfigApiOptions): Hono {
   const app = new Hono()
 
   app.use('/api/config/*', async (c, next) => {
+    if (mode === 'local' && !isLoopbackRequest(c)) {
+      return c.json({ error: 'forbidden origin' }, 403)
+    }
     if (c.req.method === 'PUT' || c.req.method === 'DELETE') {
       const contentType = c.req.header('content-type') || ''
       if (!contentType.toLowerCase().includes('application/json')) {
         return c.json({ error: 'Content-Type must be application/json' }, 400)
-      }
-      if (mode === 'local' && !isLoopbackRequest(c)) {
-        return c.json({ error: 'forbidden origin' }, 403)
       }
     }
     await next()
@@ -162,8 +161,10 @@ export function createConfigApi(options: CreateConfigApiOptions): Hono {
     if (!res.ok) return c.json({ error: githubErrorMessage(res.status) }, mapGithubStatus(res.status))
     const json: unknown = await res.json()
     if (!Array.isArray(json)) return c.json({ error: 'unexpected GitHub response' }, 502)
+    // /user/repos lists every repo the token reaches; keep only this owner's.
     const repos = json
       .filter(isRecord)
+      .filter((r) => isRecord(r.owner) && typeof r.owner.login === 'string' && r.owner.login.toLowerCase() === owner.toLowerCase())
       .map((r) => ({
         name: typeof r.name === 'string' ? r.name : '',
         defaultBranch: typeof r.default_branch === 'string' ? r.default_branch : 'main',
