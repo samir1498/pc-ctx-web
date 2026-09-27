@@ -7,6 +7,12 @@ export type Folder =
   | 'processes'
   | 'handoffs'
   | 'archive'
+  | 'reports'
+  | 'standups'
+
+// Project-scoped board also reads the archived-plans folder, which is not a
+// top-level context-store folder (see server/source.ts's 'plans-archived').
+export type ProjectFolder = Folder | 'plans-archived'
 
 export interface Task {
   id: string
@@ -66,4 +72,54 @@ export const FOLDER_LABELS: Record<Folder, string> = {
   processes: 'Processes',
   handoffs: 'Handoffs',
   archive: 'Archive',
+  reports: 'Reports',
+  standups: 'Standups',
+}
+
+export type Audience = 'plain' | 'engineering'
+
+export interface ProjectSummary {
+  id: string
+  name: string
+  sourceKind: 'disk' | 'github'
+  audience: Audience
+}
+
+export interface HubConfig {
+  mode: 'local' | 'deployed'
+  projects: ProjectConfigEntry[]
+  tokens: Record<string, 'set' | 'not set'>
+}
+
+export interface DiskProjectConfigEntry {
+  id: string
+  name: string
+  source: 'disk'
+  dir: string
+  audience?: Audience
+}
+
+export interface GithubProjectConfigEntry {
+  id: string
+  name: string
+  source: 'github'
+  owner: string
+  repo: string
+  branch: string
+  folder: string
+  audience?: Audience
+}
+
+export type ProjectConfigEntry = DiskProjectConfigEntry | GithubProjectConfigEntry
+
+export interface FsListing {
+  path: string
+  parent: string | null
+  dirs: string[]
+  isContextStore: boolean
+}
+
+export interface GithubRepoSummary {
+  name: string
+  defaultBranch: string
 }

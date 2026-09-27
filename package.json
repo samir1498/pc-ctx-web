@@ -10,7 +10,7 @@
     "typecheck": "cd client && npx tsc --noEmit",
     "typecheck:functions": "cd client && npx tsc --noEmit -p ../tsconfig.json",
     "typecheck:server": "cd client && npx tsc --noEmit -p ../server/tsconfig.json",
-    "test": "vitest run --config server/vitest.config.ts",
+    "test": "vitest run --config server/vitest.config.ts && cd client && npx vitest run",
     "hub:local:build": "cd client && npx tsc --noEmit false -p ../server/tsconfig.json --outDir ../dist-server",
     "hub:local": "npm run hub:local:build && node dist-server/local.js"
   },
