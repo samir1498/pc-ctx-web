@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Context hub mockup</title>
+<meta name="description" content="Three layout directions for the one site that reads every project's context store (Dinar, ObserveOne). Static snapshot, nothing live.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --page:#0a0a0b; --panel:#0c0c0f; --input:#0d0d10; --hover:#101012; --elevated:#111116;
+  --border:#1b1b1f; --line:#26262b; --faintline:#161619; --outline:#3a3a40;
+  --fg:#f3f2ee; --secondary:#c3c3c9; --muted:#a9a9b0; --dim:#909097; --faint:#7a7a82;
+  --green:#22c55e; --blue:#3b82f6; --amber:#f59e0b; --red:#ef4444; --purple:#a78bfa; --indigo:#6366f1;
+  --note-bg:rgba(245,158,11,.08);
+  --display:"Space Grotesk",-apple-system,BlinkMacSystemFont,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,monospace;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --page:#f6f5f1; --panel:#ffffff; --input:#fbfaf7; --hover:#f0efea; --elevated:#ffffff;
+    --border:#e3e1da; --line:#d6d3ca; --faintline:#ecebe5; --outline:#b9b6ad;
+    --fg:#17171a; --secondary:#34343a; --muted:#4a4a52; --dim:#5f5f67; --faint:#76767e;
+    --note-bg:rgba(245,158,11,.12); color-scheme: light;
+  }
+}
+:root[data-theme="light"] {
+  --page:#f6f5f1; --panel:#ffffff; --input:#fbfaf7; --hover:#f0efea; --elevated:#ffffff;
+  --border:#e3e1da; --line:#d6d3ca; --faintline:#ecebe5; --outline:#b9b6ad;
+  --fg:#17171a; --secondary:#34343a; --muted:#4a4a52; --dim:#5f5f67; --faint:#76767e;
+  --note-bg:rgba(245,158,11,.12); color-scheme: light;
+}
+* { box-sizing:border-box; }
+html,body { margin:0; background:var(--page); color:var(--fg); font-family:var(--display); -webkit-font-smoothing:antialiased; }
+body { font-size:14px; line-height:1.5; }
+button { font:inherit; color:inherit; background:none; border:1px solid var(--line); padding:6px 10px; cursor:pointer; }
+button:hover { background:var(--hover); border-color:var(--outline); }
+button.on { border-color:var(--fg); background:var(--elevated); }
+a { color:inherit; }
+.mono { font-family:var(--mono); }
+.banner { background:var(--amber); color:#111; font-weight:600; padding:8px 16px; font-size:13px; }
+.topbar { display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between; padding:12px 16px; border-bottom:1px solid var(--border); }
+.topbar h1 { font-size:15px; margin:0; font-weight:600; letter-spacing:.01em; }
+.dirs { display:flex; gap:6px; flex-wrap:wrap; }
+.dirs button { font-size:13px; }
+.fresh { font-family:var(--mono); font-size:11px; color:var(--dim); }
+.dir-intro { padding:10px 16px; color:var(--muted); font-size:13px; border-bottom:1px solid var(--faintline); }
+.note { background:var(--note-bg); border-left:2px solid var(--amber); padding:8px 12px; margin:12px 0; font-size:13px; color:var(--secondary); }
+.note b { color:var(--amber); font-weight:600; }
+.shell { display:grid; grid-template-columns:220px 1fr; min-height:calc(100vh - 110px); }
+.side { border-right:1px solid var(--border); padding:14px 0; background:var(--panel); }
+.side h4 { margin:14px 16px 6px; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--faint); font-weight:500; }
+.side .item { display:flex; justify-content:space-between; align-items:center; width:100%; text-align:left; border:0; border-left:2px solid transparent; padding:7px 16px; }
+.side .item.on { border-left-color:var(--fg); background:var(--elevated); }
+.side .item small { color:var(--faint); font-family:var(--mono); font-size:11px; }
+.main { padding:20px clamp(16px,4vw,40px); min-width:0; }
+.crumbs { font-size:12px; color:var(--faint); margin-bottom:6px; }
+.crumbs button { border:0; padding:0; color:var(--dim); text-decoration:underline; }
+h2 { font-size:22px; margin:0 0 4px; font-weight:600; }
+h3 { font-size:15px; margin:22px 0 8px; font-weight:600; }
+.sub { color:var(--muted); margin:0 0 14px; max-width:72ch; }
+.tabs { display:flex; gap:0; border-bottom:1px solid var(--border); margin:10px 0 16px; overflow-x:auto; }
+.tabs button { border:0; border-bottom:2px solid transparent; padding:8px 12px; white-space:nowrap; }
+.tabs button.on { border-bottom-color:var(--fg); background:none; }
+.board { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px; }
+.col { background:var(--panel); border:1px solid var(--border); min-width:0; }
+.col header { display:flex; justify-content:space-between; padding:9px 12px; border-bottom:1px solid var(--border); font-size:12px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); }
+.col .cards { padding:6px; display:flex; flex-direction:column; gap:6px; max-height:520px; overflow:auto; }
+.card { text-align:left; width:100%; border:1px solid var(--faintline); background:var(--input); padding:9px 10px; }
+.card:hover { border-color:var(--outline); }
+.card .t { font-weight:500; font-size:13px; }
+.card .m { display:flex; gap:8px; align-items:center; margin-top:6px; font-size:11px; color:var(--faint); font-family:var(--mono); }
+.bar { height:3px; background:var(--line); flex:1; }
+.bar i { display:block; height:100%; background:var(--green); }
+.dot { display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:6px; vertical-align:middle; }
+.s-active{background:var(--blue)} .s-paused{background:var(--amber)} .s-done{background:var(--green)} .s-cancelled{background:var(--faint)} .s-archived{background:var(--outline)}
+.more { font-size:12px; color:var(--dim); padding:6px 10px; border:0; }
+.tasks { list-style:none; padding:0; margin:0; border:1px solid var(--border); }
+.tasks li { display:flex; gap:10px; padding:8px 12px; border-bottom:1px solid var(--faintline); align-items:flex-start; }
+.tasks li:last-child { border-bottom:0; }
+.tasks .id { font-family:var(--mono); font-size:11px; color:var(--faint); min-width:30px; padding-top:2px; }
+.tasks .st { font-size:11px; font-family:var(--mono); min-width:78px; color:var(--dim); padding-top:2px; }
+.tasks .st.done { color:var(--green); } .tasks .st.in-progress { color:var(--blue); } .tasks .st.blocked { color:var(--red); }
+.prose { max-width:70ch; color:var(--secondary); }
+.prose p { margin:0 0 10px; }
+.prose h4 { margin:16px 0 6px; font-size:14px; color:var(--fg); }
+.shots { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:14px 0; }
+.shot { aspect-ratio:16/10; background:repeating-linear-gradient(45deg,var(--input),var(--input) 8px,var(--hover) 8px,var(--hover) 16px); border:1px solid var(--border); display:flex; align-items:flex-end; padding:8px; font-size:12px; color:var(--dim); }
+.panel { background:var(--panel); border:1px solid var(--border); padding:14px 16px; margin-bottom:14px; }
+.kv { display:grid; grid-template-columns:140px 1fr; gap:8px 12px; align-items:center; font-size:13px; }
+.kv label { color:var(--dim); }
+.field { background:var(--input); border:1px solid var(--line); padding:6px 9px; font-family:var(--mono); font-size:12px; min-width:0; }
+.field.disabled { opacity:.4; }
+.pill { font-family:var(--mono); font-size:11px; padding:2px 7px; border:1px solid var(--line); color:var(--dim); }
+.pill.ok { color:var(--green); border-color:rgba(34,197,94,.4); }
+.pill.no { color:var(--red); border-color:rgba(239,68,68,.4); }
+.toggle { display:inline-flex; border:1px solid var(--line); }
+.toggle button { border:0; padding:5px 10px; font-size:12px; }
+.toggle button.on { background:var(--fg); color:var(--page); }
+.toggle button:disabled { opacity:.35; cursor:not-allowed; }
+.stream { border-left:1px solid var(--line); margin-left:6px; padding-left:18px; }
+.ev { position:relative; padding:8px 0 12px; }
+.ev::before { content:""; position:absolute; left:-23px; top:14px; width:9px; height:9px; border-radius:50%; background:var(--outline); }
+.ev.done::before { background:var(--green); } .ev.new::before { background:var(--blue); }
+.ev .when { font-family:var(--mono); font-size:11px; color:var(--faint); }
+.ev .proj { font-size:11px; padding:1px 6px; border:1px solid var(--line); margin-right:6px; color:var(--dim); }
+.filters { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; }
+.plainbadge { font-size:11px; color:var(--green); border:1px solid rgba(34,197,94,.4); padding:2px 7px; margin-left:8px; vertical-align:middle; font-weight:400; }
+.home-grid { display:grid; grid-template-columns:minmax(0,1.4fr) minmax(0,1fr); gap:16px; }
+.prog { display:flex; gap:10px; align-items:center; padding:9px 0; border-bottom:1px solid var(--faintline); }
+.prog button { border:0; padding:0; text-align:left; flex:1; font-weight:500; }
+.prog .n { font-family:var(--mono); font-size:11px; color:var(--faint); min-width:44px; text-align:right; }
+.prog .bar { max-width:120px; }
+.toast { position:fixed; bottom:16px; left:50%; transform:translateX(-50%); background:var(--fg); color:var(--page); padding:9px 14px; font-size:13px; opacity:0; transition:opacity .2s; pointer-events:none; max-width:calc(100vw - 32px); }
+.toast.show { opacity:1; }
+.search { background:var(--input); border:1px solid var(--line); color:var(--fg); padding:6px 9px; font:inherit; font-size:13px; min-width:0; width:220px; }
+@media (max-width:760px) {
+  .shell { grid-template-columns:1fr; }
+  .side { border-right:0; border-bottom:1px solid var(--border); display:flex; flex-wrap:wrap; padding:6px; }
+  .side h4 { display:none; }
+  .side .item { width:auto; border-left:0; border-bottom:2px solid transparent; }
+  .side .item.on { border-bottom-color:var(--fg); }
+  .home-grid { grid-template-columns:1fr; }
+  .shots { grid-template-columns:1fr 1fr; }
+  .kv { grid-template-columns:1fr; }
+}
+</style>
+</head>
+<body>
+<div class="banner">MOCKUP: design review only. Static snapshot of both stores, nothing live, no working links.</div>
+<div class="topbar">
+  <h1>Context hub</h1>
+  <div class="dirs" id="dirs"></div>
+  <span class="fresh" id="fresh"></span>
+</div>
+<div class="dir-intro" id="dirIntro"></div>
+<div id="app"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const DATA = /*__DATA__*/null;
+
+const DIRS = {
+  A: { label: 'A · Project first', intro: 'Pick a project in the sidebar. Its home is the status board, built from plan front matter. Plans, reports, standups and settings are tabs under it.' },
+  B: { label: 'B · Reader first', intro: 'A project opens on plain words: where it stands, the latest standup, what is moving. The board and task lists sit one level down. Built for Anouar opening one page alone.' },
+  C: { label: 'C · One stream', intro: 'No per-project pages. One timeline across every store (plans started, plans finished, reports, standups), filtered by project and kind.' },
+}
+const state = { dir: 'A', project: 'dinar', view: 'home', plan: null, showArchived: false, deployed: false, streamProj: 'all', streamKind: 'all', q: '' }
+try { const s = JSON.parse(localStorage.getItem('hub-mock') || '{}'); if (s.dir) state.dir = s.dir } catch {}
+
+const $ = (s) => document.querySelector(s)
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))
+const proj = () => DATA.projects.find((p) => p.id === state.project)
+// Dinar is read by Anouar: no slugs, no task ids, no file paths on its pages.
+const plain = (p) => p.id === 'dinar'
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove('show'), 2600) }
+function go(patch) { Object.assign(state, patch); try { localStorage.setItem('hub-mock', JSON.stringify({ dir: state.dir })) } catch {}; render(); window.scrollTo(0, 0) }
+
+function fmtDate(d) { d = String(d || '').replace(/-/g, ''); return d.length >= 8 ? `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}` : '' }
+function progress(pl) { const n = pl.tasks.length, d = pl.tasks.filter((t) => t.status === 'done' || t.status === 'cancelled').length; return { n, d, pct: n ? Math.round((d / n) * 100) : 0 } }
+function bucket(pl) { if (pl.archived) return 'archived'; return pl.status || 'active' }
+function stripCodes(s) { return String(s).replace(/\s*\((?:[^()]*?(?:#\d+|\b[0-9a-f]{7}\b|\bD\d+\b)[^()]*)\)/g, '').split(/(?<=[.!?])\s+/).filter((sent) => !/[\w-]+\/[\w./-]*/.test(sent)).join(' ').replace(/`([^`]*)`/g, '$1').replace(/\[([^\]]+)\]\([^)]*\)/g, '$1').replace(/\*\*([^*]+)\*\*/g, '$1').replace(/\s*\((?:#\d+(?:\s*(?:to|,|-)\s*#?\d+)*)\)/g, '') }
+function md(text, p) {
+  return text.split(/\n{2,}/).map((b) => {
+    b = b.trim().replace(/\s*\n\s*/g, ' ')
+    b = plain(p) ? stripCodes(b) : b.replace(/`([^`]*)`/g, '<code class="mono">$1</code>')
+    if (!b) return ''
+    if (/^#{1,3}\s/.test(b)) return `<h4>${esc(b.replace(/^#+\s*/, ''))}</h4>`
+    const html = esc(b).replace(/&lt;code class=&quot;mono&quot;&gt;(.*?)&lt;\/code&gt;/g, '<code class="mono">$1</code>').replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>').replace(/\[([^\]]+)\]\([^)]*\)/g, '<u>$1</u>')
+    return `<p>${html.replace(/\n/g, ' ')}</p>`
+  }).join('')
+}
+function note(html) { return `<div class="note"><b>Open question.</b> ${html}</div>` }
+
+function dirsBar() {
+  $('#dirs').innerHTML = Object.entries(DIRS).map(([k, d]) => `<button class="${state.dir === k ? 'on' : ''}" data-dir="${k}">${d.label}</button>`).join('') +
+    `<button data-act="theme" title="Toggle light/dark">◐</button>`
+  $('#dirIntro').textContent = DIRS[state.dir].intro
+  $('#fresh').textContent = state.deployed ? `data as of ${DATA.snapshot} · GitHub via KV cache (up to 5 min old)` : `data as of ${DATA.snapshot} · read from disk`
+}
+
+function card(pl, p) {
+  const pr = progress(pl)
+  return `<button class="card" data-plan="${esc(pl.slug)}"><div class="t">${esc(pl.title)}</div>
+    <div class="m">${pr.n ? `<span class="bar"><i style="width:${pr.pct}%"></i></span><span>${pr.d}/${pr.n}</span>` : '<span>no tasks</span>'}${plain(p) ? '' : `<span>${esc(pl.category || '')}</span>`}</div></button>`
+}
+
+function board(p) {
+  const cols = [['active', 'In progress'], ['paused', 'Paused'], ['done', 'Done, not archived']]
+  if (state.showArchived) cols.push(['archived', 'Archived'])
+  const q = state.q.toLowerCase()
+  const plans = p.plans.filter((pl) => !q || (pl.title || '').toLowerCase().includes(q))
+  const html = cols.map(([k, label]) => {
+    const list = plans.filter((pl) => bucket(pl) === k).sort((a, b) => (b.created || '').localeCompare(a.created || ''))
+    const shown = list.slice(0, 25)
+    return `<div class="col"><header><span><span class="dot s-${k}"></span>${label}</span><span class="mono">${list.length}</span></header>
+      <div class="cards">${shown.map((pl) => card(pl, p)).join('') || '<div class="more">nothing here</div>'}${list.length > shown.length ? `<div class="more">+ ${list.length - shown.length} more (search to find them)</div>` : ''}</div></div>`
+  }).join('')
+  const counts = { total: p.plans.length, live: p.plans.filter((x) => !x.archived).length, arch: p.plans.filter((x) => x.archived).length }
+  return `<div class="filters"><input class="search" id="q" placeholder="Search plan titles" value="${esc(state.q)}">
+    <button data-act="arch" class="${state.showArchived ? 'on' : ''}">${state.showArchived ? 'Hide' : 'Show'} archived (${counts.arch})</button></div>
+    <div class="board">${html}</div>
+    ${p.id === 'observeone' ? note(`ObserveOne has ${counts.live} plans outside <span class="mono">plans/archived/</span>, many already done. Auto-archive on done (plan task T4) would empty the third column. Default the board to in progress + paused only?`) : ''}`
+}
+
+function planView(p) {
+  const pl = p.plans.find((x) => x.slug === state.plan)
+  if (!pl) return '<p>Plan not found.</p>'
+  const pr = progress(pl)
+  return `<div class="crumbs"><button data-view="home">${esc(p.name)}</button> / plan</div>
+    <h2>${esc(pl.title)}</h2>
+    <p class="sub">${esc(plain(p) ? stripCodes(pl.tldr) : pl.tldr)}</p>
+    <div class="m mono" style="font-size:12px;color:var(--faint);margin-bottom:14px"><span class="dot s-${bucket(pl)}"></span>${esc(bucket(pl))} · started ${fmtDate(pl.created)} · ${pr.d} of ${pr.n} done${plain(p) ? '' : ` · ${esc(pl.slug)}`}</div>
+    ${pl.intro && !plain(p) ? `<div class="prose">${md(pl.intro, p)}</div>` : ''}
+    <h3>Tasks</h3>
+    <ul class="tasks">${pl.tasks.map((t) => `<li>${plain(p) ? '' : `<span class="id">${esc(t.id)}</span>`}<span class="st ${esc(t.status)}">${esc(t.status)}</span><span>${esc(plain(p) ? stripCodes(t.desc) : t.desc)}</span></li>`).join('') || '<li>No tasks.</li>'}</ul>
+    ${plain(p) ? note('Dinar plan pages hide task ids and slugs because Anouar reads them. Task text is still written for engineers (file names, line numbers). Hide task lists entirely on Dinar and show only the summary and progress?') : ''}`
+}
+
+function standupView(p) {
+  const first = p.now.split(/\n{2,}/).slice(0, 4).join('\n\n')
+  return `<div class="crumbs"><button data-view="home">${esc(p.name)}</button> / standup</div>
+    <h2>Standup, 27 September</h2>
+    <p class="sub">A markdown file in <span class="mono">${esc(p.localDir)}/standups/2026-09-27.md</span>, rendered. Plain words, three shots.</p>
+    <div class="prose">${md(first, p)}</div>
+    <div class="shots"><div class="shot">shot 1</div><div class="shot">shot 2</div><div class="shot">shot 3</div></div>
+    ${note('Where do the screenshots live? <span class="mono">context/assets/2026-09-27/</span> in the store keeps everything in one repo but grows it; a Pages asset bucket keeps the repo small but splits the record.')}
+    ${note('This text is taken from <span class="mono">progress/now.md</span> for the mockup. Standups and the "where we are" line are separate files today in neither store. One file per day under <span class="mono">standups/</span>?')}`
+}
+
+function reportView(p) {
+  return `<div class="crumbs"><button data-view="home">${esc(p.name)}</button> / report</div>
+    <h2>${p.id === 'dinar' ? 'Phone proven: checkpoint' : 'Public API docs: checkpoint'}</h2>
+    <p class="sub">Reports are markdown with front matter (<span class="mono">title, date, milestone, shots</span>) in <span class="mono">reports/</span>. They replace ${p.id === 'dinar' ? 'the hand-written <span class="mono">status.ts</span> and <span class="mono">legacy.json</span>' : 'the dated HTML in <span class="mono">Observeone-research/reports</span>'}.</p>
+    <div class="prose"><p>Lead paragraph in plain words: what changed for the person reading, in three sentences.</p><h4>What works now</h4><p>…</p><h4>What is blocked, and on whom</h4><p>…</p></div>
+    <div class="shots"><div class="shot">before</div><div class="shot">after</div><div class="shot">detail</div></div>
+    ${note('The old Dinar reports carry custom layouts per page. Moving to markdown means one template for every report. Is losing per-page layout acceptable?')}`
+}
+
+function configView() {
+  const d = state.deployed
+  const row = (p) => `<div class="panel">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><b>${esc(p.name)}</b>
+      <span class="toggle"><button class="${!d && p.id !== 'observeone-gh' ? 'on' : ''}" ${d ? 'disabled title="Disk is only available when running ctx ui locally"' : ''} data-act="src">Disk</button><button class="${d ? 'on' : ''}" data-act="src">GitHub</button></span></div>
+    <div class="kv">
+      <label>Folder on disk</label><div style="display:flex;gap:6px"><span class="field ${d ? 'disabled' : ''}" style="flex:1">${esc(p.localDir)}</span><button ${d ? 'disabled' : ''} data-act="pick">Browse…</button></div>
+      <label>GitHub owner</label><span class="field">${esc(p.owner)} ▾</span>
+      <label>Repository</label><span class="field">${esc(p.repo)} ▾</span>
+      <label>Branch</label><span class="field">main ▾</span>
+      <label>Context folder</label><span class="field">${esc(p.folder)} ▾</span>
+      <label>Audience</label><span>${p.id === 'dinar' ? '<span class="pill ok">plain: no codes</span>' : '<span class="pill">engineering</span>'}</span>
+    </div></div>`
+  const owners = [['samir1498', true], ['Observeone1', true], ['Dinar-dz', false]]
+  return `<h2>Settings</h2>
+    <p class="sub">Showing the site ${d ? '<b>deployed</b> on Cloudflare: disk is greyed out, tokens live in KV' : '<b>running locally</b> via <span class="mono">ctx ui</span>: disk works, tokens live in <span class="mono">~/.config/pc-ctx/tokens.json</span>'}.
+      <button data-act="dep" style="margin-left:8px">Show ${d ? 'local' : 'deployed'}</button></p>
+    <h3>Projects</h3>
+    ${DATA.projects.map(row).join('')}
+    <button data-act="add">+ Add project</button>
+    <h3>GitHub tokens</h3>
+    <p class="sub">One fine-grained, read-only token per owner. Written here, never shown back.</p>
+    <div class="panel"><div class="kv">${owners.map(([o, set]) => `<label>${o}</label><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><span class="pill ${set ? 'ok' : 'no'}">${set ? 'set' : 'not set'}</span><input class="search" type="password" placeholder="paste a new token to replace" style="width:auto;flex:1"><button data-act="tok">Save</button></div>`).join('')}</div></div>
+    ${note('The owner/repo/branch pickers list only what the token can see. With no token for an owner yet, show the owner greyed out with "add a token first", or hide it?')}`
+}
+
+function sideA() {
+  return `<aside class="side"><h4>Projects</h4>${DATA.projects.map((p) => `<button class="item ${state.project === p.id && state.view !== 'config' ? 'on' : ''}" data-proj="${p.id}">${esc(p.name)}<small>${p.plans.filter((x) => !x.archived && x.status === 'active').length} active</small></button>`).join('')}
+    <h4>Site</h4><button class="item ${state.view === 'config' ? 'on' : ''}" data-view="config">Settings</button></aside>`
+}
+
+function tabsA(p) {
+  const t = [['home', 'Board'], ['report', 'Reports'], ['standup', 'Standups']]
+  return `<div class="tabs">${t.map(([k, l]) => `<button class="${state.view === k ? 'on' : ''}" data-view="${k}">${l}</button>`).join('')}</div>`
+}
+
+function renderA() {
+  const p = proj()
+  let body
+  if (state.view === 'config') body = configView()
+  else if (state.view === 'plan') body = planView(p)
+  else body = `<h2>${esc(p.name)}${plain(p) ? '<span class="plainbadge">plain view</span>' : ''}</h2>${tabsA(p)}` + (state.view === 'report' ? reportView(p) : state.view === 'standup' ? standupView(p) : board(p))
+  return `<div class="shell">${sideA()}<main class="main">${body}</main></div>`
+}
+
+function homeB(p) {
+  const active = p.plans.filter((x) => !x.archived && x.status === 'active').sort((a, b) => progress(b).pct - progress(a).pct)
+  const firstPara = p.now.split(/\n{2,}/).filter((b) => b.trim() && !/^#/.test(b.trim())).slice(0, 2).join('\n\n')
+  return `<h2>${esc(p.name)}${plain(p) ? '<span class="plainbadge">plain view</span>' : ''}</h2>
+    <div class="home-grid">
+      <div>
+        <h3>Where it stands</h3><div class="prose">${md(firstPara, p)}</div>
+        <h3>Latest standup <button data-view="standup" style="font-size:12px;margin-left:6px">open</button></h3>
+        <div class="shots"><div class="shot">shot 1</div><div class="shot">shot 2</div><div class="shot">shot 3</div></div>
+        <h3>Reports</h3><div class="prog"><button data-view="report">${p.id === 'dinar' ? 'Phone proven: checkpoint' : 'Public API docs: checkpoint'}</button><span class="n">15 Sep</span></div>
+      </div>
+      <div>
+        <h3>Moving now</h3>
+        ${active.slice(0, 8).map((pl) => { const pr = progress(pl); return `<div class="prog"><button data-plan="${esc(pl.slug)}">${esc(pl.title)}</button><span class="bar"><i style="width:${pr.pct}%"></i></span><span class="n">${pr.d}/${pr.n}</span></div>` }).join('')}
+        ${active.length > 8 ? `<div class="prog"><button data-view="plans">All ${active.length} in progress →</button></div>` : ''}
+        <h3>Waiting</h3><p class="sub">${p.plans.filter((x) => !x.archived && x.status === 'paused').length} paused plans. <button data-view="plans" style="font-size:12px">see board</button></p>
+      </div>
+    </div>
+    ${note('"Where it stands" is the first paragraphs of <span class="mono">progress/now.md</span> here. Dinar\'s old home had a hand-written lede and "building now" line. Keep one short hand-written file for that, or derive it entirely from plans?')}`
+}
+
+function renderB() {
+  const p = proj()
+  const nav = `<div class="tabs">${DATA.projects.map((x) => `<button class="${state.project === x.id && state.view !== 'config' ? 'on' : ''}" data-proj="${x.id}">${esc(x.name)}</button>`).join('')}<button class="${state.view === 'config' ? 'on' : ''}" data-view="config" style="margin-left:auto">Settings</button></div>`
+  let body
+  if (state.view === 'config') body = configView()
+  else if (state.view === 'plan') body = planView(p)
+  else if (state.view === 'plans') body = `<div class="crumbs"><button data-view="home">${esc(p.name)}</button> / all plans</div><h2>All plans</h2>${board(p)}`
+  else if (state.view === 'report') body = reportView(p)
+  else if (state.view === 'standup') body = standupView(p)
+  else body = homeB(p)
+  return `<main class="main">${nav}${body}</main>`
+}
+
+function events() {
+  const ev = []
+  for (const p of DATA.projects) for (const pl of p.plans) {
+    if (pl.created) ev.push({ d: fmtDate(pl.created), kind: 'started', p, pl })
+    if (pl.completed && fmtDate(pl.completed)) ev.push({ d: fmtDate(pl.completed), kind: 'finished', p, pl })
+  }
+  for (const p of DATA.projects) ev.push({ d: '2026-09-27', kind: 'standup', p }, { d: '2026-09-15', kind: 'report', p })
+  return ev.sort((a, b) => b.d.localeCompare(a.d))
+}
+
+function renderC() {
+  if (state.view === 'config') return `<main class="main"><div class="crumbs"><button data-view="home">Stream</button> / settings</div>${configView()}</main>`
+  if (state.view === 'plan' || state.view === 'report' || state.view === 'standup') {
+    const inner = state.view === 'plan' ? planView(proj()) : state.view === 'report' ? reportView(proj()) : standupView(proj())
+    return `<main class="main">${inner}</main>`
+  }
+  const f = (k, v, l) => `<button class="${state[k] === v ? 'on' : ''}" data-f="${k}:${v}">${l}</button>`
+  const list = events().filter((e) => (state.streamProj === 'all' || e.p.id === state.streamProj) && (state.streamKind === 'all' || e.kind === state.streamKind)).slice(0, 60)
+  return `<main class="main"><h2>Everything, newest first</h2>
+    <div class="filters">${f('streamProj', 'all', 'All projects')}${DATA.projects.map((p) => f('streamProj', p.id, p.name)).join('')}<span style="width:12px"></span>${f('streamKind', 'all', 'All')}${f('streamKind', 'started', 'Started')}${f('streamKind', 'finished', 'Finished')}${f('streamKind', 'standup', 'Standups')}${f('streamKind', 'report', 'Reports')}<button data-view="config" style="margin-left:auto">Settings</button></div>
+    <div class="stream">${list.map((e) => `<div class="ev ${e.kind === 'finished' ? 'done' : e.kind === 'started' ? 'new' : ''}"><div class="when">${e.d} · ${e.kind}</div>
+      <div><span class="proj">${esc(e.p.name)}</span>${e.pl ? `<button class="more" style="padding:0;font-size:14px;color:var(--fg)" data-proj-plan="${e.p.id}|${esc(e.pl.slug)}">${esc(e.pl.title)}</button>` : `<button class="more" style="padding:0;font-size:14px;color:var(--fg)" data-proj-view="${e.p.id}|${e.kind}">${e.kind === 'standup' ? 'Standup, 27 September' : 'Checkpoint report'}</button>`}</div></div>`).join('')}</div>
+    ${note('A stream answers "what happened" but not "where does it stand". Anouar would see ObserveOne entries unless the deployed site is scoped per viewer. Separate Access policies per project?')}</main>`
+}
+
+function render() {
+  dirsBar()
+  $('#app').innerHTML = state.dir === 'A' ? renderA() : state.dir === 'B' ? renderB() : renderC()
+  const q = $('#q'); if (q) q.oninput = (e) => { state.q = e.target.value; const pos = e.target.selectionStart; render(); const n = $('#q'); n.focus(); n.setSelectionRange(pos, pos) }
+}
+
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('button'); if (!b) return
+  const ds = b.dataset
+  if (ds.dir) return go({ dir: ds.dir, view: 'home', plan: null })
+  if (ds.proj) return go({ project: ds.proj, view: 'home', plan: null })
+  if (ds.plan) return go({ view: 'plan', plan: ds.plan })
+  if (ds.projPlan) { const [pid, slug] = ds.projPlan.split('|'); return go({ project: pid, view: 'plan', plan: slug }) }
+  if (ds.projView) { const [pid, v] = ds.projView.split('|'); return go({ project: pid, view: v }) }
+  if (ds.view) return go({ view: ds.view, plan: null })
+  if (ds.f) { const [k, v] = ds.f.split(':'); return go({ [k]: v }) }
+  const act = ds.act
+  if (act === 'arch') return go({ showArchived: !state.showArchived })
+  if (act === 'dep') return go({ deployed: !state.deployed })
+  if (act === 'theme') { const r = document.documentElement; const dark = r.dataset.theme ? r.dataset.theme === 'dark' : !matchMedia('(prefers-color-scheme: light)').matches; r.dataset.theme = dark ? 'light' : 'dark'; return }
+  if (act === 'pick') return toast('Would open a folder picker served by the local ctx ui server')
+  if (act === 'tok') return toast('Would write the token (local file or KV) and show "set", never the value')
+  if (act === 'add') return toast('Would add a project row: name, source, folder or repo')
+  if (act === 'src') return toast('Would switch this project\'s source')
+})
+
+render()
+</script>
+</body>
+</html>
