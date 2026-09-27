@@ -7,10 +7,18 @@
     "build": "cd client && bun install --frozen-lockfile && bun run build",
     "bundle": "npm run build && tar czf web-ui.tar.gz -C client/dist .",
     "deploy": "npm run build && wrangler pages deploy client/dist --project-name observeone-ctx --branch main",
-    "typecheck": "cd client && npx tsc --noEmit"
+    "typecheck": "cd client && npx tsc --noEmit",
+    "typecheck:functions": "cd client && npx tsc --noEmit -p ../tsconfig.json",
+    "typecheck:server": "cd client && npx tsc --noEmit -p ../server/tsconfig.json",
+    "test": "vitest run --config server/vitest.config.ts",
+    "hub:local:build": "cd client && npx tsc --noEmit false -p ../server/tsconfig.json --outDir ../dist-server",
+    "hub:local": "npm run hub:local:build && node dist-server/local.js"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250201.0",
+    "@hono/node-server": "^2.0.6",
+    "@types/node": "^26.0.0",
+    "vitest": "^4.1.9",
     "wrangler": "^4.0.0"
   },
   "dependencies": {
