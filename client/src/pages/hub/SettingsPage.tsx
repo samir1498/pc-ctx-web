@@ -404,7 +404,8 @@ export function SettingsPage() {
   const saveProjects = useSaveProjects()
 
   useEffect(() => {
-    if (config) setDrafts(config.projects.map(toDraft))
+    // Seed once: a token save refetches config and must not wipe unsaved project edits.
+    if (config) setDrafts((cur) => cur ?? config.projects.map(toDraft))
   }, [config])
 
   if (isLoading) return <div className="pad-x py-6 text-sm text-muted">Loading…</div>
