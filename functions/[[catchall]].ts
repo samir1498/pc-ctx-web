@@ -80,16 +80,17 @@ function isProjectConfig(value: unknown): value is ProjectConfig {
 function parseProjectConfigs(env: Env): ProjectConfig[] {
   const raw = env.PROJECTS?.trim()
   if (raw) {
+    // A set-but-broken PROJECTS must not fall back to the default repo and serve the wrong content.
     let parsed: unknown
     try {
       parsed = JSON.parse(raw)
     } catch {
-      parsed = null
+      throw new Error('PROJECTS is not valid JSON')
     }
-    if (Array.isArray(parsed)) {
-      const configs = parsed.filter(isProjectConfig)
-      if (configs.length > 0) return configs
+    if (!Array.isArray(parsed) || parsed.length === 0 || !parsed.every(isProjectConfig)) {
+      throw new Error('PROJECTS must be a non-empty array of {id,name,owner,repo,branch,folder}')
     }
+    return parsed
   }
   return [
     {
