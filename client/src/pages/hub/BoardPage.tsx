@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { useNavigate } from '@tanstack/react-router'
+import { Link } from '@tanstack/react-router'
 import { useProjectFolder, useProjectFolderList, useProjects } from '../../hooks/useContext'
 import { planBucket, planProgress, planTitle } from '../../lib/hub'
 import { isPlainAudience, stripCodes } from '../../lib/plain'
@@ -12,7 +12,6 @@ const COLUMNS = [
 ] as const
 
 export function BoardPage({ project }: { project: string }) {
-  const navigate = useNavigate()
   const { data: projects } = useProjects()
   const plain = isPlainAudience(projects?.find((p) => p.id === project)?.audience)
 
@@ -32,10 +31,6 @@ export function BoardPage({ project }: { project: string }) {
     () => (archived.data ?? []).filter((p) => !q || planTitle(p).toLowerCase().includes(q)),
     [archived.data, q],
   )
-
-  function openPlan(item: ContextItem) {
-    navigate({ to: '/p/$project/plan/$slug', params: { project, slug: item.slug } })
-  }
 
   function title(item: ContextItem): string {
     return plain ? stripCodes(planTitle(item)) : planTitle(item)
@@ -73,10 +68,11 @@ export function BoardPage({ project }: { project: string }) {
                 {list.map((p) => {
                   const pr = planProgress(p)
                   return (
-                    <button
+                    <Link
                       key={p.slug}
-                      onClick={() => openPlan(p)}
-                      className="v2row border border-faintline bg-input px-2.5 py-2 text-left"
+                      to="/p/$project/plan/$slug"
+                      params={{ project, slug: p.slug }}
+                      className="v2row block border border-faintline bg-input px-2.5 py-2 text-left no-underline"
                     >
                       <div className="text-sm font-medium">{title(p)}</div>
                       <div className="mt-1.5 flex items-center gap-2 font-mono text-2xs text-faint">
@@ -93,7 +89,7 @@ export function BoardPage({ project }: { project: string }) {
                           <span>no tasks</span>
                         )}
                       </div>
-                    </button>
+                    </Link>
                   )
                 })}
                 {list.length === 0 && <div className="p-2.5 font-mono text-2xs text-dim">nothing here</div>}
@@ -110,9 +106,14 @@ export function BoardPage({ project }: { project: string }) {
             </header>
             <div className="flex max-h-[32rem] flex-col gap-1.5 overflow-auto p-1.5">
               {filteredArchived.map((p) => (
-                <button key={p.slug} onClick={() => openPlan(p)} className="v2row border border-faintline bg-input px-2.5 py-2 text-left">
+                <Link
+                  key={p.slug}
+                  to="/p/$project/plan/$slug"
+                  params={{ project, slug: p.slug }}
+                  className="v2row block border border-faintline bg-input px-2.5 py-2 text-left no-underline"
+                >
                   <div className="text-sm font-medium">{title(p)}</div>
-                </button>
+                </Link>
               ))}
               {filteredArchived.length === 0 && <div className="p-2.5 font-mono text-2xs text-dim">nothing here</div>}
             </div>
