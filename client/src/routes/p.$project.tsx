@@ -1,16 +1,13 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, Outlet } from '@tanstack/react-router'
 import { HubLayout } from '../components/HubLayout'
-import { HubHomePage } from '../pages/hub/HubHomePage'
 
+// Layout only — the home page itself lives in p.$project.index.tsx so that
+// child routes (plans, plan/$slug, reports/$slug, standups/$slug) render
+// through this Outlet instead of being shadowed by the home content.
 export const Route = createFileRoute('/p/$project')({
-  component: RouteComponent,
-})
-
-function RouteComponent() {
-  const { project } = Route.useParams()
-  return (
+  component: () => (
     <HubLayout>
-      <HubHomePage project={project} />
+      <Outlet />
     </HubLayout>
-  )
-}
+  ),
+})

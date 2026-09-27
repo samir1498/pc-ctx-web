@@ -23,6 +23,7 @@ import { Route as ArchiveRouteImport } from './routes/archive'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PlanSlugRouteImport } from './routes/plan.$slug'
 import { Route as PProjectRouteImport } from './routes/p.$project'
+import { Route as PProjectIndexRouteImport } from './routes/p.$project.index'
 import { Route as PProjectPlansRouteImport } from './routes/p.$project.plans'
 import { Route as PProjectStandupsSlugRouteImport } from './routes/p.$project.standups.$slug'
 import { Route as PProjectReportsSlugRouteImport } from './routes/p.$project.reports.$slug'
@@ -98,6 +99,11 @@ const PProjectRoute = PProjectRouteImport.update({
   path: '/p/$project',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PProjectIndexRoute = PProjectIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => PProjectRoute,
+} as any)
 const PProjectPlansRoute = PProjectPlansRouteImport.update({
   id: '/plans',
   path: '/plans',
@@ -135,6 +141,7 @@ export interface FileRoutesByFullPath {
   '/p/$project': typeof PProjectRouteWithChildren
   '/plan/$slug': typeof PlanSlugRoute
   '/p/$project/plans': typeof PProjectPlansRoute
+  '/p/$project/': typeof PProjectIndexRoute
   '/p/$project/plan/$slug': typeof PProjectPlanSlugRoute
   '/p/$project/reports/$slug': typeof PProjectReportsSlugRoute
   '/p/$project/standups/$slug': typeof PProjectStandupsSlugRoute
@@ -152,9 +159,9 @@ export interface FileRoutesByTo {
   '/references': typeof ReferencesRoute
   '/roadmaps': typeof RoadmapsRoute
   '/settings': typeof SettingsRoute
-  '/p/$project': typeof PProjectRouteWithChildren
   '/plan/$slug': typeof PlanSlugRoute
   '/p/$project/plans': typeof PProjectPlansRoute
+  '/p/$project': typeof PProjectIndexRoute
   '/p/$project/plan/$slug': typeof PProjectPlanSlugRoute
   '/p/$project/reports/$slug': typeof PProjectReportsSlugRoute
   '/p/$project/standups/$slug': typeof PProjectStandupsSlugRoute
@@ -176,6 +183,7 @@ export interface FileRoutesById {
   '/p/$project': typeof PProjectRouteWithChildren
   '/plan/$slug': typeof PlanSlugRoute
   '/p/$project/plans': typeof PProjectPlansRoute
+  '/p/$project/': typeof PProjectIndexRoute
   '/p/$project/plan/$slug': typeof PProjectPlanSlugRoute
   '/p/$project/reports/$slug': typeof PProjectReportsSlugRoute
   '/p/$project/standups/$slug': typeof PProjectStandupsSlugRoute
@@ -198,6 +206,7 @@ export interface FileRouteTypes {
     | '/p/$project'
     | '/plan/$slug'
     | '/p/$project/plans'
+    | '/p/$project/'
     | '/p/$project/plan/$slug'
     | '/p/$project/reports/$slug'
     | '/p/$project/standups/$slug'
@@ -215,9 +224,9 @@ export interface FileRouteTypes {
     | '/references'
     | '/roadmaps'
     | '/settings'
-    | '/p/$project'
     | '/plan/$slug'
     | '/p/$project/plans'
+    | '/p/$project'
     | '/p/$project/plan/$slug'
     | '/p/$project/reports/$slug'
     | '/p/$project/standups/$slug'
@@ -238,6 +247,7 @@ export interface FileRouteTypes {
     | '/p/$project'
     | '/plan/$slug'
     | '/p/$project/plans'
+    | '/p/$project/'
     | '/p/$project/plan/$slug'
     | '/p/$project/reports/$slug'
     | '/p/$project/standups/$slug'
@@ -360,6 +370,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PProjectRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/p/$project/': {
+      id: '/p/$project/'
+      path: '/'
+      fullPath: '/p/$project/'
+      preLoaderRoute: typeof PProjectIndexRouteImport
+      parentRoute: typeof PProjectRoute
+    }
     '/p/$project/plans': {
       id: '/p/$project/plans'
       path: '/plans'
@@ -393,6 +410,7 @@ declare module '@tanstack/react-router' {
 
 interface PProjectRouteChildren {
   PProjectPlansRoute: typeof PProjectPlansRoute
+  PProjectIndexRoute: typeof PProjectIndexRoute
   PProjectPlanSlugRoute: typeof PProjectPlanSlugRoute
   PProjectReportsSlugRoute: typeof PProjectReportsSlugRoute
   PProjectStandupsSlugRoute: typeof PProjectStandupsSlugRoute
@@ -400,6 +418,7 @@ interface PProjectRouteChildren {
 
 const PProjectRouteChildren: PProjectRouteChildren = {
   PProjectPlansRoute: PProjectPlansRoute,
+  PProjectIndexRoute: PProjectIndexRoute,
   PProjectPlanSlugRoute: PProjectPlanSlugRoute,
   PProjectReportsSlugRoute: PProjectReportsSlugRoute,
   PProjectStandupsSlugRoute: PProjectStandupsSlugRoute,

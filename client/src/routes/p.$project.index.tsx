@@ -1,11 +1,11 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { BoardPage } from '../pages/hub/BoardPage'
+import { HubHomePage } from '../pages/hub/HubHomePage'
 
-export const Route = createFileRoute('/p/$project/plans')({
+export const Route = createFileRoute('/p/$project/')({
   component: RouteComponent,
 })
 
 function RouteComponent() {
   const { project } = Route.useParams()
-  return <BoardPage project={project} />
+  return <HubHomePage project={project} />
 }
