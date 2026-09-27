@@ -188,19 +188,19 @@ function ProjectRow({
         </div>
       </div>
 
-      <div className="grid grid-cols-[130px_1fr] items-center gap-y-2.5 gap-x-3 text-sm">
+      <div className="grid grid-cols-1 items-center gap-y-2.5 gap-x-3 text-sm sm:grid-cols-[130px_1fr]">
         <label className="text-dim">Project id</label>
         <input
           value={draft.id}
           onChange={(e) => onChange({ ...draft, id: e.target.value })}
-          className="w-52 border border-line bg-input px-2.5 py-1.5 font-mono text-xs"
+          className="w-full border border-line bg-input px-2.5 py-1.5 font-mono text-xs sm:w-52"
         />
 
         <label className="text-dim">Audience</label>
         <select
           value={draft.audience}
           onChange={(e) => onChange({ ...draft, audience: e.target.value === 'plain' ? 'plain' : 'engineering' })}
-          className="w-52 border border-line bg-input px-2.5 py-1.5 font-mono text-xs"
+          className="w-full border border-line bg-input px-2.5 py-1.5 font-mono text-xs sm:w-52"
         >
           <option value="engineering">engineering</option>
           <option value="plain">plain: no codes</option>
@@ -209,15 +209,17 @@ function ProjectRow({
         {draft.source === 'disk' ? (
           <>
             <label className="text-dim">Folder on disk</label>
-            <div>
-              <div className="flex gap-2">
-                <span className={`flex-1 truncate border border-line bg-input px-2.5 py-1.5 font-mono text-xs ${diskDisabled ? 'opacity-40' : ''}`}>
+            <div className="min-w-0">
+              <div className="flex min-w-0 flex-wrap gap-2">
+                <span
+                  className={`min-w-0 flex-1 truncate border border-line bg-input px-2.5 py-1.5 font-mono text-xs ${diskDisabled ? 'opacity-40' : ''}`}
+                >
                   {draft.dir || '—'}
                 </span>
                 <button
                   disabled={diskDisabled}
                   onClick={() => setPickingDisk((v) => !v)}
-                  className="border border-line px-2.5 py-1.5 font-mono text-2xs disabled:cursor-not-allowed disabled:opacity-40"
+                  className="shrink-0 border border-line px-2.5 py-1.5 font-mono text-2xs disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   Browse…
                 </button>
@@ -241,7 +243,7 @@ function ProjectRow({
               value={draft.owner}
               onChange={(e) => onChange({ ...draft, owner: e.target.value, repo: '', branch: '', folder: '' })}
               placeholder="owner"
-              className="w-52 border border-line bg-input px-2.5 py-1.5 font-mono text-xs"
+              className="w-full border border-line bg-input px-2.5 py-1.5 font-mono text-xs sm:w-52"
             />
 
             {!hasToken ? (
@@ -257,7 +259,7 @@ function ProjectRow({
                 <select
                   value={draft.repo}
                   onChange={(e) => onChange({ ...draft, repo: e.target.value, branch: '', folder: '' })}
-                  className="w-52 border border-line bg-input px-2.5 py-1.5 font-mono text-xs"
+                  className="w-full border border-line bg-input px-2.5 py-1.5 font-mono text-xs sm:w-52"
                 >
                   <option value="">select…</option>
                   {(repos.data ?? []).map((r) => (
@@ -272,7 +274,7 @@ function ProjectRow({
                   value={draft.branch}
                   onChange={(e) => onChange({ ...draft, branch: e.target.value })}
                   disabled={!draft.repo}
-                  className="w-52 border border-line bg-input px-2.5 py-1.5 font-mono text-xs disabled:opacity-40"
+                  className="w-full border border-line bg-input px-2.5 py-1.5 font-mono text-xs disabled:opacity-40 sm:w-52"
                 >
                   <option value="">select…</option>
                   {(branches.data ?? []).map((b) => (
@@ -283,13 +285,15 @@ function ProjectRow({
                 </select>
 
                 <label className="text-dim">Context folder</label>
-                <div>
-                  <div className="flex gap-2">
-                    <span className="flex-1 truncate border border-line bg-input px-2.5 py-1.5 font-mono text-xs">{draft.folder || '(repo root)'}</span>
+                <div className="min-w-0">
+                  <div className="flex min-w-0 flex-wrap gap-2">
+                    <span className="min-w-0 flex-1 truncate border border-line bg-input px-2.5 py-1.5 font-mono text-xs">
+                      {draft.folder || '(repo root)'}
+                    </span>
                     <button
                       disabled={!draft.repo || !draft.branch}
                       onClick={() => setPickingFolder((v) => !v)}
-                      className="border border-line px-2.5 py-1.5 font-mono text-2xs disabled:cursor-not-allowed disabled:opacity-40"
+                      className="shrink-0 border border-line px-2.5 py-1.5 font-mono text-2xs disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       Browse…
                     </button>
@@ -393,7 +397,7 @@ function NewTokenRow() {
 }
 
 export function SettingsPage() {
-  const { data: config, isLoading } = useConfig()
+  const { data: config, isLoading, error: configError } = useConfig()
   const [drafts, setDrafts] = useState<ProjectDraft[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
@@ -403,7 +407,9 @@ export function SettingsPage() {
     if (config) setDrafts(config.projects.map(toDraft))
   }, [config])
 
-  if (isLoading || !drafts || !config) return <div className="pad-x py-6 text-sm text-muted">Loading…</div>
+  if (isLoading) return <div className="pad-x py-6 text-sm text-muted">Loading…</div>
+  if (configError) return <div className="pad-x py-6 text-sm text-red">Error: {configError.message}</div>
+  if (!drafts || !config) return <div className="pad-x py-6 text-sm text-muted">Loading…</div>
 
   const tokenOwners = new Set(Object.keys(config.tokens))
 

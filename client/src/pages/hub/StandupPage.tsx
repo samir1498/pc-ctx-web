@@ -13,7 +13,7 @@ export function StandupPage({ project, slug }: { project: string; slug: string }
   const { data: item, isLoading, error } = useProjectItem(project, 'standups', slug)
 
   if (isLoading) return <div className="pad-x py-6 text-sm text-muted">Loading…</div>
-  if (error) return <div className="pad-x py-6 text-sm text-red">Error: {(error as Error).message}</div>
+  if (error) return <div className="pad-x py-6 text-sm text-red">Error: {error.message}</div>
   if (!item) return <div className="pad-x py-6 text-sm text-muted">Standup not found.</div>
 
   const title = String(item.frontmatter?.title ?? item.slug)

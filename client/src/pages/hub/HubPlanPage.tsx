@@ -12,7 +12,7 @@ export function HubPlanPage({ project, slug }: { project: string; slug: string }
   const { data: item, archived, isLoading, error } = useProjectPlan(project, slug)
 
   if (isLoading) return <div className="pad-x py-6 text-sm text-muted">Loading…</div>
-  if (error) return <div className="pad-x py-6 text-sm text-red">Error: {(error as Error).message}</div>
+  if (error) return <div className="pad-x py-6 text-sm text-red">Error: {error.message}</div>
   if (!item) return <div className="pad-x py-6 text-sm text-muted">Plan not found.</div>
 
   const fm = item.frontmatter

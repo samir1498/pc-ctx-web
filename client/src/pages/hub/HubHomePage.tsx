@@ -85,7 +85,8 @@ export function HubHomePage({ project }: { project: string }) {
                   >
                     {plain ? stripCodes(String(r.frontmatter?.title ?? r.slug)) : (r.frontmatter?.title ?? r.slug)}
                   </button>
-                  <span className="whitespace-nowrap font-mono text-2xs text-faint">{String(r.frontmatter?.date ?? '')}</span>
+                  {/* frontmatter `date:` (unquoted YYYY-MM-DD) parses as a Date, serialized as an ISO string; keep just the date part. */}
+                  <span className="whitespace-nowrap font-mono text-2xs text-faint">{String(r.frontmatter?.date ?? '').slice(0, 10)}</span>
                 </div>
               ))}
             </div>

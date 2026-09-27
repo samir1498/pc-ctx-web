@@ -21,7 +21,9 @@ if (!existsSync(OUT)) mkdirSync(OUT, { recursive: true })
 const DEMO_URL = process.env.DEMO_URL || 'http://localhost:5173'
 
 const PAGES = [
-  { path: '/?demo=true', name: '01-dashboard', wait: '[data-testid="dashboard"]' },
+  // '/' now redirects into the multi-project hub (layout B); the engineering
+  // dashboard moved to its own route.
+  { path: '/dashboard?demo=true', name: '01-dashboard', wait: '[data-testid="dashboard"]' },
   { path: '/plans?demo=true', name: '02-plans-list', wait: 'text=Auth:' },
   { path: '/plans/auth-email-verification-password-reset-social-login?demo=true', name: '03-plan-detail', wait: 'text=Tasks' },
   { path: '/roadmaps?demo=true', name: '04-roadmaps', wait: 'text=Green Algeria Map' },

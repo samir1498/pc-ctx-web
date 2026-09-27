@@ -93,11 +93,11 @@ export function useProjectFolderList(project: string, folder: ProjectFolder, ena
   })
 }
 
-export function useProjectItem(project: string, folder: ProjectFolder, slug: string) {
+export function useProjectItem(project: string, folder: ProjectFolder, slug: string, enabled = true) {
   return useQuery({
     queryKey: ['p', project, 'item', folder, slug],
     queryFn: () => fetchProjectItem(project, folder, slug),
-    enabled: !!project && !!slug,
+    enabled: enabled && !!project && !!slug,
     retry: false,
   })
 }
@@ -113,10 +113,11 @@ export function useProjectCounts(project: string) {
 
 // Falls back to a plan's archived copy when it is missing from the live 'plans'
 // folder — the board's archived column and a bare plan URL share this lookup.
+// The archived lookup only fires once the live one has resolved and come up empty.
 export function useProjectPlan(project: string, slug: string) {
   const live = useProjectItem(project, 'plans', slug)
-  const archived = useProjectItem(project, 'plans-archived', slug)
   const notInLive = live.isSuccess && !live.data
+  const archived = useProjectItem(project, 'plans-archived', slug, notInLive)
   return {
     data: live.data ?? (notInLive ? archived.data : undefined),
     archived: notInLive && !!archived.data,

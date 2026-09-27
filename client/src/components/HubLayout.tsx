@@ -7,13 +7,15 @@ function pad2(n: number): string {
 }
 
 function Freshness() {
-  const { data: config } = useConfig()
+  const { data: config, error } = useConfig()
   const now = new Date()
   const time = `${pad2(now.getHours())}:${pad2(now.getMinutes())}`
-  const source = config?.mode === 'deployed' ? 'GitHub, cached up to 5 min' : 'read from disk'
+  // Unknown mode (still loading, or the config fetch itself failed) never claims a source.
+  const source = error ? 'source unknown' : config?.mode === 'deployed' ? 'GitHub, cached up to 5 min' : config?.mode === 'local' ? 'read from disk' : null
   return (
     <span className="whitespace-nowrap font-mono text-2xs text-faint">
-      data as of {time} · {source}
+      data as of {time}
+      {source ? ` · ${source}` : ''}
     </span>
   )
 }

@@ -170,12 +170,16 @@ export async function fetchConfig(): Promise<HubConfig> {
   return res.json()
 }
 
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === 'object' && v !== null
+}
+
 export async function saveProjectConfigs(projects: ProjectConfigEntry[]): Promise<ProjectConfigEntry[]> {
   if (IS_DEMO) return projects
   const res = await fetch(`${BASE}/config/projects`, { method: 'PUT', headers: JSON_HEADERS, body: JSON.stringify(projects) })
   if (!res.ok) {
     const body: unknown = await res.json().catch(() => null)
-    const message = body && typeof body === 'object' && 'error' in body ? String((body as { error: unknown }).error) : res.statusText
+    const message = isRecord(body) && typeof body.error === 'string' ? body.error : res.statusText
     throw new Error(message)
   }
   return (await res.json()).projects
