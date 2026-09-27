@@ -7,6 +7,7 @@ export interface ProjectInfo {
   id: string
   name: string
   sourceKind: 'disk' | 'github'
+  audience?: 'plain' | 'engineering'
 }
 
 export interface CreateApiOptions {
@@ -109,7 +110,7 @@ export function createApi(options: CreateApiOptions): Hono {
   }
 
   app.get('/api/projects', (c) => {
-    return c.json(projects.map((p) => ({ id: p.id, name: p.name, sourceKind: p.sourceKind })))
+    return c.json(projects.map((p) => ({ id: p.id, name: p.name, sourceKind: p.sourceKind, audience: p.audience ?? 'engineering' })))
   })
 
   app.get('/api/p/:project/counts', async (c) => {

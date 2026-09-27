@@ -50,7 +50,7 @@ describe('createApi', () => {
       token?: string
     }
     const projects: ProjectWithToken[] = [
-      { id: 'alpha', name: 'Alpha', sourceKind: 'github', token: 'sek-should-not-leak' },
+      { id: 'alpha', name: 'Alpha', sourceKind: 'github', audience: 'plain', token: 'sek-should-not-leak' },
       { id: 'beta', name: 'Beta', sourceKind: 'disk' },
       { id: 'broken', name: 'Broken', sourceKind: 'disk' },
     ]
@@ -62,17 +62,27 @@ describe('createApi', () => {
     return createApi({ projects, sourceFor: (id) => sources.get(id) ?? null })
   }
 
-  it('lists projects with id, name and sourceKind, and never a token', async () => {
+  it('lists projects with id, name, sourceKind and audience (defaulted), and never a token', async () => {
     const app = buildApp()
     const res = await app.request('/api/projects')
     expect(res.status).toBe(200)
     const body: unknown = await res.json()
     expect(JSON.stringify(body)).not.toContain('sek-should-not-leak')
     expect(body).toEqual([
-      { id: 'alpha', name: 'Alpha', sourceKind: 'github' },
-      { id: 'beta', name: 'Beta', sourceKind: 'disk' },
-      { id: 'broken', name: 'Broken', sourceKind: 'disk' },
+      { id: 'alpha', name: 'Alpha', sourceKind: 'github', audience: 'plain' },
+      { id: 'beta', name: 'Beta', sourceKind: 'disk', audience: 'engineering' },
+      { id: 'broken', name: 'Broken', sourceKind: 'disk', audience: 'engineering' },
     ])
+  })
+
+  it('serves the reports and standups folders for a project (empty when absent)', async () => {
+    const app = buildApp()
+    const res = await app.request('/api/p/alpha/reports')
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual([])
+    const res2 = await app.request('/api/p/alpha/standups')
+    expect(res2.status).toBe(200)
+    expect(await res2.json()).toEqual([])
   })
 
   it('serves a project folder, including the plans-archived key', async () => {

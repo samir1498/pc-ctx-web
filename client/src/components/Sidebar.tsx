@@ -13,7 +13,7 @@ const GROUPS: { title: string; items: NavLeaf[] }[] = [
   {
     title: 'PLANNING',
     items: [
-      { label: 'Dashboard', to: '/' },
+      { label: 'Dashboard', to: '/dashboard' },
       { label: 'Plans', to: '/plans', folder: 'plans' },
       { label: 'Roadmaps', to: '/roadmaps', folder: 'roadmaps' },
       { label: 'Graph', to: '/graph', glyph: '◳' },

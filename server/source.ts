@@ -1,6 +1,17 @@
 import { load as parseYaml } from 'js-yaml'
 
-export const FOLDERS = ['plans', 'roadmaps', 'references', 'progress', 'ideas', 'processes', 'handoffs', 'archive'] as const
+export const FOLDERS = [
+  'plans',
+  'roadmaps',
+  'references',
+  'progress',
+  'ideas',
+  'processes',
+  'handoffs',
+  'archive',
+  'reports',
+  'standups',
+] as const
 
 export type BaseFolderKey = (typeof FOLDERS)[number]
 
@@ -55,8 +66,21 @@ export function parseFrontmatter(raw: string): { frontmatter: Record<string, unk
     if (!isRecord(parsed)) return null
     return { frontmatter: parsed, body: match[2]?.trim() || undefined }
   } catch {
-    return null
+    // One bad task string (e.g. an unescaped ' inside '...') must not hide the plan: keep its top-level scalars.
+    return { frontmatter: topLevelScalars(yaml), body: match[2]?.trim() || undefined }
   }
+}
+
+const SCALAR_LINE_RE = /^([A-Za-z_][\w-]*):\s*(?:'((?:[^']|'')*)'|"([^"]*)"|([^'"\s][^#]*?))\s*$/
+function topLevelScalars(yaml: string): Record<string, unknown> {
+  const out: Record<string, unknown> = { frontmatterError: true }
+  for (const line of yaml.split('\n')) {
+    const m = line.match(SCALAR_LINE_RE)
+    if (!m?.[1]) continue
+    const value = m[2] !== undefined ? m[2].replace(/''/g, "'") : (m[3] ?? m[4] ?? '')
+    out[m[1]] = /^\d+$/.test(value) ? Number(value) : value
+  }
+  return out
 }
 
 export function toEntry(folder: FolderKey, name: string, raw: string): FolderEntry {
