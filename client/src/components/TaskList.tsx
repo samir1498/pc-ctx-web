@@ -3,9 +3,10 @@ import { statusColor, taskMark } from '../lib/ui'
 
 interface TaskListProps {
   tasks: Task[]
+  showIds?: boolean
 }
 
-export function TaskList({ tasks }: TaskListProps) {
+export function TaskList({ tasks, showIds = true }: TaskListProps) {
   if (!tasks.length) return null
 
   return (
@@ -14,7 +15,7 @@ export function TaskList({ tasks }: TaskListProps) {
         const color = statusColor(task.status)
         return (
           <div key={task.id} className="flex items-start gap-3 border-b border-faintline py-3">
-            <span className="w-7 pt-px font-mono text-2xs text-faint">{task.id}</span>
+            {showIds && <span className="w-7 pt-px font-mono text-2xs text-faint">{task.id}</span>}
             <span className="w-3.5 font-mono text-sm" style={{ color }}>
               {taskMark(task.status)}
             </span>

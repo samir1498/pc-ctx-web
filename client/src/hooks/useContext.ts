@@ -75,11 +75,11 @@ export function useProjects() {
   return useQuery({ queryKey: ['projects'], queryFn: fetchProjects, retry: false })
 }
 
-export function useProjectFolder(project: string, folder: ProjectFolder, meta = false) {
+export function useProjectFolder(project: string, folder: ProjectFolder, meta = false, enabled = true) {
   return useQuery({
     queryKey: ['p', project, 'folder', folder, meta ? 'meta' : 'full'],
     queryFn: () => fetchProjectFolder(project, folder, meta),
-    enabled: !!project,
+    enabled: enabled && !!project,
     retry: false,
   })
 }

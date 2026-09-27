@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as RoadmapsRouteImport } from './routes/roadmaps'
 import { Route as ReferencesRouteImport } from './routes/references'
 import { Route as ProgressRouteImport } from './routes/progress'
@@ -17,10 +18,21 @@ import { Route as PlansRouteImport } from './routes/plans'
 import { Route as IdeasRouteImport } from './routes/ideas'
 import { Route as HandoffsRouteImport } from './routes/handoffs'
 import { Route as GraphRouteImport } from './routes/graph'
+import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as ArchiveRouteImport } from './routes/archive'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PlanSlugRouteImport } from './routes/plan.$slug'
+import { Route as PProjectRouteImport } from './routes/p.$project'
+import { Route as PProjectPlansRouteImport } from './routes/p.$project.plans'
+import { Route as PProjectStandupsSlugRouteImport } from './routes/p.$project.standups.$slug'
+import { Route as PProjectReportsSlugRouteImport } from './routes/p.$project.reports.$slug'
+import { Route as PProjectPlanSlugRouteImport } from './routes/p.$project.plan.$slug'
 
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RoadmapsRoute = RoadmapsRouteImport.update({
   id: '/roadmaps',
   path: '/roadmaps',
@@ -61,6 +73,11 @@ const GraphRoute = GraphRouteImport.update({
   path: '/graph',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ArchiveRoute = ArchiveRouteImport.update({
   id: '/archive',
   path: '/archive',
@@ -76,10 +93,36 @@ const PlanSlugRoute = PlanSlugRouteImport.update({
   path: '/plan/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PProjectRoute = PProjectRouteImport.update({
+  id: '/p/$project',
+  path: '/p/$project',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PProjectPlansRoute = PProjectPlansRouteImport.update({
+  id: '/plans',
+  path: '/plans',
+  getParentRoute: () => PProjectRoute,
+} as any)
+const PProjectStandupsSlugRoute = PProjectStandupsSlugRouteImport.update({
+  id: '/standups/$slug',
+  path: '/standups/$slug',
+  getParentRoute: () => PProjectRoute,
+} as any)
+const PProjectReportsSlugRoute = PProjectReportsSlugRouteImport.update({
+  id: '/reports/$slug',
+  path: '/reports/$slug',
+  getParentRoute: () => PProjectRoute,
+} as any)
+const PProjectPlanSlugRoute = PProjectPlanSlugRouteImport.update({
+  id: '/plan/$slug',
+  path: '/plan/$slug',
+  getParentRoute: () => PProjectRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/archive': typeof ArchiveRoute
+  '/dashboard': typeof DashboardRoute
   '/graph': typeof GraphRoute
   '/handoffs': typeof HandoffsRoute
   '/ideas': typeof IdeasRoute
@@ -88,11 +131,18 @@ export interface FileRoutesByFullPath {
   '/progress': typeof ProgressRoute
   '/references': typeof ReferencesRoute
   '/roadmaps': typeof RoadmapsRoute
+  '/settings': typeof SettingsRoute
+  '/p/$project': typeof PProjectRouteWithChildren
   '/plan/$slug': typeof PlanSlugRoute
+  '/p/$project/plans': typeof PProjectPlansRoute
+  '/p/$project/plan/$slug': typeof PProjectPlanSlugRoute
+  '/p/$project/reports/$slug': typeof PProjectReportsSlugRoute
+  '/p/$project/standups/$slug': typeof PProjectStandupsSlugRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/archive': typeof ArchiveRoute
+  '/dashboard': typeof DashboardRoute
   '/graph': typeof GraphRoute
   '/handoffs': typeof HandoffsRoute
   '/ideas': typeof IdeasRoute
@@ -101,12 +151,19 @@ export interface FileRoutesByTo {
   '/progress': typeof ProgressRoute
   '/references': typeof ReferencesRoute
   '/roadmaps': typeof RoadmapsRoute
+  '/settings': typeof SettingsRoute
+  '/p/$project': typeof PProjectRouteWithChildren
   '/plan/$slug': typeof PlanSlugRoute
+  '/p/$project/plans': typeof PProjectPlansRoute
+  '/p/$project/plan/$slug': typeof PProjectPlanSlugRoute
+  '/p/$project/reports/$slug': typeof PProjectReportsSlugRoute
+  '/p/$project/standups/$slug': typeof PProjectStandupsSlugRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/archive': typeof ArchiveRoute
+  '/dashboard': typeof DashboardRoute
   '/graph': typeof GraphRoute
   '/handoffs': typeof HandoffsRoute
   '/ideas': typeof IdeasRoute
@@ -115,13 +172,20 @@ export interface FileRoutesById {
   '/progress': typeof ProgressRoute
   '/references': typeof ReferencesRoute
   '/roadmaps': typeof RoadmapsRoute
+  '/settings': typeof SettingsRoute
+  '/p/$project': typeof PProjectRouteWithChildren
   '/plan/$slug': typeof PlanSlugRoute
+  '/p/$project/plans': typeof PProjectPlansRoute
+  '/p/$project/plan/$slug': typeof PProjectPlanSlugRoute
+  '/p/$project/reports/$slug': typeof PProjectReportsSlugRoute
+  '/p/$project/standups/$slug': typeof PProjectStandupsSlugRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/archive'
+    | '/dashboard'
     | '/graph'
     | '/handoffs'
     | '/ideas'
@@ -130,11 +194,18 @@ export interface FileRouteTypes {
     | '/progress'
     | '/references'
     | '/roadmaps'
+    | '/settings'
+    | '/p/$project'
     | '/plan/$slug'
+    | '/p/$project/plans'
+    | '/p/$project/plan/$slug'
+    | '/p/$project/reports/$slug'
+    | '/p/$project/standups/$slug'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/archive'
+    | '/dashboard'
     | '/graph'
     | '/handoffs'
     | '/ideas'
@@ -143,11 +214,18 @@ export interface FileRouteTypes {
     | '/progress'
     | '/references'
     | '/roadmaps'
+    | '/settings'
+    | '/p/$project'
     | '/plan/$slug'
+    | '/p/$project/plans'
+    | '/p/$project/plan/$slug'
+    | '/p/$project/reports/$slug'
+    | '/p/$project/standups/$slug'
   id:
     | '__root__'
     | '/'
     | '/archive'
+    | '/dashboard'
     | '/graph'
     | '/handoffs'
     | '/ideas'
@@ -156,12 +234,19 @@ export interface FileRouteTypes {
     | '/progress'
     | '/references'
     | '/roadmaps'
+    | '/settings'
+    | '/p/$project'
     | '/plan/$slug'
+    | '/p/$project/plans'
+    | '/p/$project/plan/$slug'
+    | '/p/$project/reports/$slug'
+    | '/p/$project/standups/$slug'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ArchiveRoute: typeof ArchiveRoute
+  DashboardRoute: typeof DashboardRoute
   GraphRoute: typeof GraphRoute
   HandoffsRoute: typeof HandoffsRoute
   IdeasRoute: typeof IdeasRoute
@@ -170,11 +255,20 @@ export interface RootRouteChildren {
   ProgressRoute: typeof ProgressRoute
   ReferencesRoute: typeof ReferencesRoute
   RoadmapsRoute: typeof RoadmapsRoute
+  SettingsRoute: typeof SettingsRoute
+  PProjectRoute: typeof PProjectRouteWithChildren
   PlanSlugRoute: typeof PlanSlugRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/roadmaps': {
       id: '/roadmaps'
       path: '/roadmaps'
@@ -231,6 +325,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GraphRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/archive': {
       id: '/archive'
       path: '/archive'
@@ -252,12 +353,66 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PlanSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/p/$project': {
+      id: '/p/$project'
+      path: '/p/$project'
+      fullPath: '/p/$project'
+      preLoaderRoute: typeof PProjectRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/p/$project/plans': {
+      id: '/p/$project/plans'
+      path: '/plans'
+      fullPath: '/p/$project/plans'
+      preLoaderRoute: typeof PProjectPlansRouteImport
+      parentRoute: typeof PProjectRoute
+    }
+    '/p/$project/standups/$slug': {
+      id: '/p/$project/standups/$slug'
+      path: '/standups/$slug'
+      fullPath: '/p/$project/standups/$slug'
+      preLoaderRoute: typeof PProjectStandupsSlugRouteImport
+      parentRoute: typeof PProjectRoute
+    }
+    '/p/$project/reports/$slug': {
+      id: '/p/$project/reports/$slug'
+      path: '/reports/$slug'
+      fullPath: '/p/$project/reports/$slug'
+      preLoaderRoute: typeof PProjectReportsSlugRouteImport
+      parentRoute: typeof PProjectRoute
+    }
+    '/p/$project/plan/$slug': {
+      id: '/p/$project/plan/$slug'
+      path: '/plan/$slug'
+      fullPath: '/p/$project/plan/$slug'
+      preLoaderRoute: typeof PProjectPlanSlugRouteImport
+      parentRoute: typeof PProjectRoute
+    }
   }
 }
+
+interface PProjectRouteChildren {
+  PProjectPlansRoute: typeof PProjectPlansRoute
+  PProjectPlanSlugRoute: typeof PProjectPlanSlugRoute
+  PProjectReportsSlugRoute: typeof PProjectReportsSlugRoute
+  PProjectStandupsSlugRoute: typeof PProjectStandupsSlugRoute
+}
+
+const PProjectRouteChildren: PProjectRouteChildren = {
+  PProjectPlansRoute: PProjectPlansRoute,
+  PProjectPlanSlugRoute: PProjectPlanSlugRoute,
+  PProjectReportsSlugRoute: PProjectReportsSlugRoute,
+  PProjectStandupsSlugRoute: PProjectStandupsSlugRoute,
+}
+
+const PProjectRouteWithChildren = PProjectRoute._addFileChildren(
+  PProjectRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ArchiveRoute: ArchiveRoute,
+  DashboardRoute: DashboardRoute,
   GraphRoute: GraphRoute,
   HandoffsRoute: HandoffsRoute,
   IdeasRoute: IdeasRoute,
@@ -266,6 +421,8 @@ const rootRouteChildren: RootRouteChildren = {
   ProgressRoute: ProgressRoute,
   ReferencesRoute: ReferencesRoute,
   RoadmapsRoute: RoadmapsRoute,
+  SettingsRoute: SettingsRoute,
+  PProjectRoute: PProjectRouteWithChildren,
   PlanSlugRoute: PlanSlugRoute,
 }
 export const routeTree = rootRouteImport

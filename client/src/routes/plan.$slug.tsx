@@ -1,4 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { EngLayout } from '../components/EngLayout'
 import { PlanDetailPage } from '../pages/PlanDetailPage'
 
 export const Route = createFileRoute('/plan/$slug')({
@@ -7,5 +8,9 @@ export const Route = createFileRoute('/plan/$slug')({
 
 function PlanDetailRoute() {
   const { slug } = Route.useParams()
-  return <PlanDetailPage slug={slug} />
+  return (
+    <EngLayout>
+      <PlanDetailPage slug={slug} />
+    </EngLayout>
+  )
 }
