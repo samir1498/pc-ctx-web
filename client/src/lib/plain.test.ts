@@ -32,6 +32,11 @@ describe('stripCodes', () => {
     )
   })
 
+  it('drops a path sentence that is hard-wrapped across lines, leaving no fragment', () => {
+    const wrapped = 'The till is done. The live loop is\n`context/loops/2026-the-loop.md`; its handoff says\nwhere to pick up. Next is printing.'
+    expect(stripCodes(wrapped)).toBe('The till is done. Next is printing.')
+  })
+
   it('flattens inline code, links and bold to plain text', () => {
     expect(stripCodes('Run `npm test` and read [the doc](https://example.com), it is **important**.')).toBe(
       'Run npm test and read the doc, it is important.',

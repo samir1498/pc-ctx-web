@@ -35,9 +35,22 @@ function stripLine(line: string): string {
     .trim()
 }
 
+// Stores hard-wrap prose at ~80 columns, so a sentence (and its path) spans lines;
+// rejoin plain paragraphs before the per-line pass. Lists and headings keep their breaks.
+const STRUCTURED_LINE_RE = /^\s*(?:[-*+]\s|\d+[.)]\s|#|>|\|)/
+function unwrapParagraphs(text: string): string {
+  return text
+    .split(/\n{2,}/)
+    .map((block) => {
+      const lines = block.split('\n')
+      return lines.some((l) => STRUCTURED_LINE_RE.test(l)) ? block : lines.map((l) => l.trim()).join(' ')
+    })
+    .join('\n\n')
+}
+
 /** Strip slugs, task ids, file paths, PR numbers and commit hashes from prose meant for a non-engineer. */
 export function stripCodes(text: string): string {
-  return text
+  return unwrapParagraphs(text)
     .split('\n')
     .map((line) => (line.trim() ? stripLine(line) : line))
     .join('\n')
