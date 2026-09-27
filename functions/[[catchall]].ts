@@ -1,5 +1,8 @@
 import { Hono } from 'hono'
 import { cachedSource } from '../server/cache.js'
+import { createConfigApi } from '../server/config-api.js'
+import type { ConfigStore } from '../server/config-store.js'
+import { isGithubProjectConfig, kvConfigStore } from '../server/config-store.js'
 import type { ContextSource } from '../server/source.js'
 import { isRecord } from '../server/source.js'
 import type { ProjectInfo } from '../server/api.js'
@@ -14,6 +17,7 @@ type Env = {
   PROJECTS?: string
   AUTH_GATE?: string
   CTX_CACHE?: KVNamespace
+  CTX_CONFIG?: KVNamespace
   ASSETS: { fetch: (req: Request) => Response | Promise<Response> }
 }
 
@@ -104,14 +108,27 @@ function parseProjectConfigs(env: Env): ProjectConfig[] {
   ]
 }
 
-function buildApi(env: Env): { projects: ProjectInfo[]; sourceFor: (id: string) => ContextSource | null } {
-  const configs = parseProjectConfigs(env)
+// KV never holds a disk project (kvConfigStore.saveProjects refuses them), so any stored
+// project resolves to this file's github-shaped ProjectConfig once the discriminant is dropped.
+async function resolveProjectConfigs(env: Env, store: ConfigStore | null): Promise<ProjectConfig[]> {
+  if (store) {
+    const stored = (await store.getProjects()).filter(isGithubProjectConfig)
+    if (stored.length > 0) {
+      return stored.map((p) => ({ id: p.id, name: p.name, owner: p.owner, repo: p.repo, branch: p.branch, folder: p.folder }))
+    }
+  }
+  return parseProjectConfigs(env)
+}
+
+async function buildApi(env: Env, store: ConfigStore | null): Promise<{ projects: ProjectInfo[]; sourceFor: (id: string) => ContextSource | null }> {
+  const configs = await resolveProjectConfigs(env, store)
   const projects: ProjectInfo[] = configs.map((cfg) => ({ id: cfg.id, name: cfg.name, sourceKind: 'github' }))
 
   const byId = new Map<string, ContextSource>()
   for (const cfg of configs) {
+    const token = (store ? await store.getToken(cfg.owner) : null) || env.GITHUB_TOKEN || ''
     let source: ContextSource = githubSource({
-      token: env.GITHUB_TOKEN || '',
+      token,
       owner: cfg.owner,
       repo: cfg.repo,
       branch: cfg.branch,
@@ -142,7 +159,14 @@ app.all('*', async (c) => {
   if (pathname !== '/api' && !pathname.startsWith('/api/')) {
     return c.env.ASSETS.fetch(c.req.raw)
   }
-  const { projects, sourceFor } = buildApi(c.env)
+
+  const store = c.env.CTX_CONFIG ? kvConfigStore(c.env.CTX_CONFIG) : null
+  if (pathname === '/api/config' || pathname.startsWith('/api/config/')) {
+    if (!store) return c.json({ error: 'settings storage not configured' }, 503)
+    return createConfigApi({ store, mode: 'deployed', github: fetch }).fetch(c.req.raw, c.env)
+  }
+
+  const { projects, sourceFor } = await buildApi(c.env, store)
   return createApi({ projects, sourceFor }).fetch(c.req.raw, c.env)
 })
 
