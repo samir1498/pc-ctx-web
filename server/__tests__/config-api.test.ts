@@ -108,6 +108,31 @@ describe('createConfigApi — token never leaks', () => {
   })
 })
 
+describe('createConfigApi — audience', () => {
+  it('accepts a project with a valid audience', async () => {
+    const store = memoryConfigStore()
+    const app = createConfigApi({ store, mode: 'local', github: stubGithubFetch([]) })
+    const res = await app.request('/api/config/projects', {
+      method: 'PUT',
+      headers: LOCAL_HEADERS,
+      body: JSON.stringify([{ id: 'dinar', name: 'Dinar', source: 'disk', dir: '/tmp/dinar', audience: 'plain' }]),
+    })
+    expect(res.status).toBe(200)
+    expect(await res.json()).toMatchObject({ projects: [{ audience: 'plain' }] })
+  })
+
+  it('rejects a project with an invalid audience', async () => {
+    const store = memoryConfigStore()
+    const app = createConfigApi({ store, mode: 'local', github: stubGithubFetch([]) })
+    const res = await app.request('/api/config/projects', {
+      method: 'PUT',
+      headers: LOCAL_HEADERS,
+      body: JSON.stringify([{ id: 'dinar', name: 'Dinar', source: 'disk', dir: '/tmp/dinar', audience: 'loud' }]),
+    })
+    expect(res.status).toBe(400)
+  })
+})
+
 describe('createConfigApi — deployed mode', () => {
   it('refuses a disk project with 400', async () => {
     const store = memoryConfigStore()

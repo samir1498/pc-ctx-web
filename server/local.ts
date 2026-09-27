@@ -27,7 +27,7 @@ const MIME: Record<string, string> = {
 // /api/config/projects takes effect immediately, with no server restart.
 async function buildContextApi(store: ConfigStore): Promise<Hono> {
   const configs = await store.getProjects()
-  const projects = configs.map((p) => ({ id: p.id, name: p.name, sourceKind: p.source }))
+  const projects = configs.map((p) => ({ id: p.id, name: p.name, sourceKind: p.source, audience: p.audience ?? 'engineering' as const }))
   const sources = new Map<string, ContextSource>()
   for (const p of configs) {
     if (p.source === 'disk') {

@@ -1,10 +1,13 @@
 import { isRecord } from './source.js'
 
+export type Audience = 'plain' | 'engineering'
+
 export interface DiskProjectConfig {
   id: string
   name: string
   source: 'disk'
   dir: string
+  audience?: Audience
 }
 
 export interface GithubProjectConfig {
@@ -15,12 +18,24 @@ export interface GithubProjectConfig {
   repo: string
   branch: string
   folder: string
+  audience?: Audience
 }
 
 export type ProjectConfig = DiskProjectConfig | GithubProjectConfig
 
+function hasValidAudience(v: Record<string, unknown>): boolean {
+  return v.audience === undefined || v.audience === 'plain' || v.audience === 'engineering'
+}
+
 export function isDiskProjectConfig(v: unknown): v is DiskProjectConfig {
-  return isRecord(v) && v.source === 'disk' && typeof v.id === 'string' && typeof v.name === 'string' && typeof v.dir === 'string'
+  return (
+    isRecord(v) &&
+    v.source === 'disk' &&
+    typeof v.id === 'string' &&
+    typeof v.name === 'string' &&
+    typeof v.dir === 'string' &&
+    hasValidAudience(v)
+  )
 }
 
 export function isGithubProjectConfig(v: unknown): v is GithubProjectConfig {
@@ -32,7 +47,8 @@ export function isGithubProjectConfig(v: unknown): v is GithubProjectConfig {
     typeof v.owner === 'string' &&
     typeof v.repo === 'string' &&
     typeof v.branch === 'string' &&
-    typeof v.folder === 'string'
+    typeof v.folder === 'string' &&
+    hasValidAudience(v)
   )
 }
 

@@ -65,6 +65,7 @@ interface ProjectConfig {
   repo: string
   branch: string
   folder: string
+  audience?: 'plain' | 'engineering'
 }
 
 function isProjectConfig(value: unknown): value is ProjectConfig {
@@ -75,7 +76,8 @@ function isProjectConfig(value: unknown): value is ProjectConfig {
     typeof value.owner === 'string' &&
     typeof value.repo === 'string' &&
     typeof value.branch === 'string' &&
-    typeof value.folder === 'string'
+    typeof value.folder === 'string' &&
+    (value.audience === undefined || value.audience === 'plain' || value.audience === 'engineering')
   )
 }
 
@@ -114,7 +116,15 @@ async function resolveProjectConfigs(env: Env, store: ConfigStore | null): Promi
   if (store) {
     const stored = (await store.getProjects()).filter(isGithubProjectConfig)
     if (stored.length > 0) {
-      return stored.map((p) => ({ id: p.id, name: p.name, owner: p.owner, repo: p.repo, branch: p.branch, folder: p.folder }))
+      return stored.map((p) => ({
+        id: p.id,
+        name: p.name,
+        owner: p.owner,
+        repo: p.repo,
+        branch: p.branch,
+        folder: p.folder,
+        audience: p.audience,
+      }))
     }
   }
   return parseProjectConfigs(env)
@@ -122,7 +132,7 @@ async function resolveProjectConfigs(env: Env, store: ConfigStore | null): Promi
 
 async function buildApi(env: Env, store: ConfigStore | null): Promise<{ projects: ProjectInfo[]; sourceFor: (id: string) => ContextSource | null }> {
   const configs = await resolveProjectConfigs(env, store)
-  const projects: ProjectInfo[] = configs.map((cfg) => ({ id: cfg.id, name: cfg.name, sourceKind: 'github' }))
+  const projects: ProjectInfo[] = configs.map((cfg) => ({ id: cfg.id, name: cfg.name, sourceKind: 'github', audience: cfg.audience ?? 'engineering' }))
 
   const byId = new Map<string, ContextSource>()
   for (const cfg of configs) {

@@ -1,6 +1,17 @@
 import { load as parseYaml } from 'js-yaml'
 
-export const FOLDERS = ['plans', 'roadmaps', 'references', 'progress', 'ideas', 'processes', 'handoffs', 'archive'] as const
+export const FOLDERS = [
+  'plans',
+  'roadmaps',
+  'references',
+  'progress',
+  'ideas',
+  'processes',
+  'handoffs',
+  'archive',
+  'reports',
+  'standups',
+] as const
 
 export type BaseFolderKey = (typeof FOLDERS)[number]
 
