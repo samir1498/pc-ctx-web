@@ -4,71 +4,13 @@ import { join, resolve, sep } from 'node:path'
 import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
 import { createApi } from './api.js'
+import { createConfigApi, isLoopbackRequest } from './config-api.js'
+import type { ConfigStore } from './config-store.js'
 import { diskSource } from './disk.js'
+import { fileConfigStore } from './file-config-store.js'
+import { listDirectories } from './fs-browser.js'
 import { githubSource } from './github.js'
 import type { ContextSource } from './source.js'
-import { isRecord } from './source.js'
-
-interface DiskProjectConfig {
-  id: string
-  name: string
-  source: 'disk'
-  dir: string
-}
-
-interface GithubProjectConfig {
-  id: string
-  name: string
-  source: 'github'
-  owner: string
-  repo: string
-  branch: string
-  folder: string
-}
-
-type ProjectConfig = DiskProjectConfig | GithubProjectConfig
-
-interface HubConfig {
-  projects: ProjectConfig[]
-  tokens?: Record<string, string>
-}
-
-function isDiskProjectConfig(v: unknown): v is DiskProjectConfig {
-  return isRecord(v) && v.source === 'disk' && typeof v.id === 'string' && typeof v.name === 'string' && typeof v.dir === 'string'
-}
-
-function isGithubProjectConfig(v: unknown): v is GithubProjectConfig {
-  return (
-    isRecord(v) &&
-    v.source === 'github' &&
-    typeof v.id === 'string' &&
-    typeof v.name === 'string' &&
-    typeof v.owner === 'string' &&
-    typeof v.repo === 'string' &&
-    typeof v.branch === 'string' &&
-    typeof v.folder === 'string'
-  )
-}
-
-function isProjectConfig(v: unknown): v is ProjectConfig {
-  return isDiskProjectConfig(v) || isGithubProjectConfig(v)
-}
-
-function isHubConfig(v: unknown): v is HubConfig {
-  if (!isRecord(v) || !Array.isArray(v.projects) || !v.projects.every(isProjectConfig)) return false
-  if (v.tokens !== undefined) {
-    if (!isRecord(v.tokens)) return false
-    if (!Object.values(v.tokens).every((t) => typeof t === 'string')) return false
-  }
-  return true
-}
-
-function loadConfig(path: string): HubConfig {
-  const raw = readFileSync(path, 'utf-8')
-  const parsed: unknown = JSON.parse(raw)
-  if (!isHubConfig(parsed)) throw new Error(`Invalid hub config at ${path}`)
-  return parsed
-}
 
 const MIME: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
@@ -81,32 +23,43 @@ const MIME: Record<string, string> = {
   '.woff2': 'font/woff2',
 }
 
-function main(): void {
-  const configPath = process.argv[2] || join(homedir(), '.config', 'pc-ctx', 'hub.json')
-  const config = loadConfig(configPath)
-  const staticDir = resolve(process.cwd(), 'client/dist')
-
-  const projects = config.projects.map((p) => ({ id: p.id, name: p.name, sourceKind: p.source }))
+// Rebuilt on every request (not cached at startup) so a settings save through
+// /api/config/projects takes effect immediately, with no server restart.
+async function buildContextApi(store: ConfigStore): Promise<Hono> {
+  const configs = await store.getProjects()
+  const projects = configs.map((p) => ({ id: p.id, name: p.name, sourceKind: p.source }))
   const sources = new Map<string, ContextSource>()
-  for (const p of config.projects) {
+  for (const p of configs) {
     if (p.source === 'disk') {
       sources.set(p.id, diskSource(p.dir))
     } else {
-      sources.set(
-        p.id,
-        githubSource({
-          token: config.tokens?.[p.owner] || '',
-          owner: p.owner,
-          repo: p.repo,
-          branch: p.branch,
-          folder: p.folder,
-        }),
-      )
+      const token = (await store.getToken(p.owner)) || ''
+      sources.set(p.id, githubSource({ token, owner: p.owner, repo: p.repo, branch: p.branch, folder: p.folder }))
     }
   }
+  return createApi({ projects, sourceFor: (id) => sources.get(id) ?? null })
+}
+
+function main(): void {
+  const configPath = process.argv[2] || join(homedir(), '.config', 'pc-ctx', 'hub.json')
+  const store = fileConfigStore(configPath)
+  const staticDir = resolve(process.cwd(), 'client/dist')
 
   const app = new Hono()
-  app.route('/', createApi({ projects, sourceFor: (id) => sources.get(id) ?? null }))
+
+  app.use('*', async (c, next) => {
+    if (!isLoopbackRequest(c)) return c.text('forbidden', 403)
+    await next()
+  })
+
+  app.route('/', createConfigApi({ store, mode: 'local', github: fetch, listLocalDirectories: listDirectories }))
+
+  app.use('/api/*', async (c, next) => {
+    const api = await buildContextApi(store)
+    const res = await api.fetch(c.req.raw)
+    if (res.status !== 404) return res
+    await next()
+  })
 
   // Same containment check as the CLI's ui-server.ts: never serve a path resolved outside staticDir.
   app.get('*', (c) => {
