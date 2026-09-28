@@ -76,12 +76,16 @@ export function useProjects() {
   return useQuery({ queryKey: ['projects'], queryFn: fetchProjects, retry: false })
 }
 
+// One retry for the per-project reads: a cold GitHub fetch of a large folder
+// has 502'd once and come back fine on the next try. A 4xx is final.
+const retryTransient = (failures: number, error: Error) => failures < 1 && !/\b4\d\d\b/.test(error.message)
+
 export function useProjectFolder(project: string, folder: ProjectFolder, meta = false, enabled = true) {
   return useQuery({
     queryKey: ['p', project, 'folder', folder, meta ? 'meta' : 'full'],
     queryFn: () => fetchProjectFolder(project, folder, meta),
     enabled: enabled && !!project,
-    retry: false,
+    retry: retryTransient,
   })
 }
 
@@ -90,7 +94,7 @@ export function useProjectFolderList(project: string, folder: ProjectFolder, ena
     queryKey: ['p', project, 'folder-list', folder],
     queryFn: () => fetchProjectFolderList(project, folder),
     enabled: enabled && !!project,
-    retry: false,
+    retry: retryTransient,
   })
 }
 
@@ -100,7 +104,7 @@ export function useProjectFolderPage(project: string, folder: ProjectFolder, pag
     queryFn: () => fetchProjectFolderPage(project, folder, page, size),
     placeholderData: keepPreviousData,
     enabled: !!project,
-    retry: false,
+    retry: retryTransient,
   })
 }
 
@@ -109,7 +113,7 @@ export function useProjectItem(project: string, folder: ProjectFolder, slug: str
     queryKey: ['p', project, 'item', folder, slug],
     queryFn: () => fetchProjectItem(project, folder, slug),
     enabled: enabled && !!project && !!slug,
-    retry: false,
+    retry: retryTransient,
   })
 }
 
@@ -118,7 +122,7 @@ export function useProjectCounts(project: string) {
     queryKey: ['p', project, 'counts'],
     queryFn: () => fetchProjectCounts(project),
     enabled: !!project,
-    retry: false,
+    retry: retryTransient,
   })
 }
 
@@ -183,7 +187,7 @@ export function useGithubTree(owner: string, repo: string, branch: string, path:
     queryKey: ['gh-tree', owner, repo, branch, path],
     queryFn: () => fetchGithubTree(owner, repo, branch, path),
     enabled,
-    retry: false,
+    retry: retryTransient,
   })
 }
 
