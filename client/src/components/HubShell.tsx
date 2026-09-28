@@ -99,7 +99,7 @@ export function HubShell({ project, children }: HubShellProps) {
   const [open, setOpen] = useState(false)
   const { pathname } = useLocation()
   const { data: projects } = useProjects()
-  const { groups } = useHubNav(project)
+  const { groups, loading } = useHubNav(project)
   const summary = projects?.find((p) => p.id === project)
   const here = currentItem(groups)
   const onSettings = pathname === '/settings'
@@ -165,7 +165,14 @@ export function HubShell({ project, children }: HubShellProps) {
 
         <nav aria-label="Pages" className="flex-1 overflow-y-auto pb-6">
           {project ? (
-            <NavGroups groups={groups} onNavigate={close} />
+            <>
+              <NavGroups groups={groups} onNavigate={close} />
+              {loading && (
+                <p className="nav-group mt-3 px-[1.2rem] font-mono text-2xs text-faint" aria-live="polite">
+                  Loading the plans…
+                </p>
+              )}
+            </>
           ) : (
             <section className="nav-group">
               <span className="nav-label">Site</span>

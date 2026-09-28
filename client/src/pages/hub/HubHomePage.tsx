@@ -127,7 +127,9 @@ export function HubHomePage({ project }: { project: string }) {
 
       <section>
         <h2 className="section-title">Moving now</h2>
-        {buckets.active.length > 0 ? (
+        {plans.isLoading ? (
+          <p className="text-sm text-muted">Loading plans…</p>
+        ) : buckets.active.length > 0 ? (
           <>
             <ul className="rows">
               {buckets.active.slice(0, 8).map((p) => (
