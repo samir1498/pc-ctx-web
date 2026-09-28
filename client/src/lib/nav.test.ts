@@ -109,6 +109,12 @@ describe('buildSidebar', () => {
     const groups = build('/p/dinar', { label: (t) => t.replace(/M2 /, '') })
     expect(flat(groups).some((i) => i.label === 'checkpoint')).toBe(true)
   })
+
+  it('keeps the original title when the rewrite would leave a blank row', () => {
+    const groups = build('/p/dinar', { label: (t) => (t.includes('till') ? '' : t) })
+    expect(flat(groups).some((i) => i.label === 'The till')).toBe(true)
+    expect(flat(groups).every((i) => i.label.trim() !== '')).toBe(true)
+  })
 })
 
 describe('parseHubPath', () => {

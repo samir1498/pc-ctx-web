@@ -80,7 +80,10 @@ export function parseHubPath(path: string): { project: string; folder: Folder | 
 export function buildSidebar(input: SidebarInput): NavGroup[] {
   const { project } = input
   const path = normalize(input.path)
-  const label = input.label ?? ((t: string) => t)
+  // The plain-audience rewrite drops any sentence with a path in it; a title
+  // that is nothing else keeps its original text rather than a blank row.
+  const rewrite = input.label ?? ((t: string) => t)
+  const label = (t: string): string => rewrite(t).trim() || t
   const here = parseHubPath(path)
   const is = (to: string) => normalize(to) === path
   const groups: NavGroup[] = []
