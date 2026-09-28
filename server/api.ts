@@ -1,7 +1,7 @@
 import type { Context } from 'hono'
 import { Hono } from 'hono'
 import type { ContextSource, FolderKey } from './source.js'
-import { FOLDERS, isFolderKey } from './source.js'
+import { FOLDERS, isFolderKey, withFolderFallbacks } from './source.js'
 
 export interface ProjectInfo {
   id: string
@@ -101,8 +101,15 @@ async function handleCounts(c: Context, source: ContextSource): Promise<Response
 }
 
 export function createApi(options: CreateApiOptions): Hono {
-  const { projects, sourceFor } = options
+  const { projects } = options
   const app = new Hono()
+
+  // Every source, disk or GitHub, answers for a folder's alternate location
+  // (standups kept under progress/standup) without the client knowing.
+  const sourceFor = (id: string): ContextSource | null => {
+    const source = options.sourceFor(id)
+    return source ? withFolderFallbacks(source) : null
+  }
 
   const firstSource = (): ContextSource | null => {
     const first = projects[0]

@@ -1,7 +1,7 @@
 import { readFile, readdir, stat } from 'node:fs/promises'
 import { basename, join, resolve, sep } from 'node:path'
 import type { ContextSource, FolderEntry, FolderKey, ListEntry } from './source.js'
-import { folderPath, isMarkdown, sortListEntries, toEntry, toListEntry } from './source.js'
+import { folderPath, isDocument, sortListEntries, toEntry, toListEntry } from './source.js'
 
 // FolderKey is a closed union, so only filenames are attacker-controlled here.
 // basename() rejects embedded separators, and the resolved-path check catches '..' itself.
@@ -26,7 +26,7 @@ export function diskSource(rootDir: string): ContextSource {
 
       const entries: ListEntry[] = []
       for (const name of names) {
-        if (!isMarkdown(name)) continue
+        if (!isDocument(name)) continue
         const full = safeJoin(dir, name)
         if (!full) continue
         try {

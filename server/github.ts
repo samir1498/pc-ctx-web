@@ -1,5 +1,5 @@
 import type { ContextSource, FolderEntry, FolderKey, ListEntry } from './source.js'
-import { folderPath, isMarkdown, isRecord, sortListEntries, toEntry, toListEntry } from './source.js'
+import { folderPath, isDocument, isRecord, sortListEntries, toEntry, toListEntry } from './source.js'
 
 export interface GithubSourceOptions {
   token: string
@@ -99,7 +99,7 @@ export function githubSource(opts: GithubSourceOptions): ContextSource {
       const entries = readTreeEntries(json)
       if (entries === null) return null
       return sortListEntries(
-        entries.filter((e) => e.type === 'blob' && isMarkdown(e.name)).map((e) => toListEntry(folder, e.name)),
+        entries.filter((e) => e.type === 'blob' && isDocument(e.name)).map((e) => toListEntry(folder, e.name)),
       )
     },
 

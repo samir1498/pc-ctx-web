@@ -11,26 +11,65 @@ export const FOLDERS = [
   'archive',
   'reports',
   'standups',
+  'loops',
+  'research',
 ] as const
 
 export type BaseFolderKey = (typeof FOLDERS)[number]
 
 // 'plans-archived' is not a repo-level folder like the rest — it maps to plans/archived,
-// which the old tree query for 'plans' never descended into.
-export type FolderKey = BaseFolderKey | 'plans-archived'
+// which the old tree query for 'plans' never descended into. 'progress-standup' is
+// where one store keeps its standups (progress/standup); see withFolderFallbacks.
+export type FolderKey = BaseFolderKey | 'plans-archived' | 'progress-standup'
 
-export const ALL_FOLDERS: readonly FolderKey[] = [...FOLDERS, 'plans-archived']
+export const ALL_FOLDERS: readonly FolderKey[] = [...FOLDERS, 'plans-archived', 'progress-standup']
 
 export function isFolderKey(value: string): value is FolderKey {
   return ALL_FOLDERS.some((key) => key === value)
 }
 
+const NESTED_PATHS: Partial<Record<FolderKey, string>> = {
+  'plans-archived': 'plans/archived',
+  'progress-standup': 'progress/standup',
+}
+
 export function folderPath(folder: FolderKey): string {
-  return folder === 'plans-archived' ? 'plans/archived' : folder
+  return NESTED_PATHS[folder] ?? folder
 }
 
 export function isMarkdown(name: string): boolean {
   return name.endsWith('.md') || name.endsWith('.mdx')
+}
+
+// A folder's README describes the folder; it is not one of its documents.
+export function isDocument(name: string): boolean {
+  return isMarkdown(name) && !/^readme\.mdx?$/i.test(name)
+}
+
+// Where a folder may live when its canonical path is absent. Stores differ:
+// one keeps standups at standups/, another under progress/standup/.
+const FOLDER_FALLBACKS: Partial<Record<FolderKey, FolderKey>> = {
+  standups: 'progress-standup',
+}
+
+export function withFolderFallbacks(source: ContextSource): ContextSource {
+  return {
+    async list(folder) {
+      const primary = await source.list(folder)
+      const fallback = FOLDER_FALLBACKS[folder]
+      if (primary !== null || !fallback) return primary
+      return source.list(fallback)
+    },
+    async read(folder, names) {
+      const found = await source.read(folder, names)
+      const fallback = FOLDER_FALLBACKS[folder]
+      if (!fallback || found.length === names.length) return found
+      const have = new Set(found.map((f) => f.name))
+      const missing = names.filter((n) => !have.has(n))
+      const rest = await source.read(fallback, missing)
+      return [...found, ...rest]
+    },
+  }
 }
 
 export function isRecord(value: unknown): value is Record<string, unknown> {
