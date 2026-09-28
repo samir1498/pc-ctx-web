@@ -46,7 +46,7 @@ function FsBrowser({ initialPath, onSelect, onClose }: { initialPath: string; on
   const { data, isLoading } = useFsListing(path, true)
 
   return (
-    <div className="mt-2 border border-line bg-input p-3">
+    <div className="mt-2 rounded-md border border-line bg-input p-3">
       <div className="mb-2 flex items-center justify-between gap-2 font-mono text-2xs text-dim">
         <span className="truncate">{data?.path ?? path ?? '~'}</span>
         {data?.isContextStore && <span className="border border-green/40 px-1.5 py-0.5 text-green">context store</span>}
@@ -104,7 +104,7 @@ function GithubFolderBrowser({
   const { data: dirs, isLoading } = useGithubTree(owner, repo, branch, path, enabled)
 
   return (
-    <div className="mt-2 border border-line bg-input p-3">
+    <div className="mt-2 rounded-md border border-line bg-input p-3">
       <div className="mb-2 font-mono text-2xs text-dim">/{path}</div>
       {isLoading && <p className="font-mono text-2xs text-faint">loading…</p>}
       <div className="flex flex-wrap gap-1.5">
@@ -157,7 +157,7 @@ function ProjectRow({
   const diskDisabled = mode === 'deployed'
 
   return (
-    <div className="border border-border bg-panel p-4">
+    <div className="rounded-md border border-border bg-panel p-4">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <input
           value={draft.name}
@@ -442,21 +442,26 @@ export function SettingsPage() {
   }
 
   return (
-    <div className="animate-fade-in pad-x py-7">
-      <h1 className="text-3xl font-bold tracking-[-0.03em]">Settings</h1>
-      <p className="mt-2 max-w-2xl text-sm text-muted">
+    <div className="reader animate-fade-in">
+      <p className="crumb">
+        <span>Context hub</span>
+        <span aria-hidden="true">/</span>
+        <span className="text-muted">Settings</span>
+      </p>
+      <h1 className="page-title">Settings</h1>
+      <p className="lede">
         {config.mode === 'deployed' ? (
           <>
-            Showing the site <b className="text-foreground">deployed</b> on Cloudflare: disk is greyed out, tokens live in KV.
+            This is the site <b className="font-semibold text-foreground">deployed</b> on Cloudflare: projects read from GitHub, tokens live in KV, disk is greyed out.
           </>
         ) : (
           <>
-            Showing the site <b className="text-foreground">running locally</b>: disk works, tokens live on this machine only.
+            This is the site <b className="font-semibold text-foreground">running locally</b>: disk folders work, tokens live on this machine only.
           </>
         )}
       </p>
 
-      <h2 className="mb-3 mt-7 text-sm font-semibold">Projects</h2>
+      <h2 className="section-title">Projects</h2>
       <div className="flex flex-col gap-3">
         {drafts.map((d, i) => (
           <ProjectRow
@@ -469,24 +474,24 @@ export function SettingsPage() {
           />
         ))}
       </div>
-      <div className="mt-3 flex items-center gap-3">
-        <button onClick={addProject} className="border border-line px-3 py-1.5 font-mono text-xs">
-          + Add project
+      <div className="mt-3 flex flex-wrap items-center gap-3">
+        <button onClick={addProject} className="rounded-md border border-line bg-panel px-3 py-1.5 text-sm hover:bg-hover">
+          Add a project
         </button>
         <button
           disabled={saveProjects.isPending}
           onClick={handleSave}
-          className="border border-foreground bg-foreground px-3 py-1.5 font-mono text-xs text-page disabled:opacity-50"
+          className="rounded-md border border-foreground bg-foreground px-3 py-1.5 text-sm font-medium text-page disabled:opacity-50"
         >
           Save projects
         </button>
-        {saved && <span className="font-mono text-2xs text-green">saved</span>}
-        {error && <span className="font-mono text-2xs text-red">{error}</span>}
+        {saved && <span className="font-mono text-xs text-green">Saved.</span>}
+        {error && <span className="font-mono text-xs text-red">{error}</span>}
       </div>
 
-      <h2 className="mb-1 mt-9 text-sm font-semibold">GitHub tokens</h2>
+      <h2 className="section-title">GitHub tokens</h2>
       <p className="mb-3 text-sm text-muted">One fine-grained, read-only token per owner. Written here, never shown back.</p>
-      <div className="border border-border bg-panel p-4">
+      <div className="rounded-md border border-border bg-panel p-4">
         {[...tokenOwners].map((owner) => (
           <TokenRow key={owner} owner={owner} status={config.tokens[owner] === 'set' ? 'set' : 'not set'} />
         ))}

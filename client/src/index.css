@@ -1,56 +1,122 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
-@import "highlight.js/styles/github-dark.css";
 
-/* mermaid renders diagrams into a sandboxed iframe (securityLevel: 'sandbox') */
-.mermaid iframe {
-  width: 100%;
-  border: 0;
+/* ---- palette: light by default, dark when the system asks for it ----
+   Every colour the components use is one of these variables; Tailwind's
+   tokens below alias them, so `bg-page` or `text-muted` flips with the theme. */
+:root {
+  color-scheme: light;
+  --page: #fbfbf9;
+  --rail: #f4f4f1;
+  --panel: #ffffff;
+  --input: #ffffff;
+  --hover: #ececе7;
+  --elevated: #e9e9e4;
+
+  --border: #e5e5e0;
+  --line: #d7d7d1;
+  --faintline: #ecece7;
+  --outline: #b4b4ad;
+
+  --fg: #1c1c1a;
+  --secondary: #3b3b37;
+  --muted: #5e5e58;
+  --dim: #74746d;
+  --faint: #8b8b83;
+  --fainter: #a5a59d;
+
+  --accent: #1d54b8;
+  --accent-soft: rgba(29, 84, 184, 0.1);
+  --code-bg: #f1f1ec;
+
+  --green: #1f7a46;
+  --blue: #1d54b8;
+  --amber: #a9711a;
+  --red: #b83a1d;
+  --purple: #6b4fc2;
+  --indigo: #4f46e5;
+
+  --hl-keyword: #8a3ab9;
+  --hl-string: #1f7a46;
+  --hl-number: #a9711a;
+  --hl-title: #1d54b8;
 }
 
-@theme {
-  /* surfaces */
-  --color-page: #0a0a0b;
-  --color-panel: #0c0c0f;
-  --color-input: #0d0d10;
-  --color-hover: #101012;
-  --color-elevated: #111116;
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --page: #141415;
+    --rail: #0f0f10;
+    --panel: #1b1b1d;
+    --input: #1b1b1d;
+    --hover: #222225;
+    --elevated: #26262a;
 
-  /* lines */
-  --color-border: #1b1b1f;
-  --color-line: #26262b;
-  --color-faintline: #161619;
-  --color-outline: #3a3a40;
+    --border: #27272b;
+    --line: #333338;
+    --faintline: #212124;
+    --outline: #4a4a51;
 
-  /* text */
-  --color-foreground: #f3f2ee;
-  --color-secondary: #c3c3c9;
-  --color-muted: #a9a9b0;
-  --color-dim: #909097;
-  --color-faint: #7a7a82;
-  --color-fainter: #66666e;
+    --fg: #ececea;
+    --secondary: #c9c9c4;
+    --muted: #a3a39d;
+    --dim: #8b8b84;
+    --faint: #75756e;
+    --fainter: #5e5e58;
 
-  /* status / accents */
-  --color-green: #22c55e;
-  --color-blue: #3b82f6;
-  --color-amber: #f59e0b;
-  --color-red: #ef4444;
-  --color-purple: #a78bfa;
-  --color-indigo: #6366f1;
+    --accent: #8db2ff;
+    --accent-soft: rgba(141, 178, 255, 0.14);
+    --code-bg: #1e1e21;
 
-  /* fonts */
-  --font-display: "Space Grotesk", -apple-system, BlinkMacSystemFont, sans-serif;
+    --green: #4fc27f;
+    --blue: #8db2ff;
+    --amber: #e0a94a;
+    --red: #ef7a5c;
+    --purple: #b39cf0;
+    --indigo: #a5b4fc;
+
+    --hl-keyword: #c792ea;
+    --hl-string: #7ccf9b;
+    --hl-number: #e0a94a;
+    --hl-title: #8db2ff;
+  }
+}
+
+@theme inline {
+  --color-page: var(--page);
+  --color-rail: var(--rail);
+  --color-panel: var(--panel);
+  --color-input: var(--input);
+  --color-hover: var(--hover);
+  --color-elevated: var(--elevated);
+
+  --color-border: var(--border);
+  --color-line: var(--line);
+  --color-faintline: var(--faintline);
+  --color-outline: var(--outline);
+
+  --color-foreground: var(--fg);
+  --color-secondary: var(--secondary);
+  --color-muted: var(--muted);
+  --color-dim: var(--dim);
+  --color-faint: var(--faint);
+  --color-fainter: var(--fainter);
+
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-green: var(--green);
+  --color-blue: var(--blue);
+  --color-amber: var(--amber);
+  --color-red: var(--red);
+  --color-purple: var(--purple);
+  --color-indigo: var(--indigo);
+
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
 
-  /* micro text sizes below text-xs (0.75rem) — generates text-2xs / text-3xs */
   --text-2xs: 0.6875rem;
   --text-3xs: 0.625rem;
-
-  /* kill default radii — v2 is sharp-edged */
-  --radius-sm: 0px;
-  --radius-md: 0px;
-  --radius-lg: 0px;
-  --radius-xl: 0px;
 }
 
 /* fluid horizontal page padding — scales 16px→40px with the viewport, no breakpoints */
@@ -60,42 +126,453 @@
 
 html,
 body {
-  background-color: var(--color-page);
-  color: var(--color-foreground);
-  font-family: var(--font-display);
+  background-color: var(--page);
+  color: var(--fg);
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
-/* faint horizontal scanline texture from the v2 mock */
 body {
-  background-image: repeating-linear-gradient(
-    0deg,
-    transparent,
-    transparent 2px,
-    rgba(255, 255, 255, 0.012) 2px,
-    rgba(255, 255, 255, 0.012) 3px
-  );
+  font-size: 16px;
+  line-height: 1.6;
 }
 
-/* scrollbars */
+a {
+  color: inherit;
+}
+
+/* thin, quiet scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
+}
 *::-webkit-scrollbar {
-  width: 9px;
-  height: 9px;
+  width: 8px;
+  height: 8px;
 }
 *::-webkit-scrollbar-thumb {
-  background: #222;
-  border: 3px solid var(--color-page);
+  background: var(--line);
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
 *::-webkit-scrollbar-track {
   background: transparent;
 }
 
-/* row hover used across tables/lists */
+/* ---- the docs shell ---- */
+.reader {
+  max-width: 46rem;
+  margin-inline: auto;
+  padding: 2.25rem clamp(1rem, 4vw, 2.5rem) 6rem;
+}
+.reader-wide {
+  max-width: 76rem;
+  margin-inline: auto;
+  padding: 2.25rem clamp(1rem, 4vw, 2.5rem) 6rem;
+}
+
+.crumb {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--dim);
+}
+.crumb a {
+  color: var(--dim);
+  text-decoration: none;
+}
+.crumb a:hover {
+  color: var(--fg);
+}
+.crumb span[aria-hidden] {
+  color: var(--fainter);
+}
+
+.page-title {
+  margin: 0.75rem 0 0;
+  font-size: clamp(1.6rem, 1.2rem + 1.4vw, 2.1rem);
+  font-weight: 650;
+  letter-spacing: -0.022em;
+  line-height: 1.15;
+  text-wrap: balance;
+}
+.lede {
+  margin: 0.9rem 0 0;
+  font-size: 1.0625rem;
+  line-height: 1.6;
+  color: var(--secondary);
+  text-wrap: pretty;
+}
+.meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.9rem;
+  margin-top: 0.9rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--dim);
+}
+.section-title {
+  margin: 2.5rem 0 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.pill {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  line-height: 1.5;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.pill[data-tone="active"] {
+  color: var(--green);
+  border-color: color-mix(in srgb, var(--green) 45%, transparent);
+}
+.pill[data-tone="paused"] {
+  color: var(--amber);
+  border-color: color-mix(in srgb, var(--amber) 45%, transparent);
+}
+.pill[data-tone="done"] {
+  color: var(--blue);
+  border-color: color-mix(in srgb, var(--blue) 40%, transparent);
+}
+.pill[data-tone="archived"],
+.pill[data-tone="cancelled"] {
+  color: var(--faint);
+}
+
+/* row lists (overview, folder index) */
+.rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--line);
+}
+.rows > li {
+  border-bottom: 1px solid var(--faintline);
+}
+.row-link {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr);
+  gap: 0.25rem 1rem;
+  padding: 0.8rem 0.25rem;
+  text-decoration: none;
+  color: var(--fg);
+  border-radius: 4px;
+}
+.row-link:hover {
+  background: var(--hover);
+}
+.row-link .when {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--dim);
+  padding-top: 0.2rem;
+  white-space: nowrap;
+}
+.row-link .what {
+  font-size: 0.975rem;
+  font-weight: 500;
+  line-height: 1.4;
+}
+.row-link .why {
+  grid-column: 2;
+  margin: 0.15rem 0 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+@media (max-width: 520px) {
+  .row-link {
+    grid-template-columns: 1fr;
+  }
+  .row-link .why {
+    grid-column: 1;
+  }
+}
+
+.bar {
+  display: inline-block;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--line);
+  overflow: hidden;
+  vertical-align: middle;
+}
+.bar > span {
+  display: block;
+  height: 100%;
+  background: var(--green);
+}
+
+/* ---- sidebar ---- */
+.rail {
+  background: var(--rail);
+  border-right: 1px solid var(--border);
+}
+.nav-group {
+  padding: 0 0.6rem;
+}
+.nav-group + .nav-group {
+  margin-top: 0.9rem;
+}
+.nav-label {
+  display: block;
+  margin: 0 0 0.25rem;
+  padding: 0 0.6rem;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--faint);
+  text-decoration: none;
+}
+a.nav-label:hover {
+  color: var(--fg);
+}
+.nav-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 6px;
+  color: var(--secondary);
+  font-size: 0.875rem;
+  line-height: 1.35;
+  text-decoration: none;
+  transition: background 0.12s;
+}
+.nav-row:hover {
+  background: var(--hover);
+  color: var(--fg);
+}
+.nav-row .text {
+  min-width: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.nav-row .meta {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  color: var(--faint);
+  white-space: nowrap;
+}
+.nav-row.muted {
+  color: var(--faint);
+  font-size: 0.8125rem;
+}
+.nav-row[aria-current="page"] {
+  background: var(--accent-soft);
+  color: var(--fg);
+  font-weight: 500;
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+.nav-row[aria-current="page"] .meta {
+  color: var(--muted);
+}
+
+.switcher {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+}
+.switcher a {
+  flex: 1;
+  text-align: center;
+  padding: 0.35rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--muted);
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.switcher a:hover {
+  color: var(--fg);
+}
+.switcher a[aria-current="page"] {
+  background: var(--fg);
+  color: var(--page);
+}
+
+/* ---- markdown ---- */
+.prose.reader-prose {
+  --tw-prose-body: var(--secondary);
+  --tw-prose-headings: var(--fg);
+  --tw-prose-lead: var(--secondary);
+  --tw-prose-links: var(--accent);
+  --tw-prose-bold: var(--fg);
+  --tw-prose-counters: var(--dim);
+  --tw-prose-bullets: var(--fainter);
+  --tw-prose-hr: var(--line);
+  --tw-prose-quotes: var(--secondary);
+  --tw-prose-quote-borders: var(--line);
+  --tw-prose-captions: var(--muted);
+  --tw-prose-code: var(--fg);
+  --tw-prose-pre-code: var(--fg);
+  --tw-prose-pre-bg: var(--code-bg);
+  --tw-prose-th-borders: var(--line);
+  --tw-prose-td-borders: var(--faintline);
+  font-size: 1rem;
+  line-height: 1.65;
+  max-width: none;
+}
+.prose.reader-prose :where(h1, h2, h3, h4) {
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+.prose.reader-prose :where(h1) {
+  font-size: 1.5rem;
+  margin-top: 2.2em;
+}
+.prose.reader-prose :where(h2) {
+  font-size: 1.25rem;
+  margin-top: 2.2em;
+  margin-bottom: 0.7em;
+}
+.prose.reader-prose :where(h3) {
+  font-size: 1.05rem;
+  margin-top: 1.8em;
+}
+.prose.reader-prose :where(a) {
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  font-weight: inherit;
+}
+.prose.reader-prose :where(code):not(pre code) {
+  background: var(--code-bg);
+  padding: 0.12em 0.35em;
+  border-radius: 4px;
+  font-size: 0.86em;
+  font-weight: 400;
+}
+.prose.reader-prose :where(code)::before,
+.prose.reader-prose :where(code)::after {
+  content: none;
+}
+.prose.reader-prose :where(pre) {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+}
+.prose.reader-prose :where(table) {
+  display: block;
+  overflow-x: auto;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+.prose.reader-prose :where(th) {
+  font-weight: 600;
+  text-align: left;
+}
+.prose.reader-prose :where(blockquote) {
+  font-style: normal;
+  font-weight: inherit;
+}
+.prose.reader-prose :where(blockquote p:first-of-type)::before,
+.prose.reader-prose :where(blockquote p:last-of-type)::after {
+  content: none;
+}
+.prose.reader-prose :where(img) {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+.prose.reader-prose :where(li) {
+  margin-block: 0.3em;
+}
+
+/* syntax colours ride the palette instead of a stock highlight.js theme */
+.hljs {
+  color: var(--fg);
+  background: transparent;
+}
+.hljs-comment,
+.hljs-quote {
+  color: var(--faint);
+  font-style: italic;
+}
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-built_in,
+.hljs-name,
+.hljs-tag,
+.hljs-doctag {
+  color: var(--hl-keyword);
+}
+.hljs-string,
+.hljs-attr,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-addition,
+.hljs-regexp {
+  color: var(--hl-string);
+}
+.hljs-number,
+.hljs-literal,
+.hljs-variable,
+.hljs-template-variable,
+.hljs-link {
+  color: var(--hl-number);
+}
+.hljs-title,
+.hljs-section,
+.hljs-selector-id,
+.hljs-type,
+.hljs-attribute {
+  color: var(--hl-title);
+}
+.hljs-deletion {
+  color: var(--red);
+}
+.hljs-meta {
+  color: var(--muted);
+}
+.hljs-emphasis {
+  font-style: italic;
+}
+.hljs-strong {
+  font-weight: 600;
+}
+
+/* mermaid renders diagrams into a sandboxed iframe (securityLevel: 'sandbox') */
+.mermaid iframe {
+  width: 100%;
+  border: 0;
+}
+
+/* row hover used across the legacy tables/lists */
 .v2row {
   transition: background 0.15s;
 }
 .v2row:hover {
-  background: var(--color-hover);
+  background: var(--hover);
 }
 
 @keyframes v2rise {
@@ -144,5 +621,13 @@ body {
   }
 }
 .animate-fade-in {
-  animation: fade-in 0.25s ease-out;
+  animation: fade-in 0.2s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in,
+  .animate-rise,
+  .animate-blink {
+    animation: none;
+  }
 }

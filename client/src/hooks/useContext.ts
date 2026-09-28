@@ -14,6 +14,7 @@ import {
   fetchProjectCounts,
   fetchProjectFolder,
   fetchProjectFolderList,
+  fetchProjectFolderPage,
   fetchProjectItem,
   fetchProjects,
   removeToken,
@@ -89,6 +90,16 @@ export function useProjectFolderList(project: string, folder: ProjectFolder, ena
     queryKey: ['p', project, 'folder-list', folder],
     queryFn: () => fetchProjectFolderList(project, folder),
     enabled: enabled && !!project,
+    retry: false,
+  })
+}
+
+export function useProjectFolderPage(project: string, folder: ProjectFolder, page: number, size: number) {
+  return useQuery({
+    queryKey: ['p', project, 'folder-page', folder, page, size],
+    queryFn: () => fetchProjectFolderPage(project, folder, page, size),
+    placeholderData: keepPreviousData,
+    enabled: !!project,
     retry: false,
   })
 }

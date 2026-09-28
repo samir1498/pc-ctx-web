@@ -1,4 +1,5 @@
 import type { Task } from '../types'
+import { taskText } from '../lib/hub'
 import { statusColor, taskMark } from '../lib/ui'
 
 interface TaskListProps {
@@ -10,22 +11,25 @@ export function TaskList({ tasks, showIds = true }: TaskListProps) {
   if (!tasks.length) return null
 
   return (
-    <div>
+    <ol className="m-0 list-none p-0">
       {tasks.map((task) => {
         const color = statusColor(task.status)
+        const status = task.status ?? 'pending'
         return (
-          <div key={task.id} className="flex items-start gap-3 border-b border-faintline py-3">
-            {showIds && <span className="w-7 pt-px font-mono text-2xs text-faint">{task.id}</span>}
-            <span className="w-3.5 font-mono text-sm" style={{ color }}>
+          <li key={task.id} className="flex items-start gap-3 border-b border-faintline py-3 last:border-b-0">
+            <span className="mt-0.5 w-4 shrink-0 text-center font-mono text-sm leading-6" style={{ color }} aria-hidden="true">
               {taskMark(task.status)}
             </span>
-            <span className="flex-1 text-sm text-secondary">{task.title}</span>
-            <span className="font-mono text-3xs tracking-[0.03em]" style={{ color }}>
-              {task.status ?? 'pending'}
+            <span className="min-w-0 flex-1 text-[0.95rem] leading-6 text-secondary">
+              {showIds && <span className="mr-2 font-mono text-xs text-faint">{task.id}</span>}
+              {taskText(task)}
             </span>
-          </div>
+            <span className="shrink-0 pt-1 font-mono text-2xs" style={{ color }}>
+              {status}
+            </span>
+          </li>
         )
       })}
-    </div>
+    </ol>
   )
 }

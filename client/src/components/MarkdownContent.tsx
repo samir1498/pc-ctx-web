@@ -23,9 +23,10 @@ let mermaidReady = false
 
 interface MarkdownContentProps {
   body: string
+  className?: string
 }
 
-export function MarkdownContent({ body }: MarkdownContentProps) {
+export function MarkdownContent({ body, className = '' }: MarkdownContentProps) {
   const html = useMemo(() => DOMPurify.sanitize(marked.parse(body, { async: false }) as string), [body])
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -57,7 +58,8 @@ export function MarkdownContent({ body }: MarkdownContentProps) {
         // <iframe>, fully isolating mermaid's post-DOMPurify SVG from the page
         // (defense in depth; diagram source is repo markdown). startOnLoad off:
         // we drive rendering here.
-        mermaid.initialize({ startOnLoad: false, securityLevel: 'sandbox', theme: 'dark' })
+        const dark = window.matchMedia('(prefers-color-scheme: dark)').matches
+        mermaid.initialize({ startOnLoad: false, securityLevel: 'sandbox', theme: dark ? 'dark' : 'neutral' })
         mermaidReady = true
       }
       return mermaid.run({ nodes: targets })
@@ -70,11 +72,5 @@ export function MarkdownContent({ body }: MarkdownContentProps) {
     }
   }, [html])
 
-  return (
-    <div
-      ref={containerRef}
-      className="prose prose-sm max-w-none prose-invert prose-headings:text-foreground prose-a:text-blue prose-strong:text-foreground prose-code:before:content-none prose-code:after:content-none prose-hr:border-border prose-code:font-normal"
-      dangerouslySetInnerHTML={{ __html: html }}
-    />
-  )
+  return <div ref={containerRef} className={`prose reader-prose ${className}`} dangerouslySetInnerHTML={{ __html: html }} />
 }
