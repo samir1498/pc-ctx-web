@@ -1,5 +1,9 @@
 {
   "name": "personal-context",
   "compatibility_date": "2025-02-01",
-  "pages_build_output_dir": "./client/dist"
+  "pages_build_output_dir": "./client/dist",
+  "kv_namespaces": [
+    { "binding": "CTX_CACHE", "id": "28916bb043f54753a58262d6ee3feaf8" },
+    { "binding": "CTX_CONFIG", "id": "7fc217c529d44b0991ac85c8caa87305" }
+  ]
 }

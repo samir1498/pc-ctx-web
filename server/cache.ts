@@ -36,11 +36,27 @@ function readEnvelope(cached: unknown): unknown {
   return cached.v
 }
 
+// Cloudflare KV refuses keys over 512 bytes, and a read() over a whole folder
+// joins every filename into the key (100+ plans blow past the limit). Short
+// keys stay readable; long ones hash to a fixed short suffix.
+function shortHash(s: string): string {
+  let h1 = 0x811c9dc5
+  let h2 = 0x01000193
+  for (let i = 0; i < s.length; i++) {
+    h1 = Math.imul(h1 ^ s.charCodeAt(i), 0x01000193) >>> 0
+    h2 = Math.imul(h2 + s.charCodeAt(i), 0x85ebca6b) >>> 0
+  }
+  return h1.toString(16).padStart(8, '0') + h2.toString(16).padStart(8, '0')
+}
+
 export function cachedSource(source: ContextSource, kv: KVLike, options: CacheOptions): ContextSource {
   const ttl = options.ttlSeconds ?? 300
   const listKey = (folder: FolderKey): string => `ctx:${options.projectId}:list:${folder}`
-  const readKey = (folder: FolderKey, names: string[]): string =>
-    `ctx:${options.projectId}:read:${folder}:${[...names].sort().join(',')}`
+  const readKey = (folder: FolderKey, names: string[]): string => {
+    const joined = [...names].sort().join(',')
+    const key = `ctx:${options.projectId}:read:${folder}:${joined}`
+    return key.length <= 400 ? key : `ctx:${options.projectId}:read:${folder}:h:${shortHash(joined)}`
+  }
 
   return {
     async list(folder: FolderKey): Promise<ListEntry[] | null> {

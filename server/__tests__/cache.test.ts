@@ -82,4 +82,19 @@ describe('cachedSource', () => {
     await cachedTwo.list('plans')
     expect(calls.list).toBe(2)
   })
+
+  it('hashes read() keys past the KV 512-byte limit and still round-trips', async () => {
+    const kv = fakeKv()
+    let reads = 0
+    const names = Array.from({ length: 120 }, (_, i) => `20260928-long-plan-name-number-${i}-padded-to-be-realistic.md`)
+    const big: ContextSource = {
+      async list() { return [] },
+      async read(_f, ns) { reads++; return ns.map((name) => ({ slug: name, name, path: `plans/${name}`, body: 'x' })) },
+    }
+    const cachedBig = cachedSource(big, kv, { projectId: 'proj' })
+    expect(await cachedBig.read('plans', names)).toHaveLength(120)
+    for (const key of kv.store.keys()) expect(key.length).toBeLessThanOrEqual(512)
+    await cachedBig.read('plans', [...names].reverse())
+    expect(reads).toBe(1)
+  })
 })
