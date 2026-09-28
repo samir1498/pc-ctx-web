@@ -17,4 +17,7 @@ export default defineConfig({
     __APP_VERSION__: JSON.stringify(pkg.version),
   },
   build: { outDir: 'dist' },
+  // `npm run hub:local` serves the API on 4780; the Vite dev server forwards
+  // /api there so the client hot-reloads against real stores.
+  server: { proxy: { '/api': 'http://127.0.0.1:4780' } },
 })
