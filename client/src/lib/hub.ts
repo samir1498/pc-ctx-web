@@ -17,11 +17,33 @@ export function planBucket(item: ContextItem): PlanBucket | null {
   return null
 }
 
+/** "n of m done": cancelled tasks leave the denominator, so a plan can reach 100%. */
 export function planProgress(item: ContextItem): { done: number; total: number; pct: number } {
   const tasks = item.frontmatter?.tasks
   if (!Array.isArray(tasks) || tasks.length === 0) return { done: 0, total: 0, pct: 0 }
   const done = tasks.filter((t) => t.status === 'done').length
-  return { done, total: tasks.length, pct: Math.round((done / tasks.length) * 100) }
+  const total = tasks.filter((t) => t.status !== 'cancelled').length
+  return { done, total, pct: total ? Math.round((done / total) * 100) : 0 }
+}
+
+const TASK_ORDER: Record<string, number> = { 'in-progress': 0, blocked: 1, pending: 2 }
+export const CLOSED_TASK_STATUSES = new Set(['done', 'cancelled'])
+
+/**
+ * Open tasks first (in progress, blocked, then pending in file order), closed
+ * ones (done, cancelled) kept apart so a long list can fold them away.
+ */
+export function groupTasks(tasks: Task[]): { open: Task[]; closed: Task[] } {
+  const open = tasks.filter((t) => !CLOSED_TASK_STATUSES.has(t.status ?? 'pending'))
+  const closed = tasks.filter((t) => CLOSED_TASK_STATUSES.has(t.status ?? 'pending'))
+  const rank = (t: Task) => TASK_ORDER[t.status ?? 'pending'] ?? 2
+  return { open: open.map((t, i) => ({ t, i })).sort((a, b) => rank(a.t) - rank(b.t) || a.i - b.i).map((x) => x.t), closed }
+}
+
+export function countByStatus(tasks: Task[]): [string, number][] {
+  const counts = new Map<string, number>()
+  for (const t of tasks) counts.set(t.status ?? 'pending', (counts.get(t.status ?? 'pending') ?? 0) + 1)
+  return [...counts.entries()]
 }
 
 export function planTitle(item: ContextItem): string {

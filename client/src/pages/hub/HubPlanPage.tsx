@@ -1,4 +1,5 @@
 import { Crumbs, PageState } from '../../components/Crumbs'
+import { AcceptanceList, ReferenceList } from '../../components/FrontmatterExtras'
 import { MarkdownContent } from '../../components/MarkdownContent'
 import { TaskList } from '../../components/TaskList'
 import { useProjectPlan, useProjects } from '../../hooks/useContext'
@@ -34,6 +35,11 @@ export function HubPlanPage({ project, slug }: { project: string; slug: string }
   const rawBody = heading && heading === planTitle(item) ? rest : (item.body ?? '')
   const body = rawBody ? (plain ? stripCodes(rawBody) : rawBody) : ''
   const started = formatDate(fm.created)
+  const completed = formatDate(typeof fm.completed_at === 'string' || typeof fm.completed_at === 'number' ? fm.completed_at : undefined)
+  const priority = typeof fm.priority === 'number' ? fm.priority : null
+  const roadmap = typeof fm.roadmap === 'string' ? fm.roadmap : null
+  const hasAcceptance = Array.isArray(fm.acceptance) && fm.acceptance.length > 0
+  const hasReferences = !plain && Array.isArray(fm.references) && fm.references.length > 0
 
   return (
     <article className="reader animate-fade-in">
@@ -46,6 +52,7 @@ export function HubPlanPage({ project, slug }: { project: string; slug: string }
           {BUCKET_LABEL[status] ?? status}
         </span>
         {started && <span>started {started}</span>}
+        {completed && <span>finished {completed}</span>}
         {pr.total > 0 && (
           <span className="flex items-center gap-2">
             <span className="bar w-24">
@@ -54,23 +61,30 @@ export function HubPlanPage({ project, slug }: { project: string; slug: string }
             {pr.done} of {pr.total} done
           </span>
         )}
+        {!plain && priority !== null && <span>priority {priority}</span>}
+        {!plain && roadmap && <span>roadmap {roadmap}</span>}
         {!plain && <span className="text-faint">{item.slug}</span>}
       </div>
-
-      {body && (
-        <section className="mt-8">
-          <MarkdownContent body={body} />
-        </section>
-      )}
 
       {tasks.length > 0 && (
         <section>
           <h2 className="section-title">Tasks{pr.total ? ` · ${pr.done} of ${pr.total} done` : ''}</h2>
-          <TaskList tasks={tasks} showIds={!plain} />
+          <TaskList tasks={tasks} plain={plain} />
         </section>
       )}
 
-      {!body && tasks.length === 0 && !tldr && <p className="mt-8 text-sm text-muted">This plan has a title and nothing else yet.</p>}
+      {hasAcceptance && <AcceptanceList value={fm.acceptance} plain={plain} />}
+
+      {body && (
+        <section>
+          {tasks.length > 0 && <h2 className="section-title">Notes</h2>}
+          <MarkdownContent body={body} className={tasks.length > 0 ? '' : 'mt-8'} />
+        </section>
+      )}
+
+      {hasReferences && <ReferenceList project={project} value={fm.references} />}
+
+      {!body && tasks.length === 0 && !tldr && !hasAcceptance && <p className="mt-8 text-sm text-muted">This plan has a title and nothing else yet.</p>}
     </article>
   )
 }

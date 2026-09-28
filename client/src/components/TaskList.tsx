@@ -1,35 +1,68 @@
 import type { Task } from '../types'
-import { taskText } from '../lib/hub'
+import { countByStatus, groupTasks, taskText } from '../lib/hub'
+import { stripCodes } from '../lib/plain'
 import { statusColor, taskMark } from '../lib/ui'
 
 interface TaskListProps {
   tasks: Task[]
-  showIds?: boolean
+  plain?: boolean
 }
 
-export function TaskList({ tasks, showIds = true }: TaskListProps) {
+const STATUS_LABEL: Record<string, string> = {
+  'in-progress': 'in progress',
+  pending: 'to do',
+  blocked: 'blocked',
+  done: 'done',
+  cancelled: 'cancelled',
+}
+
+// A plain reader still gets the id: it is how a task is named in a standup.
+function TaskRow({ task, plain }: { task: Task; plain: boolean }) {
+  const status = task.status ?? 'pending'
+  const color = statusColor(status)
+  const raw = taskText(task)
+  const text = (plain ? stripCodes(raw).trim() : raw) || raw
+  const note = task.note ? (plain ? stripCodes(task.note).trim() || task.note : task.note) : ''
+  return (
+    <li className="task-row" data-status={status}>
+      <span className="task-mark" style={{ color }} aria-hidden="true">
+        {taskMark(status)}
+      </span>
+      <span className="task-id">{task.id}</span>
+      <span className="task-text">
+        {text}
+        {note && <span className="task-note">{note}</span>}
+      </span>
+      <span className="task-status" style={{ color }}>
+        {STATUS_LABEL[status] ?? status}
+      </span>
+    </li>
+  )
+}
+
+const FOLD_FROM = 6
+
+export function TaskList({ tasks, plain = false }: TaskListProps) {
   if (!tasks.length) return null
+  const { open, closed } = groupTasks(tasks)
+  const summary = countByStatus(closed)
+    .map(([status, n]) => `${n} ${STATUS_LABEL[status] ?? status}`)
+    .join(' · ')
+  // Nothing open: the closed list is the whole story, so it stays unfolded.
+  const foldClosed = open.length > 0 && closed.length >= FOLD_FROM
 
   return (
-    <ol className="m-0 list-none p-0">
-      {tasks.map((task) => {
-        const color = statusColor(task.status)
-        const status = task.status ?? 'pending'
-        return (
-          <li key={task.id} className="flex items-start gap-3 border-b border-faintline py-3 last:border-b-0">
-            <span className="mt-0.5 w-4 shrink-0 text-center font-mono text-sm leading-6" style={{ color }} aria-hidden="true">
-              {taskMark(task.status)}
-            </span>
-            <span className="min-w-0 flex-1 text-[0.95rem] leading-6 text-secondary">
-              {showIds && <span className="mr-2 font-mono text-xs text-faint">{task.id}</span>}
-              {taskText(task)}
-            </span>
-            <span className="shrink-0 pt-1 font-mono text-2xs" style={{ color }}>
-              {status}
-            </span>
-          </li>
-        )
-      })}
-    </ol>
+    <div className="tasks">
+      {open.length > 0 && <ol className="task-list">{open.map((t) => <TaskRow key={t.id} task={t} plain={plain} />)}</ol>}
+      {closed.length > 0 &&
+        (foldClosed ? (
+          <details className="task-fold">
+            <summary>{summary}</summary>
+            <ol className="task-list">{closed.map((t) => <TaskRow key={t.id} task={t} plain={plain} />)}</ol>
+          </details>
+        ) : (
+          <ol className="task-list">{closed.map((t) => <TaskRow key={t.id} task={t} plain={plain} />)}</ol>
+        ))}
+    </div>
   )
 }

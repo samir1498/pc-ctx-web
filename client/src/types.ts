@@ -41,6 +41,7 @@ export interface Task {
   title?: string
   desc?: string
   status?: string
+  note?: string
 }
 
 export interface Frontmatter {

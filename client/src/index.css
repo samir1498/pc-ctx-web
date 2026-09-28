@@ -321,6 +321,128 @@ a {
   background: var(--green);
 }
 
+/* ---- plan tasks ---- */
+.task-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.task-row {
+  display: grid;
+  grid-template-columns: 1rem auto minmax(0, 1fr) auto;
+  column-gap: 0.65rem;
+  align-items: start;
+  padding: 0.55rem 0;
+  border-bottom: 1px solid var(--faintline);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+.task-list > .task-row:last-child {
+  border-bottom: 0;
+}
+.task-mark {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  text-align: center;
+  padding-top: 0.05rem;
+}
+.task-id {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--faint);
+  padding-top: 0.25rem;
+  min-width: 2.2rem;
+}
+.task-text {
+  color: var(--secondary);
+  overflow-wrap: anywhere;
+}
+.task-row[data-status="done"] .task-text,
+.task-row[data-status="cancelled"] .task-text {
+  color: var(--muted);
+}
+.task-row[data-status="cancelled"] .task-text {
+  text-decoration: line-through;
+  text-decoration-color: var(--faint);
+}
+.task-note {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+  white-space: pre-line;
+}
+.task-status {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  padding-top: 0.3rem;
+  white-space: nowrap;
+}
+.task-fold {
+  margin-top: 0.75rem;
+  border-top: 1px solid var(--faintline);
+}
+.task-fold > summary {
+  cursor: pointer;
+  padding: 0.65rem 0;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--muted);
+  list-style: none;
+}
+.task-fold > summary::-webkit-details-marker {
+  display: none;
+}
+.task-fold > summary::before {
+  content: "▸";
+  display: inline-block;
+  width: 1rem;
+  color: var(--faint);
+}
+.task-fold[open] > summary::before {
+  content: "▾";
+}
+.task-fold > summary:hover {
+  color: var(--fg);
+}
+@media (max-width: 480px) {
+  .task-row {
+    grid-template-columns: 1rem auto minmax(0, 1fr);
+  }
+  .task-status {
+    grid-column: 3;
+    padding-top: 0;
+  }
+}
+
+/* acceptance and references */
+.check-list,
+.ref-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.check-list > li,
+.ref-list > li {
+  position: relative;
+  padding: 0.35rem 0 0.35rem 1.4rem;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--secondary);
+}
+.check-list > li::before {
+  content: "☐";
+  position: absolute;
+  left: 0.1rem;
+  color: var(--faint);
+}
+.ref-list > li::before {
+  content: "→";
+  position: absolute;
+  left: 0.1rem;
+  color: var(--faint);
+}
+
 /* ---- sidebar ---- */
 .rail {
   background: var(--rail);
