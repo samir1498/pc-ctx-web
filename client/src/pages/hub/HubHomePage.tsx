@@ -49,7 +49,7 @@ function LatestDoc({ project, folder, item, plain, label }: { project: string; f
         </Link>
         <span className="font-mono text-xs text-dim">{shortDate(docDate(item))}</span>
       </p>
-      <Shots shots={shotsOf(item.frontmatter)} />
+      <Shots shots={shotsOf(item.frontmatter)} project={project} docPath={item.path} />
       {excerpt && <MarkdownContent body={excerpt} className="mt-2 text-[0.95rem]" />}
       <p className="mt-2">
         <Link to="/p/$project/$folder/$slug" params={{ project, folder, slug: item.slug }} className="font-mono text-xs text-accent no-underline hover:underline">

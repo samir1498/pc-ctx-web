@@ -21,10 +21,17 @@ const standups: ContextItem[] = [
 const roadmaps: ContextItem[] = [
   { slug: 'dz-pos-to-first-shop', name: 'dz-pos-to-first-shop.md', path: 'roadmaps/dz-pos-to-first-shop.md', frontmatter: { title: 'dz-pos to first shop' } },
 ]
-const counts = { plans: 4, reports: 1, standups: 2, roadmaps: 1, handoffs: 2, processes: 6, loops: 15, research: 0 }
+const designs: ContextItem[] = [
+  { slug: 'e-logo', name: 'e-logo.html', path: 'designs/e-logo.html', frontmatter: { title: "Dinar's logo", kind: 'html' } },
+  { slug: 'screens', name: 'screens.md', path: 'designs/screens.md', frontmatter: { title: 'Screens', created: 20260924 } },
+]
+const research: ContextItem[] = [
+  { slug: '20260920-lumina-taken-apart', name: '20260920-lumina-taken-apart.md', path: 'research/20260920-lumina-taken-apart.md', frontmatter: { title: 'Lumina, taken apart', date: '2026-09-20' } },
+]
+const counts = { plans: 4, reports: 1, standups: 2, roadmaps: 1, handoffs: 2, processes: 6, loops: 15, research: 1, designs: 2 }
 
 function build(path: string, extra: Partial<Parameters<typeof buildSidebar>[0]> = {}) {
-  return buildSidebar({ project: 'dinar', path, counts, plans, reports, standups, roadmaps, ...extra })
+  return buildSidebar({ project: 'dinar', path, counts, plans, reports, standups, roadmaps, designs, research, ...extra })
 }
 
 const flat = (groups: ReturnType<typeof build>) => groups.flatMap((g) => g.items)
@@ -35,6 +42,16 @@ describe('buildSidebar', () => {
     expect(items).toContainEqual(expect.objectContaining({ label: 'Finish the shop', to: '/p/dinar/plan/20260927-finish-the-shop' }))
     expect(items).toContainEqual(expect.objectContaining({ label: 'M2 checkpoint', to: '/p/dinar/reports/2026-09-10-m2-checkpoint' }))
     expect(items).toContainEqual(expect.objectContaining({ label: 'Standup, 22 Sep', to: '/p/dinar/standups/2026-09-22' }))
+  })
+
+  it('lists designs and research as their own groups, a kept-HTML page among them', () => {
+    const groups = build('/p/dinar')
+    const byKey = Object.fromEntries(groups.map((g) => [g.key, g.items]))
+    expect(byKey.designs?.map((i) => i.label)).toEqual(["Dinar's logo", 'Screens'])
+    expect(byKey.designs?.[0]).toMatchObject({ to: '/p/dinar/designs/e-logo', meta: undefined })
+    expect(byKey.designs?.[1]?.meta).toBe('24 Sep')
+    expect(byKey.research?.map((i) => i.to)).toEqual(['/p/dinar/research/20260920-lumina-taken-apart'])
+    expect(byKey.library?.map((i) => i.label)).not.toContain('Research')
   })
 
   it('groups plans by status: in progress, waiting, done', () => {
@@ -53,7 +70,7 @@ describe('buildSidebar', () => {
 
   it('keeps the sidebar on a plan page with that plan marked current', () => {
     const groups = build('/p/dinar/plan/20260910-till')
-    expect(groups.map((g) => g.key)).toEqual(['start', 'plans-active', 'plans-paused', 'plans-done', 'reports', 'standups', 'roadmaps', 'library'])
+    expect(groups.map((g) => g.key)).toEqual(['start', 'plans-active', 'plans-paused', 'plans-done', 'reports', 'standups', 'roadmaps', 'designs', 'research', 'library'])
     expect(currentItem(groups)).toEqual(expect.objectContaining({ label: 'The till', to: '/p/dinar/plan/20260910-till' }))
     expect(flat(groups).filter((i) => i.current)).toHaveLength(1)
   })
@@ -66,7 +83,7 @@ describe('buildSidebar', () => {
   })
 
   it('hides empty domains instead of saying "none yet"', () => {
-    const groups = build('/p/dinar', { reports: [], standups: [], counts: { ...counts, reports: 0, standups: 0, research: 0 } })
+    const groups = build('/p/dinar', { reports: [], standups: [], designs: [], research: [], counts: { ...counts, reports: 0, standups: 0, research: 0, designs: 0 } })
     const keys = groups.map((g) => g.key)
     expect(keys).not.toContain('reports')
     expect(keys).not.toContain('standups')

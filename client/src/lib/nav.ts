@@ -30,6 +30,8 @@ export interface SidebarInput {
   reports?: ContextItem[]
   standups?: ContextItem[]
   roadmaps?: ContextItem[]
+  designs?: ContextItem[]
+  research?: ContextItem[]
   /** Names-only listing of the folder the reader is currently inside, if any. */
   folderItems?: { folder: Folder; items: ListEntry[] }
   /** Rewrites a label for the plain audience (drops codes). Identity by default. */
@@ -49,7 +51,6 @@ export const LIBRARY_FOLDERS: readonly Folder[] = [
   'progress',
   'handoffs',
   'processes',
-  'research',
   'loops',
   'references',
   'ideas',
@@ -133,7 +134,7 @@ export function buildSidebar(input: SidebarInput): NavGroup[] {
     if (g) groups.push(g)
   }
 
-  const recentGroup = (folder: 'reports' | 'standups' | 'roadmaps', name: string, items: ContextItem[] | undefined): NavGroup | null => {
+  const recentGroup = (folder: 'reports' | 'standups' | 'roadmaps' | 'designs' | 'research', name: string, items: ContextItem[] | undefined): NavGroup | null => {
     const list = items ?? []
     const count = input.counts?.[folder] ?? list.length
     if (list.length === 0 && count === 0) return null
@@ -146,7 +147,7 @@ export function buildSidebar(input: SidebarInput): NavGroup[] {
         label: label(dated ? displayTitle(it, FOLDER_SINGULAR[folder]) : title),
         to: paths.doc(project, folder, it.slug),
         current: is(paths.doc(project, folder, it.slug)),
-        meta: dated ? undefined : shortDate(docDate(it)),
+        meta: dated ? undefined : shortDate(docDate(it)) || undefined,
       }
     })
     // Inside the folder every page is listed; the index row stays as the way
@@ -165,6 +166,8 @@ export function buildSidebar(input: SidebarInput): NavGroup[] {
     recentGroup('reports', 'Reports', input.reports),
     recentGroup('standups', 'Standups', input.standups),
     recentGroup('roadmaps', 'Roadmap', input.roadmaps),
+    recentGroup('designs', 'Designs', input.designs),
+    recentGroup('research', 'Research', input.research),
   ]) {
     if (g) groups.push(g)
   }

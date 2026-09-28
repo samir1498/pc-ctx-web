@@ -1,11 +1,16 @@
+import { resolveStoreUrl } from '../lib/media'
+
 interface ShotsProps {
   shots?: string[]
+  project?: string
+  docPath?: string
 }
 
-// Up to three screenshots from a standup or report's frontmatter. An entry
-// without any renders nothing: an empty frame would only say "no shot".
-export function Shots({ shots }: ShotsProps) {
-  const list = (shots ?? []).slice(0, 3)
+// Up to three screenshots from a standup or report's frontmatter, written as
+// ../media/... in the store. An entry without any renders nothing: an empty
+// frame would only say "no shot".
+export function Shots({ shots, project, docPath }: ShotsProps) {
+  const list = (shots ?? []).slice(0, 3).map((s) => (project && docPath ? resolveStoreUrl(s, project, docPath) : s))
   if (list.length === 0) return null
 
   return (

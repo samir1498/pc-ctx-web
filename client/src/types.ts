@@ -11,6 +11,7 @@ export type Folder =
   | 'standups'
   | 'loops'
   | 'research'
+  | 'designs'
 
 export const FOLDERS: readonly Folder[] = [
   'plans',
@@ -25,6 +26,7 @@ export const FOLDERS: readonly Folder[] = [
   'standups',
   'loops',
   'research',
+  'designs',
 ]
 
 export function isFolder(value: string): value is Folder {
@@ -57,6 +59,8 @@ export interface Frontmatter {
   tasks?: Task[] | string
   entries?: unknown[]
   references?: string[]
+  /** 'html' for a page kept as HTML in the store, rendered in a sandbox. */
+  kind?: string
   [key: string]: unknown
 }
 
@@ -100,6 +104,7 @@ export const FOLDER_LABELS: Record<Folder, string> = {
   standups: 'Standups',
   loops: 'Loops',
   research: 'Research',
+  designs: 'Designs',
 }
 
 // Singular, for a page heading and a breadcrumb ("Report", "Standup").
@@ -116,6 +121,7 @@ export const FOLDER_SINGULAR: Record<Folder, string> = {
   standups: 'Standup',
   loops: 'Loop',
   research: 'Research note',
+  designs: 'Design page',
 }
 
 export type Audience = 'plain' | 'engineering'

@@ -78,7 +78,7 @@ export function HubPlanPage({ project, slug }: { project: string; slug: string }
       {body && (
         <section>
           {tasks.length > 0 && <h2 className="section-title">Notes</h2>}
-          <MarkdownContent body={body} className={tasks.length > 0 ? '' : 'mt-8'} />
+          <MarkdownContent body={body} className={tasks.length > 0 ? '' : 'mt-8'} project={project} docPath={item.path} />
         </section>
       )}
 

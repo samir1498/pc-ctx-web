@@ -22,6 +22,8 @@ export function useHubNav(project: string | undefined): { groups: NavGroup[]; lo
   const reports = useProjectFolder(pid, 'reports', true, (c?.reports ?? 0) > 0)
   const standups = useProjectFolder(pid, 'standups', true, (c?.standups ?? 0) > 0)
   const roadmaps = useProjectFolder(pid, 'roadmaps', true, (c?.roadmaps ?? 0) > 0)
+  const designs = useProjectFolder(pid, 'designs', true, (c?.designs ?? 0) > 0)
+  const research = useProjectFolder(pid, 'research', true, (c?.research ?? 0) > 0)
 
   const here = parseHubPath(pathname)
   const openFolder: Folder | null = here && here.folder && LIBRARY_FOLDERS.includes(here.folder as Folder) ? (here.folder as Folder) : null
@@ -37,10 +39,12 @@ export function useHubNav(project: string | undefined): { groups: NavGroup[]; lo
       reports: reports.data,
       standups: standups.data,
       roadmaps: roadmaps.data,
+      designs: designs.data,
+      research: research.data,
       folderItems: openFolder && folderList.data ? { folder: openFolder, items: folderList.data } : undefined,
       label: plain ? stripCodes : undefined,
     })
-  }, [project, pathname, c, plans.data, reports.data, standups.data, roadmaps.data, openFolder, folderList.data, plain])
+  }, [project, pathname, c, plans.data, reports.data, standups.data, roadmaps.data, designs.data, research.data, openFolder, folderList.data, plain])
 
   return { groups, loading: counts.isLoading || plans.isLoading }
 }

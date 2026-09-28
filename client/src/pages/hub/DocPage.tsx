@@ -3,6 +3,7 @@ import { Crumbs, PageState } from '../../components/Crumbs'
 import { AcceptanceList, PlanRef, ReferenceList } from '../../components/FrontmatterExtras'
 import { MarkdownContent } from '../../components/MarkdownContent'
 import { Shots } from '../../components/Shots'
+import { StoreHtml } from '../../components/StoreHtml'
 import { TaskList } from '../../components/TaskList'
 import { useProjectItem, useProjects } from '../../hooks/useContext'
 import { usePlanLookup } from '../../hooks/usePlanLookup'
@@ -128,11 +129,15 @@ export function DocPage({ project, folder, slug }: { project: string; folder: Fo
         {!plain && <span className="text-faint">{item.path}</span>}
       </div>
 
-      <Shots shots={shotsOf(item.frontmatter)} />
+      <Shots shots={shotsOf(item.frontmatter)} project={project} docPath={item.path} />
 
-      {body.trim() ? (
+      {fm.kind === 'html' ? (
+        <section className="mt-6">
+          <StoreHtml html={item.body ?? ''} project={project} docPath={item.path} />
+        </section>
+      ) : body.trim() ? (
         <section className="mt-8">
-          <MarkdownContent body={body} />
+          <MarkdownContent body={body} project={project} docPath={item.path} />
         </section>
       ) : empty ? (
         <p className="mt-8 text-sm text-muted">This page has a title and nothing else yet.</p>

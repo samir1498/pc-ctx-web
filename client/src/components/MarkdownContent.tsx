@@ -3,6 +3,7 @@ import { marked } from 'marked'
 import { markedHighlight } from 'marked-highlight'
 import hljs from 'highlight.js'
 import DOMPurify from 'dompurify'
+import { resolveStoreUrl } from '../lib/media'
 
 marked.use(markedHighlight({
   langPrefix: 'hljs language-',
@@ -24,10 +25,61 @@ let mermaidReady = false
 interface MarkdownContentProps {
   body: string
   className?: string
+  /** With docPath: relative pictures and sibling pages resolve against the store. */
+  project?: string
+  docPath?: string
 }
 
-export function MarkdownContent({ body, className = '' }: MarkdownContentProps) {
-  const html = useMemo(() => DOMPurify.sanitize(marked.parse(body, { async: false }) as string), [body])
+// After sanitizing: a picture written as ../media/x becomes the media API
+// URL, gets a caption from its title, and opens full size in a new tab; a
+// link to a sibling .md page becomes its hub route.
+function resolveReferences(html: string, project: string, docPath: string): string {
+  if (typeof DOMParser === 'undefined') return html
+  const doc = new DOMParser().parseFromString(`<body>${html}</body>`, 'text/html')
+  doc.querySelectorAll('img').forEach((img) => {
+    const src = resolveStoreUrl(img.getAttribute('src') ?? '', project, docPath)
+    img.setAttribute('src', src)
+    img.setAttribute('loading', 'lazy')
+    const title = img.getAttribute('title') ?? ''
+    const parentLink = img.closest('a')
+    const figure = doc.createElement('figure')
+    const holder = parentLink ?? img
+    holder.replaceWith(figure)
+    if (parentLink) {
+      parentLink.setAttribute('target', '_blank')
+      parentLink.setAttribute('rel', 'noreferrer')
+      figure.appendChild(parentLink)
+    } else {
+      const a = doc.createElement('a')
+      a.setAttribute('href', src)
+      a.setAttribute('target', '_blank')
+      a.setAttribute('rel', 'noreferrer')
+      a.appendChild(img)
+      figure.appendChild(a)
+    }
+    if (title) {
+      const cap = doc.createElement('figcaption')
+      cap.textContent = title
+      figure.appendChild(cap)
+      img.removeAttribute('title')
+    }
+    // A figure inside a paragraph is invalid HTML; lift it out.
+    const p = figure.parentElement
+    if (p && p.tagName === 'P' && p.childNodes.length === 1) p.replaceWith(figure)
+  })
+  doc.querySelectorAll('a[href]').forEach((a) => {
+    const href = a.getAttribute('href') ?? ''
+    const resolved = resolveStoreUrl(href, project, docPath)
+    if (resolved !== href) a.setAttribute('href', resolved)
+  })
+  return doc.body.innerHTML
+}
+
+export function MarkdownContent({ body, className = '', project, docPath }: MarkdownContentProps) {
+  const html = useMemo(() => {
+    const clean = DOMPurify.sanitize(marked.parse(body, { async: false }) as string)
+    return project && docPath ? resolveReferences(clean, project, docPath) : clean
+  }, [body, project, docPath])
   const containerRef = useRef<HTMLDivElement>(null)
 
   // marked emits ```mermaid fences as <pre><code class="hljs language-mermaid">.
