@@ -22,7 +22,7 @@ const FOLDER_BLURB: Partial<Record<Folder, string>> = {
   reports: 'Checkpoints written for a reader outside the code.',
   standups: 'The morning note: yesterday, today, blockers.',
   roadmaps: 'The milestones in order and how far along each one is.',
-  designs: 'How it looks: the logo, the screens, the public page, the film.',
+  designs: 'How it looks: mockups, screens, marks and films.',
 }
 
 function Row({ project, folder, item, plain }: { project: string; folder: Folder; item: ContextItem; plain: boolean }) {
