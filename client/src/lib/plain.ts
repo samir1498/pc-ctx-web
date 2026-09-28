@@ -14,6 +14,8 @@ const BARE_PR_RE = /#\d+\b/g
 const TASK_ID_RE = /\b[TD]-?\d+\b/g
 // A path-shaped token: word/word(/word)*, at least one slash.
 const PATH_RE = /[\w.-]+\/[\w./-]*/
+const PATH_RE_G = new RegExp(PATH_RE.source, 'g')
+const TABLE_ROW_RE = /^\s*\|/
 const SENTENCE_SPLIT_RE = /(?<=[.!?])\s+/
 
 // Drops any sentence that still mentions a file path, then flattens markdown
@@ -23,10 +25,13 @@ function stripLine(line: string): string {
   // Unbold first: "done.** The" would otherwise hide the sentence boundary.
   let out = line.replace(/\*\*([^*]+)\*\*/g, '$1').replace(CODE_PAREN_RE, '').replace(BARE_REF_RE, '').replace(BARE_PR_RE, '').replace(TASK_ID_RE, '')
 
-  out = out
-    .split(SENTENCE_SPLIT_RE)
-    .filter((sentence) => !PATH_RE.test(sentence))
-    .join(' ')
+  // A table row is one line; dropping it would break the table. Blank the path instead.
+  out = TABLE_ROW_RE.test(out)
+    ? out.replace(PATH_RE_G, '')
+    : out
+        .split(SENTENCE_SPLIT_RE)
+        .filter((sentence) => !PATH_RE.test(sentence))
+        .join(' ')
 
   return out
     .replace(/`([^`]*)`/g, '$1')

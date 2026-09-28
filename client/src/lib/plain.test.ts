@@ -58,3 +58,13 @@ describe('stripCodes', () => {
     expect(stripCodes('The register screen is ready for daily use.')).toBe('The register screen is ready for daily use.')
   })
 })
+
+describe('stripCodes keeps a markdown table whole', () => {
+  it('blanks a path inside a row instead of dropping the row', () => {
+    const table = '| Wave | Tasks | Why |\n|---|---|---|\n| 1 | T3 documents | disjoint code (core/API) |\n| 2 | T4 till | reads `the` model |'
+    const out = stripCodes(table).split('\n')
+    expect(out).toHaveLength(4)
+    expect(out[2]).toBe('| 1 | documents | disjoint code () |')
+    expect(out[3]).toBe('| 2 | till | reads the model |')
+  })
+})
