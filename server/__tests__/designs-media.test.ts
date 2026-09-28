@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { createApi } from '../api.js'
 import { diskSource } from '../disk.js'
-import { FOLDERS, MEDIA_PATH_RE, htmlMeta, isDocument, mediaContentType, withFolderFallbacks } from '../source.js'
+import { FOLDERS, MEDIA_CSP, MEDIA_PATH_RE, htmlMeta, isDocument, mediaContentType, withFolderFallbacks } from '../source.js'
 
 const LOGO_HTML = `<style>.page{max-width:640px}</style>
 <div class="page">
@@ -54,6 +54,7 @@ describe('a store with designs and media on disk', () => {
     await writeFile(join(root, 'designs', 'e-logo.html'), LOGO_HTML)
     await writeFile(join(root, 'designs', 'screens.md'), "---\ntitle: 'Screens'\n---\n\n![Till](../media/screens/till.png \"The till\")\n")
     await writeFile(join(root, 'media', 'screens', 'till.png'), PNG)
+    await writeFile(join(root, 'media', 'screens', 'mark.svg'), '<svg xmlns="http://www.w3.org/2000/svg"><script>fetch("/api/config/x",{method:"PUT"})</script></svg>')
   })
 
   afterEach(async () => {
@@ -81,6 +82,18 @@ describe('a store with designs and media on disk', () => {
     expect(res.headers.get('content-type')).toBe('image/png')
     expect(res.headers.get('cache-control')).toContain('max-age=3600')
     expect(new Uint8Array(await res.arrayBuffer())).toEqual(PNG)
+  })
+
+  it('sandboxes every media response, so an SVG with a script never runs as the hub', async () => {
+    const svg = await api().request('/api/p/fx/media/screens/mark.svg')
+    expect(svg.status).toBe(200)
+    expect(svg.headers.get('content-type')).toBe('image/svg+xml')
+    expect(svg.headers.get('content-security-policy')).toBe(MEDIA_CSP)
+    expect(MEDIA_CSP.split(';')[0]).toBe('sandbox')
+    expect(MEDIA_CSP).toContain("default-src 'none'")
+    expect(svg.headers.get('x-content-type-options')).toBe('nosniff')
+    const png = await api().request('/api/p/fx/media/screens/till.png')
+    expect(png.headers.get('content-security-policy')).toBe(MEDIA_CSP)
   })
 
   it('refuses paths that leave media/ or name another kind of file', async () => {

@@ -1,7 +1,7 @@
 import type { Context } from 'hono'
 import { Hono } from 'hono'
 import type { ContextSource, FolderKey } from './source.js'
-import { FOLDERS, MEDIA_PATH_RE, isFolderKey, withFolderFallbacks } from './source.js'
+import { FOLDERS, MEDIA_CSP, MEDIA_PATH_RE, isFolderKey, withFolderFallbacks } from './source.js'
 
 export interface ProjectInfo {
   id: string
@@ -128,6 +128,9 @@ export function createApi(options: CreateApiOptions): Hono {
 
   // A page's pictures: /api/p/<project>/media/<path under media/>. The path
   // shape is checked here and again by the source; anything else is a 404.
+  // Every file comes back sandboxed: an SVG (or a PDF) opened by its own URL
+  // would otherwise run on the hub's origin, where /api/config is writable.
+  // An <img> still renders it under this policy.
   app.get('/api/p/:project/media/*', async (c) => {
     const source = sourceFor(c.req.param('project'))
     if (!source?.readMedia) return c.notFound()
@@ -145,6 +148,7 @@ export function createApi(options: CreateApiOptions): Hono {
       'Content-Type': file.contentType,
       'Cache-Control': 'public, max-age=3600',
       'X-Content-Type-Options': 'nosniff',
+      'Content-Security-Policy': MEDIA_CSP,
     })
   })
 

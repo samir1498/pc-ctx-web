@@ -63,6 +63,13 @@ export function isDocument(name: string, folder?: FolderKey): boolean {
 // served, and only these characters in a path.
 export const MEDIA_PATH_RE = /^(?:[\w-][\w.-]*\/)*[\w-][\w.-]*\.(png|jpe?g|webp|gif|svg|avif|mp4|webm|pdf)$/i
 
+/**
+ * Sent with every media file. `sandbox` puts a file opened by its own URL
+ * in an opaque origin, so a script inside an SVG or a PDF never runs as the
+ * hub; the rest lets an SVG keep its inline styles and data: fills.
+ */
+export const MEDIA_CSP = "sandbox; default-src 'none'; style-src 'unsafe-inline'; img-src data:"
+
 const MEDIA_TYPES: Record<string, string> = {
   png: 'image/png',
   jpg: 'image/jpeg',
