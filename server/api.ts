@@ -1,7 +1,7 @@
 import type { Context } from 'hono'
 import { Hono } from 'hono'
 import type { ContextSource, FolderKey } from './source.js'
-import { FOLDERS, isFolderKey, withFolderFallbacks } from './source.js'
+import { FOLDERS, MEDIA_PATH_RE, isFolderKey, withFolderFallbacks } from './source.js'
 
 export interface ProjectInfo {
   id: string
@@ -124,6 +124,28 @@ export function createApi(options: CreateApiOptions): Hono {
     const source = sourceFor(c.req.param('project'))
     if (!source) return c.notFound()
     return handleCounts(c, source)
+  })
+
+  // A page's pictures: /api/p/<project>/media/<path under media/>. The path
+  // shape is checked here and again by the source; anything else is a 404.
+  app.get('/api/p/:project/media/*', async (c) => {
+    const source = sourceFor(c.req.param('project'))
+    if (!source?.readMedia) return c.notFound()
+    const prefix = `/api/p/${encodeURIComponent(c.req.param('project'))}/media/`
+    const path = decodeURIComponent(new URL(c.req.url).pathname.slice(prefix.length))
+    if (!MEDIA_PATH_RE.test(path) || path.includes('..')) return c.notFound()
+    let file: Awaited<ReturnType<NonNullable<ContextSource['readMedia']>>>
+    try {
+      file = await source.readMedia(path)
+    } catch (err) {
+      return c.json(errorPayload(`fetch media/${path}`, err), 502)
+    }
+    if (!file) return c.notFound()
+    return c.body(file.bytes, 200, {
+      'Content-Type': file.contentType,
+      'Cache-Control': 'public, max-age=3600',
+      'X-Content-Type-Options': 'nosniff',
+    })
   })
 
   app.get('/api/p/:project/:folder', async (c) => {

@@ -59,6 +59,8 @@ export function cachedSource(source: ContextSource, kv: KVLike, options: CacheOp
   }
 
   return {
+    // Pictures are not kept in KV; the edge cache in front of the function holds them.
+    readMedia: source.readMedia?.bind(source),
     async list(folder: FolderKey): Promise<ListEntry[] | null> {
       const key = listKey(folder)
       const cached = await kv.get(key, 'json')

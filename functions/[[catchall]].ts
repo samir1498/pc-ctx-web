@@ -176,8 +176,19 @@ app.all('*', async (c) => {
     return createConfigApi({ store, mode: 'deployed', github: fetch }).fetch(c.req.raw, c.env)
   }
 
+  // Pictures are bytes, not KV material: the edge cache in front of the
+  // function holds them for the hour the response header says.
+  const isMedia = /^\/api\/p\/[^/]+\/media\//.test(pathname) && c.req.method === 'GET'
+  const edge = isMedia && typeof caches !== 'undefined' ? caches.default : null
+  if (edge) {
+    const hit = await edge.match(c.req.raw)
+    if (hit) return hit
+  }
+
   const { projects, sourceFor } = await buildApi(c.env, store)
-  return createApi({ projects, sourceFor }).fetch(c.req.raw, c.env)
+  const res = await createApi({ projects, sourceFor }).fetch(c.req.raw, c.env)
+  if (edge && res.ok) c.executionCtx.waitUntil(edge.put(c.req.raw, res.clone()))
+  return res
 })
 
 export const onRequest = (ctx: PagesContext): Response | Promise<Response> => {

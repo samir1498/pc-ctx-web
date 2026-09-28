@@ -13,6 +13,7 @@ export const FOLDERS = [
   'standups',
   'loops',
   'research',
+  'designs',
 ] as const
 
 export type BaseFolderKey = (typeof FOLDERS)[number]
@@ -20,9 +21,9 @@ export type BaseFolderKey = (typeof FOLDERS)[number]
 // 'plans-archived' is not a repo-level folder like the rest — it maps to plans/archived,
 // which the old tree query for 'plans' never descended into. 'progress-standup' is
 // where one store keeps its standups (progress/standup); see withFolderFallbacks.
-export type FolderKey = BaseFolderKey | 'plans-archived' | 'progress-standup'
+export type FolderKey = BaseFolderKey | 'plans-archived' | 'progress-standup' | 'mockups'
 
-export const ALL_FOLDERS: readonly FolderKey[] = [...FOLDERS, 'plans-archived', 'progress-standup']
+export const ALL_FOLDERS: readonly FolderKey[] = [...FOLDERS, 'plans-archived', 'progress-standup', 'mockups']
 
 export function isFolderKey(value: string): value is FolderKey {
   return ALL_FOLDERS.some((key) => key === value)
@@ -33,6 +34,8 @@ const NESTED_PATHS: Partial<Record<FolderKey, string>> = {
   'progress-standup': 'progress/standup',
 }
 
+// A store that keeps its designs under another name lists it here (see FOLDER_FALLBACKS).
+
 export function folderPath(folder: FolderKey): string {
   return NESTED_PATHS[folder] ?? folder
 }
@@ -41,19 +44,58 @@ export function isMarkdown(name: string): boolean {
   return name.endsWith('.md') || name.endsWith('.mdx')
 }
 
+export function isHtml(name: string): boolean {
+  return /\.html?$/i.test(name)
+}
+
+// Folders whose pages may be a picture rather than prose: kept as HTML in
+// the store and rendered in a sandbox.
+const HTML_FOLDERS: readonly FolderKey[] = ['designs', 'mockups']
+
 // A folder's README describes the folder; it is not one of its documents.
-export function isDocument(name: string): boolean {
-  return isMarkdown(name) && !/^readme\.mdx?$/i.test(name)
+export function isDocument(name: string, folder?: FolderKey): boolean {
+  if (/^readme\.mdx?$/i.test(name)) return false
+  if (isMarkdown(name)) return true
+  return folder !== undefined && HTML_FOLDERS.includes(folder) && isHtml(name)
+}
+
+// Pictures a page refers to as ../media/<path>. Only this subtree is ever
+// served, and only these characters in a path.
+export const MEDIA_PATH_RE = /^(?:[\w-][\w.-]*\/)*[\w-][\w.-]*\.(png|jpe?g|webp|gif|svg|avif|mp4|webm|pdf)$/i
+
+const MEDIA_TYPES: Record<string, string> = {
+  png: 'image/png',
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  webp: 'image/webp',
+  gif: 'image/gif',
+  svg: 'image/svg+xml',
+  avif: 'image/avif',
+  mp4: 'video/mp4',
+  webm: 'video/webm',
+  pdf: 'application/pdf',
+}
+
+export function mediaContentType(path: string): string {
+  const ext = path.slice(path.lastIndexOf('.') + 1).toLowerCase()
+  return MEDIA_TYPES[ext] ?? 'application/octet-stream'
+}
+
+export interface MediaFile {
+  bytes: ArrayBuffer
+  contentType: string
 }
 
 // Where a folder may live when its canonical path is absent. Stores differ:
 // one keeps standups at standups/, another under progress/standup/.
 const FOLDER_FALLBACKS: Partial<Record<FolderKey, FolderKey>> = {
   standups: 'progress-standup',
+  designs: 'mockups',
 }
 
 export function withFolderFallbacks(source: ContextSource): ContextSource {
   return {
+    readMedia: source.readMedia?.bind(source),
     async list(folder) {
       const primary = await source.list(folder)
       const fallback = FOLDER_FALLBACKS[folder]
@@ -93,6 +135,8 @@ export interface ListEntry {
 export interface ContextSource {
   list(folder: FolderKey): Promise<ListEntry[] | null>
   read(folder: FolderKey, names: string[]): Promise<FolderEntry[]>
+  /** A file under the store's media/ folder; null when there is none. */
+  readMedia?(path: string): Promise<MediaFile | null>
 }
 
 export function parseFrontmatter(raw: string): { frontmatter: Record<string, unknown>; body?: string } | null {
@@ -214,13 +258,34 @@ function topLevelScalars(yaml: string): Record<string, unknown> {
 }
 
 export function toEntry(folder: FolderKey, name: string, raw: string): FolderEntry {
+  const base = { slug: name.replace(/\.\w+$/, ''), name, path: `${folderPath(folder)}/${name}` }
+  if (isHtml(name)) return { ...base, frontmatter: htmlMeta(raw), body: raw }
   const parsed = parseFrontmatter(raw)
-  return {
-    slug: name.replace(/\.\w+$/, ''),
-    name,
-    path: `${folderPath(folder)}/${name}`,
-    ...(parsed ? { frontmatter: parsed.frontmatter, body: parsed.body } : { body: raw }),
-  }
+  return { ...base, ...(parsed ? { frontmatter: parsed.frontmatter, body: parsed.body } : { body: raw }) }
+}
+
+const stripTags = (html: string) => html.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim()
+const decodeEntities = (text: string) =>
+  text
+    .replace(/&middot;/g, '·')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#(\d+);/g, (_, n: string) => String.fromCodePoint(Number(n)))
+
+// A kept-HTML page has no front matter: its title is its first heading and
+// its summary the paragraph marked as the lede, as the old site wrote them.
+export function htmlMeta(html: string): Record<string, unknown> {
+  const h1 = html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i)?.[1]
+  const titleTag = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]
+  const lede = html.match(/<p[^>]*class="[^"]*\blede\b[^"]*"[^>]*>([\s\S]*?)<\/p>/i)?.[1]
+  const meta: Record<string, unknown> = { kind: 'html' }
+  const title = decodeEntities(stripTags(h1 ?? titleTag ?? ''))
+  if (title) meta.title = title
+  if (lede) meta.tldr = decodeEntities(stripTags(lede))
+  return meta
 }
 
 export function toListEntry(folder: FolderKey, name: string): ListEntry {
