@@ -91,6 +91,15 @@ const LIST_QUERY = `
   }
 `
 
+// The REST contents endpoint in its raw form: the bytes of one file, up to
+// 100 MB, where GraphQL's Blob.text stops at 512 KB.
+async function fetchRaw(opts: GithubSourceOptions, repoPath: string): Promise<Response> {
+  const url = `https://api.github.com/repos/${opts.owner}/${opts.repo}/contents/${repoPath.split('/').map(encodeURIComponent).join('/')}?ref=${encodeURIComponent(opts.branch)}`
+  return fetch(url, {
+    headers: { Authorization: `Bearer ${opts.token}`, Accept: 'application/vnd.github.raw+json', 'User-Agent': 'pc-ctx-web/1.0' },
+  })
+}
+
 export function githubSource(opts: GithubSourceOptions): ContextSource {
   const expr = (folder: FolderKey): string => `${opts.branch}:${joinPath(opts.folder, folderPath(folder))}`
 
@@ -99,11 +108,7 @@ export function githubSource(opts: GithubSourceOptions): ContextSource {
     // endpoint in its raw form, with the same token.
     async readMedia(path: string): Promise<MediaFile | null> {
       if (!MEDIA_PATH_RE.test(path)) return null
-      const repoPath = joinPath(opts.folder, `media/${path}`)
-      const url = `https://api.github.com/repos/${opts.owner}/${opts.repo}/contents/${repoPath.split('/').map(encodeURIComponent).join('/')}?ref=${encodeURIComponent(opts.branch)}`
-      const res = await fetch(url, {
-        headers: { Authorization: `Bearer ${opts.token}`, Accept: 'application/vnd.github.raw+json', 'User-Agent': 'pc-ctx-web/1.0' },
-      })
+      const res = await fetchRaw(opts, joinPath(opts.folder, `media/${path}`))
       if (res.status === 404) return null
       if (!res.ok) throw new Error(`GitHub contents request failed: ${res.status}`)
       return { bytes: await res.arrayBuffer(), contentType: mediaContentType(path) }
@@ -122,7 +127,7 @@ export function githubSource(opts: GithubSourceOptions): ContextSource {
       if (names.length === 0) return []
       const base = joinPath(opts.folder, folderPath(folder))
       const aliases = names
-        .map((name, i) => `f${i}: object(expression: ${JSON.stringify(`${opts.branch}:${base}/${name}`)}) { ... on Blob { text isBinary } }`)
+        .map((name, i) => `f${i}: object(expression: ${JSON.stringify(`${opts.branch}:${base}/${name}`)}) { ... on Blob { text isBinary isTruncated } }`)
         .join('\n')
       const query = `query($owner: String!, $repo: String!) { repository(owner: $owner, name: $repo) { ${aliases} } }`
 
@@ -131,13 +136,21 @@ export function githubSource(opts: GithubSourceOptions): ContextSource {
       if (!repository) return []
 
       const out: FolderEntry[] = []
-      names.forEach((name, i) => {
+      for (const [i, name] of names.entries()) {
         const blob = repository[`f${i}`]
-        if (!isRecord(blob)) return
-        const { text, isBinary } = blob
-        if (isBinary === true || typeof text !== 'string') return
+        if (!isRecord(blob)) continue
+        const { text, isBinary, isTruncated } = blob
+        if (isBinary === true || typeof text !== 'string') continue
+        // A page past 512 KB (a design page with its fonts inlined) comes back
+        // cut mid-tag; read the whole file instead of rendering half of it.
+        if (isTruncated === true) {
+          const res = await fetchRaw(opts, `${base}/${name}`)
+          if (!res.ok) throw new Error(`GitHub contents request failed: ${res.status}`)
+          out.push(toEntry(folder, name, await res.text()))
+          continue
+        }
         out.push(toEntry(folder, name, text))
-      })
+      }
       return out
     },
   }
