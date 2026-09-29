@@ -120,7 +120,7 @@ export function HubShell({ project, children }: HubShellProps) {
   const close = () => setOpen(false)
 
   return (
-    <div className="flex h-dvh w-full flex-col bg-page text-foreground md:grid md:grid-cols-[17rem_minmax(0,1fr)]">
+    <div className="flex h-dvh w-full flex-col bg-page text-foreground md:grid md:grid-cols-[17rem_minmax(0,1fr)] md:grid-rows-[minmax(0,1fr)] md:overflow-hidden">
       <header className="flex items-center gap-3 border-b border-border bg-rail px-3 py-2 md:hidden">
         <button
           type="button"
@@ -147,7 +147,7 @@ export function HubShell({ project, children }: HubShellProps) {
 
       <aside
         id="hub-rail"
-        className={`rail fixed inset-y-0 left-0 z-40 flex w-[18rem] max-w-[85vw] flex-col transition-transform duration-200 md:static md:z-auto md:w-auto md:max-w-none md:translate-x-0 ${
+        className={`rail fixed inset-y-0 left-0 z-40 flex w-[18rem] max-w-[85vw] flex-col transition-transform duration-200 md:static md:z-auto md:min-h-0 md:w-auto md:max-w-none md:translate-x-0 ${
           open ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
@@ -193,7 +193,7 @@ export function HubShell({ project, children }: HubShellProps) {
         </div>
       </aside>
 
-      <main className="min-w-0 flex-1 overflow-y-auto">{children}</main>
+      <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain">{children}</main>
     </div>
   )
 }
