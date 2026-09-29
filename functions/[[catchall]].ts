@@ -52,6 +52,8 @@ interface PagesContext {
   env: Env
   params: Record<string, string>
   next: () => Promise<Response>
+  waitUntil: (promise: Promise<unknown>) => void
+  passThroughOnException: () => void
 }
 
 const DEFAULT_OWNER = 'samir1498'
@@ -191,6 +193,12 @@ app.all('*', async (c) => {
   return res
 })
 
+// The third argument is what `c.executionCtx` reads; without it the media
+// cache's waitUntil throws and every picture answers 500.
 export const onRequest = (ctx: PagesContext): Response | Promise<Response> => {
-  return app.fetch(ctx.request, ctx.env)
+  return app.fetch(ctx.request, ctx.env, {
+    waitUntil: (promise) => ctx.waitUntil(promise),
+    passThroughOnException: () => ctx.passThroughOnException(),
+    props: {},
+  })
 }
