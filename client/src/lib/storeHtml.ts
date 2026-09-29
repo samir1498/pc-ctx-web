@@ -24,7 +24,7 @@ export interface StoreHtmlOptions {
 // reads like the rest of the hub. A page that brings its own <style> keeps it.
 const BASE_CSS = `
 :root{color-scheme:light dark}
-html,body{margin:0;background:transparent}
+html,body{margin:0;background:transparent;overflow:hidden}
 body{font:16px/1.6 Inter,system-ui,sans-serif;color:#1c1c1a;max-width:46rem;padding:0 0 1rem}
 @media (prefers-color-scheme:dark){body{color:#e6e6e2}}
 img,video,svg{max-width:100%;height:auto}

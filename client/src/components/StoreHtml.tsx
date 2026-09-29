@@ -26,20 +26,28 @@ export function StoreHtml({ html, project, docPath }: StoreHtmlProps) {
   const frame = useRef<HTMLIFrameElement>(null)
   const [height, setHeight] = useState(480)
 
+  // The frame never scrolls itself (overflow hidden in the base style): its
+  // height follows the content as images load, so the hub page is the one scroller.
   useEffect(() => {
     const el = frame.current
     if (!el) return
+    let observer: ResizeObserver | undefined
     const measure = () => {
-      const body = el.contentDocument?.documentElement
-      if (body) setHeight(Math.max(240, body.scrollHeight + 8))
+      const root = el.contentDocument?.documentElement
+      if (root) setHeight(Math.max(240, root.scrollHeight))
     }
-    el.addEventListener('load', measure)
-    window.addEventListener('resize', measure)
-    const again = window.setTimeout(measure, 800)
+    const watch = () => {
+      measure()
+      observer?.disconnect()
+      const body = el.contentDocument?.body
+      if (!body) return
+      observer = new ResizeObserver(measure)
+      observer.observe(body)
+    }
+    el.addEventListener('load', watch)
     return () => {
-      el.removeEventListener('load', measure)
-      window.removeEventListener('resize', measure)
-      window.clearTimeout(again)
+      el.removeEventListener('load', watch)
+      observer?.disconnect()
     }
   }, [doc])
 
