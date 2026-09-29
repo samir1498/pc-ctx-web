@@ -80,4 +80,22 @@ describe('githubSource', () => {
     expect(entries[0]?.name).toBe('a.md')
     expect(entries[0]?.frontmatter).toEqual({ title: 'A' })
   })
+
+  it('reads a truncated blob in full through the raw contents endpoint', async () => {
+    const calls: string[] = []
+    const full = '<p>' + 'x'.repeat(600_000) + '</p>'
+    vi.stubGlobal('fetch', async (input: string | URL | Request) => {
+      const url = typeof input === 'string' ? input : input.toString()
+      calls.push(url)
+      if (url.endsWith('/graphql')) {
+        const payload = { data: { repository: { f0: { text: full.slice(0, 524_288), isBinary: false, isTruncated: true } } } }
+        return new Response(JSON.stringify(payload), { status: 200, headers: { 'Content-Type': 'application/json' } })
+      }
+      return new Response(full, { status: 200 })
+    })
+    const source = githubSource({ token: 't', owner: 'acme', repo: 'ctx', branch: 'main', folder: 'context' })
+    const entries = await source.read('designs', ['big.html'])
+    expect(entries[0]?.body).toBe(full)
+    expect(calls[1]).toBe('https://api.github.com/repos/acme/ctx/contents/context/designs/big.html?ref=main')
+  })
 })
