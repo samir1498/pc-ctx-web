@@ -55,11 +55,13 @@ function main(): void {
 
   app.route('/', createConfigApi({ store, mode: 'local', github: fetch, listLocalDirectories: listDirectories }))
 
-  app.use('/api/*', async (c, next) => {
+  // An API miss stays an API miss: falling through to the SPA's index.html
+  // would hand the client HTML with a 200, which it then fails to parse as JSON.
+  app.use('/api/*', async (c) => {
     const api = await buildContextApi(store)
     const res = await api.fetch(c.req.raw)
     if (res.status !== 404) return res
-    await next()
+    return c.json({ error: 'Not found' }, 404)
   })
 
   // Same containment check as the CLI's ui-server.ts: never serve a path resolved outside staticDir.

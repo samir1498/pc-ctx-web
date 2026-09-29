@@ -141,6 +141,17 @@ export async function fetchProjectFolder(project: string, folder: ProjectFolder,
   return res.json()
 }
 
+// One page of a project folder, frontmatter only: a big folder (an archive of
+// hundreds of pages) lists without fetching every body.
+export async function fetchProjectFolderPage(project: string, folder: ProjectFolder, page: number, size: number): Promise<PagedResponse> {
+  if (IS_DEMO) return { total: 0, page, size, items: [] }
+  const params = new URLSearchParams({ page: String(page), size: String(size), meta: '1' })
+  const res = await fetch(`${projBase(project)}/${folder}?${params}`)
+  if (res.status === 404) return { total: 0, page, size, items: [] }
+  if (!res.ok) throw new Error(`Failed to fetch ${folder}: ${res.status}`)
+  return res.json()
+}
+
 export async function fetchProjectItem(project: string, folder: ProjectFolder, slug: string): Promise<ContextItemDetail | null> {
   if (IS_DEMO) return null
   const res = await fetch(`${projBase(project)}/${folder}/${encodeURIComponent(slug)}`)

@@ -1,7 +1,7 @@
 import type { Context } from 'hono'
 import { Hono } from 'hono'
 import type { ContextSource, FolderKey } from './source.js'
-import { FOLDERS, isFolderKey } from './source.js'
+import { FOLDERS, MEDIA_CSP, MEDIA_PATH_RE, isFolderKey, withFolderFallbacks } from './source.js'
 
 export interface ProjectInfo {
   id: string
@@ -101,8 +101,15 @@ async function handleCounts(c: Context, source: ContextSource): Promise<Response
 }
 
 export function createApi(options: CreateApiOptions): Hono {
-  const { projects, sourceFor } = options
+  const { projects } = options
   const app = new Hono()
+
+  // Every source, disk or GitHub, answers for a folder's alternate location
+  // (standups kept under progress/standup) without the client knowing.
+  const sourceFor = (id: string): ContextSource | null => {
+    const source = options.sourceFor(id)
+    return source ? withFolderFallbacks(source) : null
+  }
 
   const firstSource = (): ContextSource | null => {
     const first = projects[0]
@@ -117,6 +124,32 @@ export function createApi(options: CreateApiOptions): Hono {
     const source = sourceFor(c.req.param('project'))
     if (!source) return c.notFound()
     return handleCounts(c, source)
+  })
+
+  // A page's pictures: /api/p/<project>/media/<path under media/>. The path
+  // shape is checked here and again by the source; anything else is a 404.
+  // Every file comes back sandboxed: an SVG (or a PDF) opened by its own URL
+  // would otherwise run on the hub's origin, where /api/config is writable.
+  // An <img> still renders it under this policy.
+  app.get('/api/p/:project/media/*', async (c) => {
+    const source = sourceFor(c.req.param('project'))
+    if (!source?.readMedia) return c.notFound()
+    const prefix = `/api/p/${encodeURIComponent(c.req.param('project'))}/media/`
+    const path = decodeURIComponent(new URL(c.req.url).pathname.slice(prefix.length))
+    if (!MEDIA_PATH_RE.test(path) || path.includes('..')) return c.notFound()
+    let file: Awaited<ReturnType<NonNullable<ContextSource['readMedia']>>>
+    try {
+      file = await source.readMedia(path)
+    } catch (err) {
+      return c.json(errorPayload(`fetch media/${path}`, err), 502)
+    }
+    if (!file) return c.notFound()
+    return c.body(file.bytes, 200, {
+      'Content-Type': file.contentType,
+      'Cache-Control': 'public, max-age=3600',
+      'X-Content-Type-Options': 'nosniff',
+      'Content-Security-Policy': MEDIA_CSP,
+    })
   })
 
   app.get('/api/p/:project/:folder', async (c) => {

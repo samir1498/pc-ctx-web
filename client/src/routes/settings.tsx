@@ -1,11 +1,11 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { HubLayout } from '../components/HubLayout'
+import { HubShell } from '../components/HubShell'
 import { SettingsPage } from '../pages/hub/SettingsPage'
 
 export const Route = createFileRoute('/settings')({
   component: () => (
-    <HubLayout>
+    <HubShell>
       <SettingsPage />
-    </HubLayout>
+    </HubShell>
   ),
 })

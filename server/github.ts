@@ -1,5 +1,6 @@
 import type { ContextSource, FolderEntry, FolderKey, ListEntry } from './source.js'
-import { folderPath, isMarkdown, isRecord, sortListEntries, toEntry, toListEntry } from './source.js'
+import type { MediaFile } from './source.js'
+import { MEDIA_PATH_RE, folderPath, isDocument, isRecord, mediaContentType, sortListEntries, toEntry, toListEntry } from './source.js'
 
 export interface GithubSourceOptions {
   token: string
@@ -94,12 +95,26 @@ export function githubSource(opts: GithubSourceOptions): ContextSource {
   const expr = (folder: FolderKey): string => `${opts.branch}:${joinPath(opts.folder, folderPath(folder))}`
 
   return {
+    // GraphQL carries no bytes, so a picture comes through the REST contents
+    // endpoint in its raw form, with the same token.
+    async readMedia(path: string): Promise<MediaFile | null> {
+      if (!MEDIA_PATH_RE.test(path)) return null
+      const repoPath = joinPath(opts.folder, `media/${path}`)
+      const url = `https://api.github.com/repos/${opts.owner}/${opts.repo}/contents/${repoPath.split('/').map(encodeURIComponent).join('/')}?ref=${encodeURIComponent(opts.branch)}`
+      const res = await fetch(url, {
+        headers: { Authorization: `Bearer ${opts.token}`, Accept: 'application/vnd.github.raw+json', 'User-Agent': 'pc-ctx-web/1.0' },
+      })
+      if (res.status === 404) return null
+      if (!res.ok) throw new Error(`GitHub contents request failed: ${res.status}`)
+      return { bytes: await res.arrayBuffer(), contentType: mediaContentType(path) }
+    },
+
     async list(folder: FolderKey): Promise<ListEntry[] | null> {
       const json = await graphql(opts, LIST_QUERY, { owner: opts.owner, repo: opts.repo, expr: expr(folder) })
       const entries = readTreeEntries(json)
       if (entries === null) return null
       return sortListEntries(
-        entries.filter((e) => e.type === 'blob' && isMarkdown(e.name)).map((e) => toListEntry(folder, e.name)),
+        entries.filter((e) => e.type === 'blob' && isDocument(e.name, folder)).map((e) => toListEntry(folder, e.name)),
       )
     },
 

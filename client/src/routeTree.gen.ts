@@ -25,9 +25,10 @@ import { Route as PlanSlugRouteImport } from './routes/plan.$slug'
 import { Route as PProjectRouteImport } from './routes/p.$project'
 import { Route as PProjectIndexRouteImport } from './routes/p.$project.index'
 import { Route as PProjectPlansRouteImport } from './routes/p.$project.plans'
-import { Route as PProjectStandupsSlugRouteImport } from './routes/p.$project.standups.$slug'
-import { Route as PProjectReportsSlugRouteImport } from './routes/p.$project.reports.$slug'
+import { Route as PProjectFolderRouteImport } from './routes/p.$project.$folder'
+import { Route as PProjectFolderIndexRouteImport } from './routes/p.$project.$folder.index'
 import { Route as PProjectPlanSlugRouteImport } from './routes/p.$project.plan.$slug'
+import { Route as PProjectFolderSlugRouteImport } from './routes/p.$project.$folder.$slug'
 
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
@@ -109,20 +110,25 @@ const PProjectPlansRoute = PProjectPlansRouteImport.update({
   path: '/plans',
   getParentRoute: () => PProjectRoute,
 } as any)
-const PProjectStandupsSlugRoute = PProjectStandupsSlugRouteImport.update({
-  id: '/standups/$slug',
-  path: '/standups/$slug',
+const PProjectFolderRoute = PProjectFolderRouteImport.update({
+  id: '/$folder',
+  path: '/$folder',
   getParentRoute: () => PProjectRoute,
 } as any)
-const PProjectReportsSlugRoute = PProjectReportsSlugRouteImport.update({
-  id: '/reports/$slug',
-  path: '/reports/$slug',
-  getParentRoute: () => PProjectRoute,
+const PProjectFolderIndexRoute = PProjectFolderIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => PProjectFolderRoute,
 } as any)
 const PProjectPlanSlugRoute = PProjectPlanSlugRouteImport.update({
   id: '/plan/$slug',
   path: '/plan/$slug',
   getParentRoute: () => PProjectRoute,
+} as any)
+const PProjectFolderSlugRoute = PProjectFolderSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => PProjectFolderRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -140,11 +146,12 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRoute
   '/p/$project': typeof PProjectRouteWithChildren
   '/plan/$slug': typeof PlanSlugRoute
+  '/p/$project/$folder': typeof PProjectFolderRouteWithChildren
   '/p/$project/plans': typeof PProjectPlansRoute
   '/p/$project/': typeof PProjectIndexRoute
+  '/p/$project/$folder/$slug': typeof PProjectFolderSlugRoute
   '/p/$project/plan/$slug': typeof PProjectPlanSlugRoute
-  '/p/$project/reports/$slug': typeof PProjectReportsSlugRoute
-  '/p/$project/standups/$slug': typeof PProjectStandupsSlugRoute
+  '/p/$project/$folder/': typeof PProjectFolderIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -162,9 +169,9 @@ export interface FileRoutesByTo {
   '/plan/$slug': typeof PlanSlugRoute
   '/p/$project/plans': typeof PProjectPlansRoute
   '/p/$project': typeof PProjectIndexRoute
+  '/p/$project/$folder/$slug': typeof PProjectFolderSlugRoute
   '/p/$project/plan/$slug': typeof PProjectPlanSlugRoute
-  '/p/$project/reports/$slug': typeof PProjectReportsSlugRoute
-  '/p/$project/standups/$slug': typeof PProjectStandupsSlugRoute
+  '/p/$project/$folder': typeof PProjectFolderIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -182,11 +189,12 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRoute
   '/p/$project': typeof PProjectRouteWithChildren
   '/plan/$slug': typeof PlanSlugRoute
+  '/p/$project/$folder': typeof PProjectFolderRouteWithChildren
   '/p/$project/plans': typeof PProjectPlansRoute
   '/p/$project/': typeof PProjectIndexRoute
+  '/p/$project/$folder/$slug': typeof PProjectFolderSlugRoute
   '/p/$project/plan/$slug': typeof PProjectPlanSlugRoute
-  '/p/$project/reports/$slug': typeof PProjectReportsSlugRoute
-  '/p/$project/standups/$slug': typeof PProjectStandupsSlugRoute
+  '/p/$project/$folder/': typeof PProjectFolderIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -205,11 +213,12 @@ export interface FileRouteTypes {
     | '/settings'
     | '/p/$project'
     | '/plan/$slug'
+    | '/p/$project/$folder'
     | '/p/$project/plans'
     | '/p/$project/'
+    | '/p/$project/$folder/$slug'
     | '/p/$project/plan/$slug'
-    | '/p/$project/reports/$slug'
-    | '/p/$project/standups/$slug'
+    | '/p/$project/$folder/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -227,9 +236,9 @@ export interface FileRouteTypes {
     | '/plan/$slug'
     | '/p/$project/plans'
     | '/p/$project'
+    | '/p/$project/$folder/$slug'
     | '/p/$project/plan/$slug'
-    | '/p/$project/reports/$slug'
-    | '/p/$project/standups/$slug'
+    | '/p/$project/$folder'
   id:
     | '__root__'
     | '/'
@@ -246,11 +255,12 @@ export interface FileRouteTypes {
     | '/settings'
     | '/p/$project'
     | '/plan/$slug'
+    | '/p/$project/$folder'
     | '/p/$project/plans'
     | '/p/$project/'
+    | '/p/$project/$folder/$slug'
     | '/p/$project/plan/$slug'
-    | '/p/$project/reports/$slug'
-    | '/p/$project/standups/$slug'
+    | '/p/$project/$folder/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -384,19 +394,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PProjectPlansRouteImport
       parentRoute: typeof PProjectRoute
     }
-    '/p/$project/standups/$slug': {
-      id: '/p/$project/standups/$slug'
-      path: '/standups/$slug'
-      fullPath: '/p/$project/standups/$slug'
-      preLoaderRoute: typeof PProjectStandupsSlugRouteImport
+    '/p/$project/$folder': {
+      id: '/p/$project/$folder'
+      path: '/$folder'
+      fullPath: '/p/$project/$folder'
+      preLoaderRoute: typeof PProjectFolderRouteImport
       parentRoute: typeof PProjectRoute
     }
-    '/p/$project/reports/$slug': {
-      id: '/p/$project/reports/$slug'
-      path: '/reports/$slug'
-      fullPath: '/p/$project/reports/$slug'
-      preLoaderRoute: typeof PProjectReportsSlugRouteImport
-      parentRoute: typeof PProjectRoute
+    '/p/$project/$folder/': {
+      id: '/p/$project/$folder/'
+      path: '/'
+      fullPath: '/p/$project/$folder/'
+      preLoaderRoute: typeof PProjectFolderIndexRouteImport
+      parentRoute: typeof PProjectFolderRoute
     }
     '/p/$project/plan/$slug': {
       id: '/p/$project/plan/$slug'
@@ -405,23 +415,42 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PProjectPlanSlugRouteImport
       parentRoute: typeof PProjectRoute
     }
+    '/p/$project/$folder/$slug': {
+      id: '/p/$project/$folder/$slug'
+      path: '/$slug'
+      fullPath: '/p/$project/$folder/$slug'
+      preLoaderRoute: typeof PProjectFolderSlugRouteImport
+      parentRoute: typeof PProjectFolderRoute
+    }
   }
 }
 
+interface PProjectFolderRouteChildren {
+  PProjectFolderSlugRoute: typeof PProjectFolderSlugRoute
+  PProjectFolderIndexRoute: typeof PProjectFolderIndexRoute
+}
+
+const PProjectFolderRouteChildren: PProjectFolderRouteChildren = {
+  PProjectFolderSlugRoute: PProjectFolderSlugRoute,
+  PProjectFolderIndexRoute: PProjectFolderIndexRoute,
+}
+
+const PProjectFolderRouteWithChildren = PProjectFolderRoute._addFileChildren(
+  PProjectFolderRouteChildren,
+)
+
 interface PProjectRouteChildren {
+  PProjectFolderRoute: typeof PProjectFolderRouteWithChildren
   PProjectPlansRoute: typeof PProjectPlansRoute
   PProjectIndexRoute: typeof PProjectIndexRoute
   PProjectPlanSlugRoute: typeof PProjectPlanSlugRoute
-  PProjectReportsSlugRoute: typeof PProjectReportsSlugRoute
-  PProjectStandupsSlugRoute: typeof PProjectStandupsSlugRoute
 }
 
 const PProjectRouteChildren: PProjectRouteChildren = {
+  PProjectFolderRoute: PProjectFolderRouteWithChildren,
   PProjectPlansRoute: PProjectPlansRoute,
   PProjectIndexRoute: PProjectIndexRoute,
   PProjectPlanSlugRoute: PProjectPlanSlugRoute,
-  PProjectReportsSlugRoute: PProjectReportsSlugRoute,
-  PProjectStandupsSlugRoute: PProjectStandupsSlugRoute,
 }
 
 const PProjectRouteWithChildren = PProjectRoute._addFileChildren(

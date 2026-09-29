@@ -1,7 +1,8 @@
 import { readFile, readdir, stat } from 'node:fs/promises'
 import { basename, join, resolve, sep } from 'node:path'
 import type { ContextSource, FolderEntry, FolderKey, ListEntry } from './source.js'
-import { folderPath, isMarkdown, sortListEntries, toEntry, toListEntry } from './source.js'
+import type { MediaFile } from './source.js'
+import { MEDIA_PATH_RE, folderPath, isDocument, mediaContentType, sortListEntries, toEntry, toListEntry } from './source.js'
 
 // FolderKey is a closed union, so only filenames are attacker-controlled here.
 // basename() rejects embedded separators, and the resolved-path check catches '..' itself.
@@ -26,7 +27,7 @@ export function diskSource(rootDir: string): ContextSource {
 
       const entries: ListEntry[] = []
       for (const name of names) {
-        if (!isMarkdown(name)) continue
+        if (!isDocument(name, folder)) continue
         const full = safeJoin(dir, name)
         if (!full) continue
         try {
@@ -38,6 +39,19 @@ export function diskSource(rootDir: string): ContextSource {
         entries.push(toListEntry(folder, name))
       }
       return sortListEntries(entries)
+    },
+
+    async readMedia(path: string): Promise<MediaFile | null> {
+      if (!MEDIA_PATH_RE.test(path)) return null
+      const mediaDir = resolve(rootDir, 'media')
+      const full = resolve(mediaDir, path)
+      if (!full.startsWith(mediaDir + sep)) return null
+      try {
+        const bytes = new Uint8Array(await readFile(full)).buffer
+        return { bytes, contentType: mediaContentType(path) }
+      } catch {
+        return null
+      }
     },
 
     async read(folder: FolderKey, names: string[]): Promise<FolderEntry[]> {

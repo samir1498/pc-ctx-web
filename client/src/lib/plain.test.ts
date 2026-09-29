@@ -43,10 +43,11 @@ describe('stripCodes', () => {
     expect(stripCodes(t)).toBe('2026-01-02 08:45: the first module is merged. Merged since then: the split, the screens and more.')
   })
 
-  it('flattens inline code, links and bold to plain text', () => {
+  it('flattens inline code, bold and links into the code, keeps a link to a web page', () => {
     expect(stripCodes('Run `npm test` and read [the doc](https://example.com), it is **important**.')).toBe(
-      'Run npm test and read the doc, it is important.',
+      'Run npm test and read [the doc](https://example.com), it is important.',
     )
+    expect(stripCodes('See [the PR](https://github.com/Dinar-dz/dz-pos/pull/223) and [the route](crates/api/src/routes.rs).')).toBe('See the PR and the route.')
   })
 
   it('preserves paragraph breaks and heading lines', () => {
@@ -56,5 +57,26 @@ describe('stripCodes', () => {
 
   it('leaves ordinary prose untouched', () => {
     expect(stripCodes('The register screen is ready for daily use.')).toBe('The register screen is ready for daily use.')
+  })
+})
+
+describe('stripCodes keeps a markdown table whole', () => {
+  it('blanks a path inside a row instead of dropping the row', () => {
+    const table = '| Wave | Tasks | Why |\n|---|---|---|\n| 1 | T3 documents | disjoint code (core/API) |\n| 2 | T4 till | reads `the` model |'
+    const out = stripCodes(table).split('\n')
+    expect(out).toHaveLength(4)
+    expect(out[2]).toBe('| 1 | documents | disjoint code () |')
+    expect(out[3]).toBe('| 2 | till | reads the model |')
+  })
+})
+
+describe('stripCodes keeps pictures and links whole', () => {
+  it('leaves a markdown image, its caption and a link untouched, and still drops a path in prose', () => {
+    const md = 'The path src/till.rs was wrong. ![Supplier account](../media/reports/s.png "The supplier\'s account. The balance is right.") See [the clip](https://x.example/c.mp4) and [the page](../designs/screens.md).'
+    const out = stripCodes(md)
+    expect(out).toContain('![Supplier account](../media/reports/s.png "The supplier\'s account. The balance is right.")')
+    expect(out).toContain('[the clip](https://x.example/c.mp4)')
+    expect(out).toContain('[the page](../designs/screens.md)')
+    expect(out).not.toContain('src/till.rs')
   })
 })
