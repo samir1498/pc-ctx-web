@@ -13,12 +13,13 @@ for (const path of pages) {
     let bytes = 0
     p.on('response', async (r) => { try { const h = await r.headerValue('content-length'); bytes += Number(h || 0) } catch {} })
     const t0 = Date.now()
-    await p.goto(B + path, { waitUntil: 'domcontentloaded' })
+    const doc = await p.goto(B + path, { waitUntil: 'domcontentloaded' })
+    const gh = (await doc?.headerValue('x-hub-github-calls')) ?? '?'
     const dcl = Date.now() - t0
     await p.waitForLoadState('networkidle', { timeout: 60000 })
     const idle = Date.now() - t0
     const lcp = await p.evaluate(() => new Promise((res) => { new PerformanceObserver((l) => { const e = l.getEntries(); res(Math.round(e[e.length - 1]?.startTime ?? -1)) }).observe({ type: 'largest-contentful-paint', buffered: true }); setTimeout(() => res(-1), 1000) }))
-    out.push(`${run}: dcl ${dcl}ms, lcp ${lcp}ms, settled ${idle}ms, api calls ${api.length} (slowest ${Math.max(0, ...api)}ms)`)
+    out.push(`${run}: dcl ${dcl}ms, lcp ${lcp}ms, settled ${idle}ms, api calls ${api.length} (slowest ${Math.max(0, ...api)}ms), github ${gh}, status ${doc?.status()}`)
     await p.close()
   }
   console.log(path, '\n  ' + out.join('\n  '))
