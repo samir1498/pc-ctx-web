@@ -9,14 +9,13 @@ import { summarizeAll } from '../lib/dashboard'
 interface Props {
   title: string
   active: string
-  project: Project
+  /** Absent on pages that belong to no project, such as the token usage dashboard. */
+  project?: Project
 }
 const { title, active, project } = Astro.props
 const hub = Astro.locals.hub
-const store = await hub.store(project.id)
-const trees = store ? await store.trees() : {}
-const summaries = summarizeAll(trees)
-const hasUsage = (trees.usage?.entries.length ?? 0) > 0
+const store = project ? await hub.store(project.id) : null
+const summaries = store ? summarizeAll(await store.trees()) : []
 ---
 
 <!doctype html>
@@ -25,7 +24,7 @@ const hasUsage = (trees.usage?.entries.length ?? 0) > 0
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="robots" content="noindex" />
-    <title>{title} · {project.name}</title>
+    <title>{title} · {project?.name ?? 'Context hub'}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -42,14 +41,14 @@ const hasUsage = (trees.usage?.entries.length ?? 0) > 0
   </head>
   <body class="min-h-dvh">
     <div class="lg:grid lg:h-dvh lg:grid-cols-[16rem_1fr]">
-      <Sidebar project={project} projects={hub.projects} summaries={summaries} hasUsage={hasUsage} active={active} />
+      <Sidebar project={project} projects={hub.projects} summaries={summaries} active={active} />
       <div class="flex min-w-0 flex-col lg:h-dvh lg:overflow-y-auto">
         <header class="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-border bg-page/85 px-4 py-3 backdrop-blur sm:px-8">
           <div class="flex min-w-0 items-center gap-3">
             <details class="relative lg:hidden">
               <summary class="cursor-pointer list-none rounded-card border border-border bg-panel px-3 py-1.5 text-sm">Menu</summary>
               <div class="absolute left-0 top-11 z-20 w-64 overflow-hidden rounded-card border border-border shadow-xl">
-                <Sidebar project={project} projects={hub.projects} summaries={summaries} hasUsage={hasUsage} active={active} mobile />
+                <Sidebar project={project} projects={hub.projects} summaries={summaries} active={active} mobile />
               </div>
             </details>
             <slot name="crumbs" />

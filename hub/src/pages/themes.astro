@@ -3,8 +3,7 @@ import HubLayout from '../layouts/HubLayout.astro'
 import ThemeGallery from '../components/ThemeGallery.tsx'
 
 const hub = Astro.locals.hub
-const project = hub.project(Astro.url.searchParams.get('p') ?? '') ?? hub.projects[0]
-if (!project) return new Response('No project is configured.', { status: 500 })
+const project = hub.project(Astro.url.searchParams.get('p') ?? '') ?? undefined
 ---
 
 <HubLayout title="Themes" active="themes" project={project}>

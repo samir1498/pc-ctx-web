@@ -1,4 +1,21 @@
 ---
-const first = Astro.locals.hub.projects[0]
-return first ? Astro.redirect(`/p/${first.id}`, 302) : new Response('No project is configured.', { status: 500 })
+import HubLayout from '../layouts/HubLayout.astro'
+import UsageExplorer from '../components/UsageExplorer.tsx'
+import { loadHubUsage } from '../lib/usage-load'
+
+// The main dashboard: token usage across every tool on the box, not tied to a project.
+const rows = await loadHubUsage(Astro.locals.hub)
+const days = new Set(rows.map((r) => r.date)).size
 ---
+
+<HubLayout title="Token usage" active="usage">
+  <h1 class="font-display text-3xl font-bold tracking-tight">Token usage</h1>
+  <p class="mt-1 max-w-3xl text-muted">
+    Tokens and cost per day for Claude Code, opencode, Hermes and other clients of the model router, collected on the box from counts only, never prompt text.
+    Claude Code is priced at the API list price although it runs on a subscription; opencode's cost is its own figure; free models cost nothing.
+    Days are Europe/Berlin, so edges differ from the Anthropic console, which uses UTC.
+  </p>
+  <div class="mt-8 min-h-96">
+    {days > 0 ? <UsageExplorer client:only="react" rows={rows} /> : <p class="text-muted">No usage files yet. The collector on the box writes them once a day.</p>}
+  </div>
+</HubLayout>
