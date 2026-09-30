@@ -3,11 +3,9 @@ import HubLayout from '../../../layouts/HubLayout.astro'
 import Sparkline from '../../../components/Sparkline.astro'
 import StatusCard from '../../../components/StatusCard.astro'
 import StatusSkeleton from '../../../components/StatusSkeleton.astro'
-import UsageCard from '../../../components/UsageCard.astro'
 import { notFound, pageCtx } from '../../../lib/page'
 import { recent, summarizeAll } from '../../../lib/dashboard'
 import { PRIMARY, SECONDARY, label } from '../../../lib/sections'
-import { loadUsage } from '../../../lib/usage-load'
 import { dayLabel } from '../../../lib/format'
 import { firstParagraphs, splitLeadingHeading } from '../../../doc/hub'
 import { renderMarkdown } from '../../../doc/render'
@@ -22,7 +20,6 @@ const shown = summaries.filter((s) => s.count > 0)
 const tiles = shown.filter((s) => PRIMARY.includes(s.key))
 const docs = shown.reduce((n, s) => n + s.count, 0)
 const fresh = shown.reduce((n, s) => n + s.newThisWeek, 0)
-const usage = plain ? [] : await loadUsage(store, 28)
 const activity = recent(trees, [...PRIMARY, ...SECONDARY].filter((k) => k !== 'archive'))
 
 // A plain reader gets the store's own "where it stands" note first.
@@ -55,7 +52,6 @@ if (plain) {
     )
   }
 
-  {usage.length > 0 && <div class="mt-8"><UsageCard rows={usage} href={`${base}/usage`} /></div>}
 
   <section class="mt-10">
     <h2 class="font-display text-lg font-semibold">Sections</h2>

@@ -1,9 +1,4 @@
 ---
-// The usage page lives under the project whose store has a usage/ folder.
-const hub = Astro.locals.hub
-for (const p of hub.projects) {
-  const store = p.audience === 'plain' ? null : await hub.store(p.id)
-  if (store && (await store.tree('usage'))) return Astro.redirect(`/p/${p.id}/usage`, 302)
-}
-return new Response('No store has usage files yet.', { status: 404 })
+// Old address of the token usage dashboard, which now lives at /.
+return Astro.redirect('/', 301)
 ---

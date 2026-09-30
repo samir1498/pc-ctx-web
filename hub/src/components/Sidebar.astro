@@ -4,19 +4,18 @@ import type { SectionSummary } from '../lib/dashboard'
 import { PRIMARY, SECONDARY, label } from '../lib/sections'
 
 interface Props {
-  project: Project
+  project?: Project
   projects: Project[]
   summaries: SectionSummary[]
-  hasUsage: boolean
   active: string
   mobile?: boolean
 }
-const { project, projects, summaries, hasUsage, active, mobile = false } = Astro.props
-const base = `/p/${project.id}`
+const { project, projects, summaries, active, mobile = false } = Astro.props
+const base = project ? `/p/${project.id}` : '/'
 const count = new Map(summaries.map((s) => [s.key, s.count]))
 const primary = PRIMARY.filter((k) => (count.get(k) ?? 0) > 0)
 const secondary = SECONDARY.filter((k) => (count.get(k) ?? 0) > 0)
-const top = [{ href: base, label: project.audience === 'plain' ? 'Overview' : 'Dashboard', key: 'dashboard' }, ...(hasUsage ? [{ href: `${base}/usage`, label: 'Usage', key: 'usage' }] : [])]
+const top = project ? [{ href: base, label: project.audience === 'plain' ? 'Overview' : 'Dashboard', key: 'dashboard' }] : []
 const row = (on: boolean) => ['flex items-center justify-between rounded-lg px-3 py-1.5 transition-colors', on ? 'bg-accent-soft font-medium text-accent' : 'text-muted hover:bg-hover hover:text-fg']
 const id = mobile ? 'project-m' : 'project-d'
 ---
@@ -26,22 +25,37 @@ const id = mobile ? 'project-m' : 'project-d'
   aria-label="Sections"
 >
   <a href={base} class="flex items-center gap-2.5 px-5 pb-4 pt-5">
-    <span class="grid size-8 place-items-center rounded-card bg-accent font-display font-bold text-accent-fg">{project.name.charAt(0).toLowerCase()}</span>
+    <span class="grid size-8 place-items-center rounded-card bg-accent font-display font-bold text-accent-fg">{(project?.name ?? "c").charAt(0).toLowerCase()}</span>
     <span>
       <span class="block font-display font-semibold leading-tight">Context hub</span>
-      <span class="block text-xs text-dim">{project.name}</span>
+      <span class="block text-xs text-dim">{project?.name ?? 'All projects'}</span>
     </span>
   </a>
 
+  <ul class="px-3 pb-3">
+    <li><a href="/" class:list={row(active === 'usage')}>Token usage</a></li>
+  </ul>
+
   {
-    projects.length > 1 && (
+    !project && (
+      <>
+        <div class="eyebrow px-5">Projects</div>
+        <ul class="mt-1.5 space-y-0.5 px-3">
+          {projects.map((p) => <li><a href={`/p/${p.id}`} class:list={row(false)}>{p.name}</a></li>)}
+        </ul>
+      </>
+    )
+  }
+
+  {
+    project && projects.length > 1 && (
       <div class="px-5 pb-3">
         <label class="eyebrow mb-1.5 block" for={id}>
           Project
         </label>
         <select id={id} data-project-switch class="w-full rounded-lg border border-border bg-panel px-2.5 py-1.5 text-fg">
           {projects.map((p) => (
-            <option value={`/p/${p.id}`} selected={p.id === project.id}>
+            <option value={`/p/${p.id}`} selected={p.id === project?.id}>
               {p.name}
             </option>
           ))}
@@ -86,6 +100,6 @@ const id = mobile ? 'project-m' : 'project-d'
   }
 
   <div class="mt-auto border-t border-border px-5 py-4 text-xs text-dim">
-    <a href={`/themes?p=${project.id}`} class:list={['block hover:text-fg', active === 'themes' && 'font-medium text-accent']}>Themes</a>
+    <a href={project ? `/themes?p=${project.id}` : '/themes'} class:list={['block hover:text-fg', active === 'themes' && 'font-medium text-accent']}>Themes</a>
   </div>
 </nav>
