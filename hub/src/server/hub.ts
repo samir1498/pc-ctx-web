@@ -19,6 +19,9 @@ export interface HubEnv {
   CTX_CONFIG?: KVLike
 }
 
+/** Cookie naming the project last opened, so the usage page keeps that project's sidebar. */
+export const LAST_PROJECT = 'hub-project'
+
 export const hubEnv = env as unknown as HubEnv
 
 export interface Hub {
