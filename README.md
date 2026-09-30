@@ -1,104 +1,43 @@
 # pc-ctx Web UI
 
-A web interface for browsing plans, roadmaps, references, and progress logs from any [pc-ctx](https://github.com/samir1498/pc-ctx) repository.
+The context hub: a web interface for the plans, roadmaps, references, designs and progress logs in any [pc-ctx](https://github.com/samir1498/pc-ctx) repository, plus a token usage dashboard.
 
-Built with React 19, Hono, TanStack Router, TanStack Query, framer-motion, and Tailwind CSS v4. Runs on Cloudflare Pages.
+Two parts:
+- `hub/`: the site. Astro, server-rendered on Cloudflare Pages, with React islands (TanStack Query and Table, Recharts) and Tailwind CSS v4.
+- `collector/`: a Python script run by a daily systemd timer. It counts token usage on the box and pushes one file per day to the context store's `usage/` folder. See `collector/README.md`.
 
-## Features
+## How it reads
 
-- **Dashboard** — Animated SVG donut chart for status distribution, bar chart for weekly activity, count-up counters, top plans, recent timeline
-- **Plans** — Full-text search, status filter, sort by priority/date/name, pagination, HoverCard summaries
-- **Folders** — Roadmaps, references, progress logs — each with inline markdown rendering
-- **Plan detail** — Rendered markdown with syntax highlighting, task list with status badges
-- **Auth** — Cloudflare Access at the edge (optional, zero config)
-- **Responsive** — Side-by-side on desktop, stacked on mobile
+```
+Browser → Cloudflare Access → Pages Worker (Astro) → GitHub GraphQL → the context repo
+                                     ↕
+                             KV cache (by blob SHA)
+```
 
-## Quick start
+No database. A page fetches only what it shows: one GraphQL call covers every folder tree (cached 60 s), blobs are fetched in batches and cached in KV by SHA with no expiry, and a folder's parsed metadata is cached by its tree SHA.
 
-### Prerequisites
+The Worker re-checks the Cloudflare Access JWT when `ACCESS_TEAM_DOMAIN` and `ACCESS_AUD` are set, and refuses to serve (500) when they are missing, unless it runs under `astro dev` or with `HUB_AUTH=off`.
 
-- A GitHub repo using [pc-ctx](https://github.com/samir1498/pc-ctx) with plans/roadmaps/references/progress
-- A [Cloudflare](https://cloudflare.com) account (free tier)
-
-### Deploy
-
-1. **Fork this repo**
-2. **Create a Cloudflare Pages project** and connect your fork
-3. **Set a secret** — `GITHUB_TOKEN` with `repo` scope (for private repos)
-4. **Set environment variables** (optional):
-   - `GITHUB_OWNER` — defaults to `samir1498`
-   - `GITHUB_REPO` — defaults to `personal-context`
-   - `BRANCH` — defaults to `main`
-
-Your site will be live at `https://your-project.pages.dev` behind Cloudflare Access (configure in Zero Trust dashboard → Access → Applications → Workers → add your domain → set a policy).
-
-### Or deploy with wrangler
+## Run and deploy
 
 ```bash
-git clone https://github.com/samir1498/pc-ctx-web
-cd pc-ctx-web
-npm install
-cd client && npm install && cd ..
-
-# Create Pages project
-wrangler pages project create <your-project-name> --production-branch main
-
-# Deploy
-wrangler pages deploy client/dist --project-name <your-project-name>
-
-# Set secret
-wrangler pages secret put GITHUB_TOKEN --project-name <your-project-name>
+cd hub
+pnpm install
+pnpm dev            # local, against the real KV and GitHub (wrangler login needed)
+pnpm check          # astro check
+pnpm test           # vitest
+pnpm build:pages    # build, then repackage into ../.hub-pages for Pages
+cd ../.hub-pages && npx wrangler pages deploy --project-name context-hub --branch main
 ```
 
-## Architecture
+The Cloudflare adapter no longer emits Pages output, so `pnpm build:pages` repackages the Worker build (`hub/scripts/pages-package.mjs`). Deploy from `main` after a merge; a branch deploy is a preview.
 
-```
-Browser → Cloudflare Access (optional) → Hono Worker → GitHub API → your context repo
-                      ↓
-               React SPA (served by Worker)
-```
+Projects come from the `PROJECTS` variable or the KV config (`CTX_CONFIG`); GitHub tokens are Pages secrets, never in the repo.
 
-No database. All reads go through the GitHub API, authenticated via `GITHUB_TOKEN`. The Hono Worker runs as a Cloudflare Pages Function and serves both the API proxy and the static SPA.
+## Measuring
 
-### API endpoints
+`node scripts/measure-hub.mjs <base-url> /path [/path...]` loads each path twice in headless Chromium and prints DOM ready, LCP, settled time and the GitHub calls the Worker made (`x-hub-github-calls`).
 
-| Endpoint | Returns |
-|----------|---------|
-| `GET /api/plans` | All plans with frontmatter + body |
-| `GET /api/plans/:slug` | Single plan detail |
-| `GET /api/roadmaps` | All roadmaps |
-| `GET /api/references` | All references |
-| `GET /api/progress` | All progress logs |
+## The `ctx ui` command
 
-## Tech stack
-
-| Layer | Choice |
-|-------|--------|
-| Runtime | Cloudflare Pages (Hono Functions Worker) |
-| Frontend | React 19 + Vite + Tailwind CSS v4 |
-| Routing | TanStack Router (file-based) |
-| Data | TanStack Query (30s stale time) |
-| Charts | Pure SVG (donut) + animated bars |
-| Animations | framer-motion |
-| Auth | Cloudflare Access (edge, optional) |
-
-## Development
-
-```bash
-cd client
-npm install
-npm run dev          # Vite dev server (hot reload, no API)
-
-# Or full local API
-cd ..
-npm install
-npm run dev          # wrangler pages dev (API + SPA, no hot reload)
-```
-
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md).
-
-## License
-
-MIT
+`ctx ui` in pc-ctx downloads the last `web-v*` release (`web-ui.tar.gz`), which was built from the old `client/` app. That app is gone, so `ctx ui` stays on the last release.

@@ -1,14 +1,11 @@
 node_modules/
 dist/
-dist-server/
 .wrangler/
 *.tar.gz
 *.zip
 *:Zone.Identifier
 
-# local Pages Functions secrets (never commit)
+# local Worker secrets and dev flags (never commit)
 .dev.vars
 
-# repo installs with bun (see package.json build script) — keep pnpm out
-pnpm-lock.yaml
 .hub-pages
