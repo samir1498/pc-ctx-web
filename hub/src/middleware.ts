@@ -1,6 +1,6 @@
 import { defineMiddleware } from 'astro:middleware'
 import { accessToken, verifyAccess } from './server/access'
-import { createHub, hubEnv } from './server/hub'
+import { createHub, hubEnv, LAST_PROJECT } from './server/hub'
 
 export const onRequest = defineMiddleware(async (ctx, next) => {
   const team = hubEnv.ACCESS_TEAM_DOMAIN
@@ -25,6 +25,10 @@ export const onRequest = defineMiddleware(async (ctx, next) => {
   const meter = { github: 0 }
   ctx.locals.meter = meter
   ctx.locals.hub = await createHub(meter)
+  const opened = ctx.url.pathname.match(/^\/p\/([^/]+)/)?.[1]
+  if (opened && ctx.locals.hub.project(opened)) {
+    ctx.cookies.set(LAST_PROJECT, opened, { path: '/', httpOnly: true, secure: true, sameSite: 'lax', maxAge: 365 * 86400 })
+  }
   const res = await next()
   // The T1 measure: how many GitHub calls this request cost.
   res.headers.set('x-hub-github-calls', String(meter.github))

@@ -5,6 +5,7 @@ import ThemeSwitcher from '../components/ThemeSwitcher.tsx'
 import { THEME_STORAGE_KEY } from '../lib/themes'
 import type { Project } from '../source/projects'
 import { summarizeAll } from '../lib/dashboard'
+import { LAST_PROJECT } from '../server/hub'
 
 interface Props {
   title: string
@@ -14,7 +15,9 @@ interface Props {
 }
 const { title, active, project } = Astro.props
 const hub = Astro.locals.hub
-const store = project ? await hub.store(project.id) : null
+// Pages tied to no project keep the same sidebar, on the project last opened.
+const shown = project ?? hub.project(Astro.cookies.get(LAST_PROJECT)?.value ?? '') ?? hub.projects[0]
+const store = shown ? await hub.store(shown.id) : null
 const summaries = store ? summarizeAll(await store.trees()) : []
 ---
 
@@ -41,14 +44,14 @@ const summaries = store ? summarizeAll(await store.trees()) : []
   </head>
   <body class="min-h-dvh">
     <div class="lg:grid lg:h-dvh lg:grid-cols-[16rem_1fr]">
-      <Sidebar project={project} projects={hub.projects} summaries={summaries} active={active} />
+      <Sidebar project={shown} projects={hub.projects} summaries={summaries} active={active} />
       <div class="flex min-w-0 flex-col lg:h-dvh lg:overflow-y-auto">
         <header class="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-border bg-page/85 px-4 py-3 backdrop-blur sm:px-8">
           <div class="flex min-w-0 items-center gap-3">
             <details class="relative lg:hidden">
               <summary class="cursor-pointer list-none rounded-card border border-border bg-panel px-3 py-1.5 text-sm">Menu</summary>
               <div class="absolute left-0 top-11 z-20 w-64 overflow-hidden rounded-card border border-border shadow-xl">
-                <Sidebar project={project} projects={hub.projects} summaries={summaries} active={active} mobile />
+                <Sidebar project={shown} projects={hub.projects} summaries={summaries} active={active} mobile />
               </div>
             </details>
             <slot name="crumbs" />
