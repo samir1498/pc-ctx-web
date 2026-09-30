@@ -8,6 +8,7 @@ Writes one `usage/YYYY-MM-DD.json` per Europe/Berlin day into the context store,
 | opencode | `~/.local/share/opencode/opencode.db`, table `message` | one call per assistant message; cost as opencode reports it |
 | Hermes | OmniRoute `~/.omniroute/storage.sqlite`, `call_logs` with key `hermes` | one call per `correlation_id`, real model from `requested_model` |
 | Other router clients | same table, no API key | tool `router` |
+| Hermes, direct | `~/.hermes/state.db`, provider rows that did not go through the router | tool `hermes`; dated by the row's last use, so a long-lived row lands on one day |
 
 Only counts, model and provider ids, tool and date are written. No prompt text, paths, titles or request bodies are read out, and `~/.omniroute/call_logs/` is never opened. Databases are opened read-only.
 
@@ -22,7 +23,7 @@ Cost:
 
 ```
 python3 collector/usage_collect.py --publish        # last 3 days, pushed to the store (what the timer runs)
-python3 collector/usage_collect.py --backfill --publish  # every day the sources still hold
+python3 collector/usage_collect.py --backfill --publish  # adds days with no file yet; existing older days are kept
 python3 collector/usage_collect.py --refresh-prices # re-read ~/.hermes/models_dev_cache.json into prices.json
 python3 collector/usage_collect.py --dry-run        # print per-day totals only
 python3 collector/usage_collect.py --out DIR        # write the files to DIR, no git
@@ -49,4 +50,6 @@ The hub reads the context store from GitHub, so the timer runs with `--publish` 
 - It never touches the shared store checkout or anyone's uncommitted work. It refuses to reset any path that is not a linked worktree.
 - Each run logs one `usage-collect: ... pushed <sha>` or `FAILED` line (`journalctl --user -u usage-collect`).
 
-Claude Code deletes transcripts after `cleanupPeriodDays`, and OmniRoute keeps its log for 90 days. Days the collector has already written survive both.
+Claude Code deletes transcripts after `cleanupPeriodDays`, and OmniRoute keeps its log for 90 days. Days the collector has already written survive both: a backfill only adds missing days and never rewrites one older than the 3-day window, since pruned transcripts would undercount it.
+
+A source that is not on disk is named in the log line as `missing=`; its tool is then absent from the days just written.

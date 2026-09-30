@@ -91,6 +91,27 @@ describe('store over GitHub with a KV cache', () => {
     expect(doc?.body).toContain('Shipped it.')
   })
 
+  it('serves the page when every KV write fails', async () => {
+    const kv = { ...memoryKv(), put: () => Promise.reject(new Error('429 Too Many Requests')) }
+    const page = await createStore(REF, kv, 'p', { github: 0 }).page('plans', 0, 5)
+    expect(page.items).toHaveLength(5)
+  })
+
+  it('a renamed file keeps its content cache but shows its new slug and path', async () => {
+    const kv = memoryKv()
+    await createStore(REF, kv, 'p', { github: 0 }).allMetas('plans')
+    const old = PLANS[0]!.name
+    PLANS[0]!.name = '2026-09-01-renamed.md'
+    try {
+      // another project id skips the cached tree; meta keys are shared across projects
+      const page = await createStore(REF, kv, 'p2', { github: 0 }).page('plans', 0, 45)
+      const row = page.items.find((m) => m.oid === 'oid0')
+      expect(row).toMatchObject({ slug: '2026-09-01-renamed', path: 'plans/2026-09-01-renamed.md' })
+    } finally {
+      PLANS[0]!.name = old
+    }
+  })
+
   it('answers null for a document that is not in the tree', async () => {
     const s = createStore(REF, null, 'p', { github: 0 })
     expect(await s.doc('plans', 'nope')).toBeNull()

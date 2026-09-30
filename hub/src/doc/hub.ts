@@ -1,20 +1,10 @@
-import type { ContextItem, Frontmatter, ListEntry, Task } from './types'
+import type { ContextItem, Frontmatter, Task } from './types'
 
 /** frontmatter.shots is an untyped index-signature field; narrow it to string[] without a cast. */
 export function shotsOf(fm: Frontmatter | undefined): string[] {
   const raw = fm?.shots
   if (!Array.isArray(raw)) return []
   return raw.filter((s): s is string => typeof s === 'string')
-}
-
-export type PlanBucket = 'active' | 'paused' | 'done'
-
-/** Board column for a live plan; anything else (e.g. cancelled) shows on no column, matching the mockup. */
-export function planBucket(item: ContextItem): PlanBucket | null {
-  const status = item.frontmatter?.status
-  if (status === 'active' || status === 'paused' || status === 'done') return status
-  if (status === undefined) return 'active'
-  return null
 }
 
 /** "n of m done": cancelled tasks leave the denominator, so a plan can reach 100%. */
@@ -44,10 +34,6 @@ export function countByStatus(tasks: Task[]): [string, number][] {
   const counts = new Map<string, number>()
   for (const t of tasks) counts.set(t.status ?? 'pending', (counts.get(t.status ?? 'pending') ?? 0) + 1)
   return [...counts.entries()]
-}
-
-export function planTitle(item: ContextItem): string {
-  return item.frontmatter?.title ?? titleFromSlug(item.slug)
 }
 
 export function taskText(task: Task): string {
@@ -90,7 +76,7 @@ export function docDate(item: { slug: string; frontmatter?: Frontmatter }): stri
   const fm = item.frontmatter
   const raw = fm?.date ?? fm?.created
   if (raw !== undefined && raw !== null) {
-    // An unquoted YAML date parses as a Date, serialized as an ISO string; keep the date part.
+    // Front matter is parsed with CORE_SCHEMA, so a date is a string; drop any time part.
     const s = String(raw).replace(/T.*$/, '')
     const digits = s.replace(/-/g, '')
     if (/^\d{8}$/.test(digits)) return `${digits.slice(0, 4)}-${digits.slice(4, 6)}-${digits.slice(6, 8)}`
@@ -125,10 +111,6 @@ export function docTitle(item: { slug: string; frontmatter?: Frontmatter; body?:
     if (heading) return heading
   }
   return titleFromSlug(item.slug)
-}
-
-export function listTitle(entry: ListEntry): string {
-  return titleFromSlug(entry.slug)
 }
 
 const BARE_DATE_RE = /^\d{4}-\d{2}-\d{2}$/

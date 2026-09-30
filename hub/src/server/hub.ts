@@ -13,6 +13,8 @@ export interface HubEnv {
   PROJECTS?: string
   ACCESS_TEAM_DOMAIN?: string
   ACCESS_AUD?: string
+  /** 'off' serves without Access outside dev: local preview and the T1 timings only. */
+  HUB_AUTH?: string
   CTX_CACHE?: KVLike
   CTX_CONFIG?: KVLike
 }

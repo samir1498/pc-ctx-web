@@ -22,10 +22,6 @@ export type FolderKey = BaseFolderKey | 'plans-archived' | 'progress-standup' | 
 
 export const ALL_FOLDERS: readonly FolderKey[] = [...FOLDERS, 'plans-archived', 'progress-standup', 'mockups', 'usage']
 
-export function isFolderKey(value: string): value is FolderKey {
-  return ALL_FOLDERS.some((key) => key === value)
-}
-
 const NESTED_PATHS: Partial<Record<FolderKey, string>> = {
   'plans-archived': 'plans/archived',
   'progress-standup': 'progress/standup',
@@ -106,17 +102,6 @@ export interface FolderEntry {
   path: string
   frontmatter?: Record<string, unknown>
   body?: string
-}
-
-export interface ListEntry {
-  slug: string
-  name: string
-  path: string
-}
-
-
-export function toListEntry(folder: FolderKey, name: string): ListEntry {
-  return { slug: name.replace(/\.\w+$/, ''), name, path: `${folderPath(folder)}/${name}` }
 }
 
 // Leading YYYY-MM-DD (dashed or not) sorts newest-first; everything else falls back

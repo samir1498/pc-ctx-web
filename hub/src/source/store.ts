@@ -40,11 +40,16 @@ export interface Store {
 export function createStore(ref: RepoRef, kv: KVLike | null, projectId: string, meter: Meter): Store {
   let memo: Promise<Partial<Record<FolderKey, SectionTree>>> | null = null
   const treeKey = `tree:${V}:${projectId}`
+  // A cache write is best effort: a KV 429 must not fail a page GitHub already answered.
+  const save = (key: string, value: unknown, options?: { expirationTtl?: number }) =>
+    kv ? kv.put(key, JSON.stringify(value), options).catch(() => undefined) : undefined
+  // Keyed by name too, so a renamed file never shows its old slug or path.
+  const metaKey = (t: SectionTree, e: TreeEntry) => `m:${V}:${e.oid}:${t.source}:${e.name}`
 
   async function loadTrees(): Promise<Partial<Record<FolderKey, SectionTree>>> {
     const cached = kv ? await kv.get(treeKey, 'json') : null
     const raw: Trees = isRecord(cached) ? (cached as Trees) : await fetchTrees(ref, meter, ALL_FOLDERS)
-    if (kv && !isRecord(cached)) await kv.put(treeKey, JSON.stringify(raw), { expirationTtl: TREE_TTL })
+    if (!isRecord(cached)) await save(treeKey, raw, { expirationTtl: TREE_TTL })
     const out: Partial<Record<FolderKey, SectionTree>> = {}
     for (const key of ALL_FOLDERS) {
       const t = raw[key]
@@ -75,7 +80,7 @@ export function createStore(ref: RepoRef, kv: KVLike | null, projectId: string, 
       await Promise.all(
         [...fetched].map(async ([oid, { text }]) => {
           out.set(oid, text)
-          if (kv && text.length <= BLOB_CACHE_MAX) await kv.put(`b:${V}:${oid}`, JSON.stringify(text))
+          if (text.length <= BLOB_CACHE_MAX) await save(`b:${V}:${oid}`, text)
         }),
       )
     }
@@ -83,7 +88,7 @@ export function createStore(ref: RepoRef, kv: KVLike | null, projectId: string, 
   }
 
   async function metasFor(t: SectionTree, entries: TreeEntry[]): Promise<DocMeta[]> {
-    const hits = await Promise.all(entries.map((e) => (kv ? kv.get(`m:${V}:${e.oid}:${t.source}`, 'json') : null)))
+    const hits = await Promise.all(entries.map((e) => (kv ? kv.get(metaKey(t, e), 'json') : null)))
     const missing = entries.filter((_, i) => !isRecord(hits[i]))
     const texts = missing.length ? await readTexts(missing.map((e) => e.oid)) : new Map<string, string>()
     const fresh = new Map<string, DocMeta>()
@@ -93,7 +98,7 @@ export function createStore(ref: RepoRef, kv: KVLike | null, projectId: string, 
         if (text === undefined) return
         const meta = toMeta(toEntry(t.source, e.name, text), e.oid)
         fresh.set(e.oid, meta)
-        if (kv) await kv.put(`m:${V}:${e.oid}:${t.source}`, JSON.stringify(meta))
+        await save(metaKey(t, e), meta)
       }),
     )
     return entries.flatMap((e, i) => {
@@ -111,7 +116,7 @@ export function createStore(ref: RepoRef, kv: KVLike | null, projectId: string, 
     const cached = kv ? await kv.get(key, 'json') : null
     if (Array.isArray(cached)) return cached as DocMeta[]
     const metas = await metasFor(t, sorted(t))
-    if (kv) await kv.put(key, JSON.stringify(metas), { expirationTtl: FOLDER_META_TTL })
+    await save(key, metas, { expirationTtl: FOLDER_META_TTL })
     return metas
   }
 
@@ -129,8 +134,9 @@ export function createStore(ref: RepoRef, kv: KVLike | null, projectId: string, 
       const slice = all.slice(page * size, page * size + size)
       const whole = kv ? await kv.get(`fm:${V}:${projectId}:${folder}:${t.oid}`, 'json') : null
       if (Array.isArray(whole)) {
-        const byOid = new Map((whole as DocMeta[]).map((m) => [m.oid, m]))
-        return { total: all.length, items: slice.flatMap((e) => byOid.get(e.oid) ?? []) }
+        // By name: two files with the same content share an oid but are two rows.
+        const byName = new Map((whole as DocMeta[]).map((m) => [m.name, m]))
+        return { total: all.length, items: slice.flatMap((e) => byName.get(e.name) ?? []) }
       }
       return { total: all.length, items: await metasFor(t, slice) }
     },

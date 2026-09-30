@@ -1,4 +1,4 @@
-import type { Audience } from './types'
+import type { Audience } from '../source/projects'
 
 export function isPlainAudience(audience: Audience | undefined): boolean {
   return audience === 'plain'
