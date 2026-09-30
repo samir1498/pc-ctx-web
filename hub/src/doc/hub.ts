@@ -51,7 +51,7 @@ export function planTitle(item: ContextItem): string {
 }
 
 export function taskText(task: Task): string {
-  return task.title ?? task.desc ?? task.id
+  return task.desc ?? task.title ?? task.id
 }
 
 /** First two non-heading paragraphs of a markdown body — the home page's "where it stands" lede. */

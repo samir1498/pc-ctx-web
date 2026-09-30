@@ -27,8 +27,9 @@
 }
 
 /* ---- light (also the system default) ---- */
+/* Defaults on every theme boundary, so a preview never inherits the page theme's fonts or radius. */
 :root,
-[data-theme="light"] {
+[data-theme] {
   color-scheme: light;
   --page: #f7f7f4;
   --rail: #efefea;

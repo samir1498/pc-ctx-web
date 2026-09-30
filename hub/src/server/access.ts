@@ -12,6 +12,7 @@ interface Jwk {
 
 let certs: { at: number; keys: Jwk[] } | null = null
 const CERTS_TTL_MS = 60 * 60 * 1000
+const REFETCH_FLOOR_MS = 60_000
 
 function b64urlBytes(s: string): Uint8Array<ArrayBuffer> {
   const bin = atob(s.replace(/-/g, '+').replace(/_/g, '/').padEnd(Math.ceil(s.length / 4) * 4, '='))
@@ -55,8 +56,8 @@ export async function verifyAccess(token: string | null, teamDomain: string, aud
   if (!header || !payload || header.alg !== 'RS256' || typeof header.kid !== 'string') return null
 
   let jwk = (await keys(teamDomain)).find((k) => k.kid === header.kid)
-  // A rotated key: refetch once before refusing.
-  jwk ??= (await keys(teamDomain, true)).find((k) => k.kid === header.kid)
+  // A rotated key: refetch before refusing, at most once a minute, so forged kids cannot hammer the certs URL.
+  if (!jwk && (!certs || Date.now() - certs.at > REFETCH_FLOOR_MS)) jwk = (await keys(teamDomain, true)).find((k) => k.kid === header.kid)
   if (!jwk) return null
   const key = await crypto.subtle.importKey('jwk', { kty: jwk.kty, n: jwk.n, e: jwk.e, alg: 'RS256', ext: true }, { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['verify'])
   const ok = await crypto.subtle.verify('RSASSA-PKCS1-v1_5', key, b64urlBytes(sig), new TextEncoder().encode(`${h}.${p}`))

@@ -13,7 +13,10 @@ export type ThemeKey = (typeof THEMES)[number]['key']
 export const THEME_STORAGE_KEY = 'hub-theme'
 export const THEME_EVENT = 'hub-themechange'
 
+let active: ThemeKey | null = null
+
 export function applyTheme(key: ThemeKey): void {
+  active = key
   const root = document.documentElement
   if (key === 'system') root.removeAttribute('data-theme')
   else root.setAttribute('data-theme', key)
@@ -23,6 +26,11 @@ export function applyTheme(key: ThemeKey): void {
     // storage blocked: the choice lasts for this page only
   }
   window.dispatchEvent(new Event(THEME_EVENT))
+}
+
+/** The theme in use on this page; storage only persists it, and may be blocked. */
+export function activeTheme(): ThemeKey {
+  return active ?? storedTheme()
 }
 
 export function storedTheme(): ThemeKey {

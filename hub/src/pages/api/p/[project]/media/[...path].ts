@@ -10,11 +10,12 @@ export const GET: APIRoute = async ({ params, request, locals }) => {
 
   const edge = typeof caches !== 'undefined' ? (caches as unknown as { default: Cache }).default : null
   const hit = edge ? await edge.match(request) : undefined
-  if (hit) return hit
+  if (hit) return privately(hit)
 
   const store = await locals.hub.store(project.id)
   const file = store ? await store.media(path).catch(() => null) : null
   if (!file) return new Response('Not found', { status: 404 })
+  // The edge copy must be public for the Cache API to keep it; browsers only get a private one.
   const res = new Response(file.bytes, {
     headers: {
       'content-type': file.contentType,
@@ -24,5 +25,11 @@ export const GET: APIRoute = async ({ params, request, locals }) => {
     },
   })
   if (edge) locals.cfContext?.waitUntil(edge.put(request, res.clone()))
-  return res
+  return privately(res)
+}
+
+function privately(res: Response): Response {
+  const out = new Response(res.body, res)
+  out.headers.set('cache-control', 'private, max-age=3600')
+  return out
 }

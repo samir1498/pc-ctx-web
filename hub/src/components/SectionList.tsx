@@ -49,7 +49,8 @@ function List({ project, section, first, statuses }: Props) {
       if (!res.ok) throw new Error((await res.json().catch(() => null))?.error ?? `HTTP ${res.status}`)
       return res.json()
     },
-    getNextPageParam: (last) => ((last.page + 1) * 20 < last.total ? last.page + 1 : undefined),
+    // Count what arrived rather than assume the server's page size.
+    getNextPageParam: (last, all) => (all.reduce((n, p) => n + p.items.length, 0) < last.total && last.items.length > 0 ? last.page + 1 : undefined),
     // The server already rendered page 0 of the unfiltered list.
     initialData: unfiltered ? { pages: [first], pageParams: [0] } : undefined,
     placeholderData: keepPreviousData,
@@ -124,7 +125,7 @@ function List({ project, section, first, statuses }: Props) {
         </span>
         {query.hasNextPage && (
           <button onClick={() => query.fetchNextPage()} disabled={query.isFetchingNextPage} className="rounded-lg border border-border px-3 py-1.5 text-fg hover:bg-hover disabled:opacity-50">
-            {query.isFetchingNextPage ? 'Loading' : 'Load 20 more'}
+            {query.isFetchingNextPage ? 'Loading' : 'Load more'}
           </button>
         )}
       </div>

@@ -37,6 +37,7 @@ describe('a plan with tasks renders them grouped', () => {
   it('reads the row text from desc, then title, then the id', () => {
     expect(taskText(tasks[2] as Task)).toBe("Align the buttons' centre line")
     expect(taskText(tasks[5] as Task)).toBe('Legacy title field')
+    expect(taskText({ id: 'T8', desc: 'Current', title: 'Legacy' } as Task)).toBe('Current')
     expect(taskText({ id: 'T9' })).toBe('T9')
   })
 })

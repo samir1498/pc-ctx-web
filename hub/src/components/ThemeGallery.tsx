@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Check } from 'lucide-react'
-import { THEMES, THEME_EVENT, applyTheme, storedTheme, type ThemeKey } from '../lib/themes'
+import { THEMES, THEME_EVENT, activeTheme, applyTheme, type ThemeKey } from '../lib/themes'
 
 const BARS = [
   [38, 22, 9],
@@ -58,8 +58,8 @@ function Preview({ theme }: { theme: Exclude<ThemeKey, 'system'> }) {
 export default function ThemeGallery() {
   const [current, setCurrent] = useState<ThemeKey>('system')
   useEffect(() => {
-    setCurrent(storedTheme())
-    const on = () => setCurrent(storedTheme())
+    setCurrent(activeTheme())
+    const on = () => setCurrent(activeTheme())
     window.addEventListener(THEME_EVENT, on)
     return () => window.removeEventListener(THEME_EVENT, on)
   }, [])

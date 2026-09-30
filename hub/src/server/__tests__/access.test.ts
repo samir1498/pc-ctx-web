@@ -32,6 +32,13 @@ describe('verifyAccess', () => {
     expect(await verifyAccess(await sign(good()), TEAM, AUD)).toBe('samir@example.com')
   })
 
+  it('does not refetch the certs for every forged key id', async () => {
+    await verifyAccess(await sign(good()), TEAM, AUD) // certs now cached and fresh
+    vi.mocked(fetch).mockClear()
+    for (const kid of ['x1', 'x2', 'x3']) expect(await verifyAccess(await sign(good(), kid), TEAM, AUD)).toBeNull()
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
   it('refuses a missing token', async () => {
     expect(await verifyAccess(null, TEAM, AUD)).toBeNull()
   })
