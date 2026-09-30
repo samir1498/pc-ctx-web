@@ -185,6 +185,15 @@ class WindowsTest(Base):
         self.assertGreater(s1["cost"], 0)
         self.assertNotIn("never leaves", json.dumps(sessions))
 
+    def test_cowork_transcript_under_a_hidden_folder_is_read(self):
+        path = os.path.join(self.dir, "s", "local_1", ".claude", "projects", "x", "t.jsonl")
+        os.makedirs(os.path.dirname(path))
+        with open(path, "w") as fh:
+            fh.write(assistant("c1", 4, entrypoint="local-agent", sessionId="c") + "\n")
+        uc.read_claude(self.dir, START, END, self.tally, host="windows")
+        days, _ = self.rows()
+        self.assertEqual([(r["tool"], r["output"]) for r in days["2026-09-29"]], [("cowork", 4)])
+
     def test_plan_samples_by_day(self):
         with open(os.path.join(self.dir, "plan-usage-history.json"), "w") as fh:
             json.dump({"samples": [{"t": 1790676000000, "u": {"fh": 12, "sd": 40}}, {"t": 1, "u": {}}]}, fh)

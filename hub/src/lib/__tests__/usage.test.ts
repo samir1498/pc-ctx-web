@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { parseUsageDay } from '../usage-types'
-import { byDay, byModel, keysOf, lastDays, previousDays, priceLabel, sum, windowDates } from '../usage'
+import { byDay, byModel, inCategory, keysOf, lastDays, previousDays, priceLabel, sum, windowDates } from '../usage'
 
 const day = (rows: unknown[]) => JSON.stringify({ date: '2026-09-29', tz: 'Europe/Berlin', rows })
 const row = (over: Record<string, unknown> = {}) => ({
@@ -90,5 +90,16 @@ describe('host, sessions and plan samples', () => {
     const day = parseUsageDay(file)!
     expect(day.sessions).toEqual([expect.objectContaining({ id: 's1', date: '2026-09-29', host: 'windows', title: 'Weekly report', models: ['claude-opus-5-5'], output: 10 })])
     expect(day.plan).toEqual([{ at: '2026-09-29T12:00', fiveHour: 12, sevenDay: 40 }])
+  })
+})
+
+describe('categories', () => {
+  const r = (tool: string, host = 'wsl') => ({ tool, host }) as Parameters<ReturnType<typeof inCategory>>[0]
+  it('groups the three Claude Code apps and splits them by host', () => {
+    const rows = [r('claude-code'), r('claude-desktop', 'windows'), r('claude-sdk'), r('cowork', 'windows'), r('opencode')]
+    expect(rows.filter(inCategory('claude')).map((x) => x.tool)).toEqual(['claude-code', 'claude-desktop', 'claude-sdk'])
+    expect(rows.filter(inCategory('claude', 'windows')).map((x) => x.tool)).toEqual(['claude-desktop'])
+    expect(rows.filter(inCategory('cowork')).map((x) => x.tool)).toEqual(['cowork'])
+    expect(rows.filter(inCategory('all'))).toHaveLength(5)
   })
 })

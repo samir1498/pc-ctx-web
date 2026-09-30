@@ -91,12 +91,15 @@ SURFACE = {"claude-desktop": "claude-desktop", "local-agent": "cowork", "sdk-py"
 
 
 def read_claude(root, start, end, tally, host="wsl"):
-    """Dedup by message.id, keeping the last line: output_tokens grows per content block."""
+    """Dedup by message.id, keeping the last line: output_tokens grows per content block.
+
+    include_hidden: Cowork keeps each transcript under a .claude/ folder, which ** skips otherwise.
+    """
     if not root or not os.path.isdir(root):
         return
     cutoff = start.timestamp() - 86400
     seen = {}
-    for path in glob.iglob(os.path.join(root, "**", "*.jsonl"), recursive=True):
+    for path in glob.iglob(os.path.join(root, "**", "*.jsonl"), recursive=True, include_hidden=True):
         try:
             if os.path.getmtime(path) < cutoff:
                 continue
