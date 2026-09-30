@@ -11,9 +11,11 @@ const days = new Set(rows.map((r) => r.date)).size
 <HubLayout title="Token usage" active="usage">
   <h1 class="font-display text-3xl font-bold tracking-tight">Token usage</h1>
   <p class="mt-1 max-w-3xl text-muted">
-    Tokens and cost per day for Claude Code, opencode, Hermes and other clients of the model router, collected on the box from counts only, never prompt text.
-    Claude Code is priced at the API list price although it runs on a subscription; opencode's cost is its own figure; free models cost nothing.
-    Days are Europe/Berlin, so edges differ from the Anthropic console, which uses UTC.
+    Tokens per day for Claude Code, opencode, Hermes and other clients of the model router. Counted on the box once a day; no prompt text leaves it.
+    Days run on Berlin time.
+  </p>
+  <p class="mt-2 max-w-3xl text-sm text-dim">
+    API value is what the same tokens would cost at API list prices. Claude Code runs on a subscription, so it is a comparison, not a bill. Free models count as 0.
   </p>
   <div class="mt-8 min-h-96">
     {days > 0 ? <UsageExplorer client:only="react" rows={rows} /> : <p class="text-muted">No usage files yet. The collector on the box writes them once a day.</p>}

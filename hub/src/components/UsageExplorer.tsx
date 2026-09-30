@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react'
 import type { UsageRow } from '../lib/usage-types'
 import { TOOL_LABEL } from '../lib/usage-types'
-import { byModel, keysOf, lastDays, previousDays, priceLabel, slotOf, sum, totalTokens, type GroupBy, type Metric } from '../lib/usage'
-import { count, dayLabel, pct, tokens, usd } from '../lib/format'
+import { byModel, keysOf, labelOf, lastDays, previousDays, priceLabel, slotOf, sum, totalTokens, windowDates, type GroupBy, type Metric } from '../lib/usage'
+import { count, pct, tokens, usd } from '../lib/format'
 import DailyUsageChart from './charts/DailyUsageChart'
 import MiniBars from './charts/MiniBars'
 
@@ -12,10 +12,12 @@ const GROUPS: { key: GroupBy; label: string }[] = [
   { key: 'provider', label: 'Provider' },
   { key: 'model', label: 'Model' },
 ]
+// Tokens lead: the subscriptions make cost a what-if, and it hides every tool but Claude Code.
 const METRICS: { key: Metric; label: string }[] = [
-  { key: 'cost', label: 'Cost' },
   { key: 'tokens', label: 'Tokens' },
+  { key: 'cost', label: 'API value' },
 ]
+const SPLIT_MAX = 8
 
 function Segmented<T extends string | number>({ label, value, options, onChange }: { label: string; value: T; options: { key: T; label: string }[]; onChange: (v: T) => void }) {
   return (
@@ -61,8 +63,7 @@ const TYPES = [
 export default function UsageExplorer({ rows }: { rows: UsageRow[] }) {
   const [range, setRange] = useState<number>(14)
   const [group, setGroup] = useState<GroupBy>('tool')
-  const [metric, setMetric] = useState<Metric>('cost')
-  const [view, setView] = useState<'chart' | 'table'>('chart')
+  const [metric, setMetric] = useState<Metric>('tokens')
 
   const keys = useMemo(() => keysOf(group, rows), [rows, group])
   const modelKeys = useMemo(() => keysOf('model', rows), [rows])
@@ -74,8 +75,18 @@ export default function UsageExplorer({ rows }: { rows: UsageRow[] }) {
   const delta = (a: number, b: number) => (b > 0 ? a / b - 1 : undefined)
   const cacheHit = t.cacheRead / Math.max(1, t.cacheRead + t.input + t.cacheWrite)
   const models = byModel(cur)
-  const days = [...new Set(cur.map((r) => r.date))].sort()
+  const days = useMemo(() => windowDates(rows, range), [rows, range])
   const perDay = days.map((d) => ({ date: d, ...sum(cur.filter((r) => r.date === d)) }))
+  const measure = (x: ReturnType<typeof sum>) => (metric === 'cost' ? x.cost : totalTokens(x))
+  const groups = keys
+    .map((key) => {
+      const mine = cur.filter((r) => r[group] === key)
+      return { key, total: measure(sum(mine)), days: days.map((d) => ({ label: d, value: measure(sum(mine.filter((r) => r.date === d))) })) }
+    })
+    .filter((g) => g.total > 0)
+    .sort((a, b) => b.total - a.total)
+  const split = groups.slice(0, SPLIT_MAX)
+  const hidden = groups.length - split.length
 
   return (
     <div className="space-y-6">
@@ -86,49 +97,38 @@ export default function UsageExplorer({ rows }: { rows: UsageRow[] }) {
       </div>
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <Kpi label="Cost, API equivalent" value={usd(t.cost)} delta={delta(t.cost, p.cost)} />
         <Kpi label="Tokens" value={tokens(all)} delta={delta(all, totalTokens(p))} />
         <Kpi label="Model calls" value={count(t.calls)} delta={delta(t.calls, p.calls)} />
         <Kpi label="Cache hit rate" value={`${Math.round(cacheHit * 100)}%`} note="share of prompt tokens read from cache" />
+        <Kpi label="API value" value={usd(t.cost)} note="what this would cost at API list prices" />
       </div>
 
       <section className="card p-5">
-        <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
-          <h2 className="font-display text-lg font-semibold">
-            {metric === 'cost' ? 'Cost' : 'Tokens'} per day, by {group}
-          </h2>
-          <div className="flex gap-1 text-xs">
-            {(['chart', 'table'] as const).map((v) => (
-              <button key={v} onClick={() => setView(v)} className={`rounded-md px-2 py-1 ${view === v ? 'bg-hover text-fg' : 'text-dim hover:text-fg'}`}>
-                {v === 'chart' ? 'Chart' : 'Table'}
-              </button>
-            ))}
-          </div>
+        <h2 className="mb-4 font-display text-lg font-semibold">
+          {metric === 'cost' ? 'API value' : 'Tokens'} per day, by {group}
+        </h2>
+        <DailyUsageChart rows={cur} group={group} metric={metric} height={300} keys={keys} dates={days} />
+      </section>
+
+      <section>
+        <h2 className="mb-3 font-display text-lg font-semibold">Each {group} on its own scale</h2>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {split.map((g) => (
+            <div key={g.key} className="card p-4">
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="flex min-w-0 items-center gap-2 text-sm">
+                  <span className="size-2.5 shrink-0 rounded-sm" style={{ background: `var(${slotOf(keys, g.key)})` }} />
+                  <span className="truncate">{labelOf(group, g.key)}</span>
+                </span>
+                <span className="num shrink-0 text-sm text-fg">{metric === 'cost' ? usd(g.total) : tokens(g.total)}</span>
+              </div>
+              <div className="mt-3">
+                <MiniBars data={g.days} format={metric === 'cost' ? 'usd' : 'tokens'} labelFormat="day" height={80} color={slotOf(keys, g.key)} />
+              </div>
+            </div>
+          ))}
         </div>
-        {view === 'chart' ? (
-          <DailyUsageChart rows={cur} group={group} metric={metric} height={300} keys={keys} />
-        ) : (
-          <div className="max-h-80 overflow-auto">
-            <table className="w-full text-sm">
-              <thead className="sticky top-0 bg-panel text-left text-xs text-dim">
-                <tr>
-                  <th className="py-2 font-medium">Day</th>
-                  {TYPES.map((x) => <th key={x.key} className="py-2 text-right font-medium">{x.label}</th>)}
-                  <th className="py-2 text-right font-medium">Cost</th>
-                </tr>
-              </thead>
-              <tbody className="num">
-                {[...perDay].reverse().map((d) => (
-                  <tr key={d.date} className="border-t border-border">
-                    <td className="py-1.5 font-sans text-muted">{dayLabel(d.date)}</td>
-                    {TYPES.map((x) => <td key={x.key} className="py-1.5 text-right">{tokens(d[x.key])}</td>)}
-                    <td className="py-1.5 text-right">{usd(d.cost)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+        {hidden > 0 && <p className="mt-2 text-xs text-dim">{hidden} smaller {group === 'model' ? 'models' : 'entries'} are in the table below.</p>}
       </section>
 
       <section>
@@ -163,7 +163,7 @@ export default function UsageExplorer({ rows }: { rows: UsageRow[] }) {
                 <th className="py-2 text-right font-medium">Output</th>
                 <th className="py-2 text-right font-medium">Cache read</th>
                 <th className="py-2 text-right font-medium">Cache write</th>
-                <th className="px-5 py-2 text-right font-medium">Cost</th>
+                <th className="px-5 py-2 text-right font-medium">API value</th>
               </tr>
             </thead>
             <tbody>

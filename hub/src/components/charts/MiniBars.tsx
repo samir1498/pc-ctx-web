@@ -1,9 +1,9 @@
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis } from 'recharts'
 import { BASE_TOKENS, useTokens } from '../../lib/useTokens'
-import { dayLabel, tokens } from '../../lib/format'
+import { dayLabel, tokens, usd } from '../../lib/format'
 
 // Named formats, because island props must serialise (no functions from .astro).
-const FORMATS = { tokens, added: (n: number) => `${n} added` }
+const FORMATS = { tokens, usd, added: (n: number) => `${n} added` }
 const LABELS = { day: dayLabel, plain: (s: string) => s }
 
 interface Props {

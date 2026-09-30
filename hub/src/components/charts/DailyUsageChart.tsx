@@ -14,11 +14,13 @@ interface Props {
   height?: number
   /** Colour order for the group, from the whole history so a range change never repaints. */
   keys?: string[]
+  /** Every day of the window, so a day without usage shows as a gap rather than vanishing. */
+  dates?: string[]
 }
 
-export default function DailyUsageChart({ rows, group, metric, height = 280, keys }: Props) {
+export default function DailyUsageChart({ rows, group, metric, height = 280, keys, dates }: Props) {
   const t = useTokens(ALL)
-  const data = byDay(rows, group, metric)
+  const data = byDay(rows, group, metric, dates)
   const order = keys ?? keysOf(group, rows)
   const present = order.filter((k) => data.some((d) => ((d[k] as number | undefined) ?? 0) > 0))
   const fmt = metric === 'cost' ? (n: number) => usd(n) : tokens

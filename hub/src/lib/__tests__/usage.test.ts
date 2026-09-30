@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { parseUsageDay } from '../usage-types'
-import { byModel, keysOf, priceLabel, sum } from '../usage'
+import { byDay, byModel, keysOf, lastDays, previousDays, priceLabel, sum, windowDates } from '../usage'
 
 const day = (rows: unknown[]) => JSON.stringify({ date: '2026-09-29', tz: 'Europe/Berlin', rows })
 const row = (over: Record<string, unknown> = {}) => ({
@@ -55,5 +55,20 @@ describe('priceLabel and sum', () => {
   it('gives the router tool a fixed colour slot after the three named tools', () => {
     const rows = parseUsageDay(day([row({ tool: 'router' }), row({ tool: 'claude-code' })]))!.rows
     expect(keysOf('tool', rows)).toEqual(['claude-code', 'router'])
+  })
+})
+
+describe('day windows', () => {
+  const on = (date: string) => ({ ...parseUsageDay(day([row()]))!.rows[0]!, date })
+  const rows = [on('2026-09-10'), on('2026-09-17'), on('2026-09-20')]
+
+  it('counts calendar days back from the newest file, gaps included', () => {
+    expect(windowDates(rows, 3)).toEqual(['2026-09-18', '2026-09-19', '2026-09-20'])
+    expect(lastDays(rows, 3).map((r) => r.date)).toEqual(['2026-09-20'])
+    expect(previousDays(rows, 3).map((r) => r.date)).toEqual(['2026-09-17'])
+  })
+
+  it('keeps an empty day in the chart data', () => {
+    expect(byDay(lastDays(rows, 3), 'tool', 'tokens', windowDates(rows, 3)).map((p) => p.date)).toEqual(['2026-09-18', '2026-09-19', '2026-09-20'])
   })
 })
