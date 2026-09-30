@@ -1,0 +1,24 @@
+---
+import HubLayout from '../../../../layouts/HubLayout.astro'
+import Crumbs from '../../../../components/Crumbs.astro'
+import DocView from '../../../../components/doc/DocView.astro'
+import { notFound, pageCtx } from '../../../../lib/page'
+import { isSection, label, singular } from '../../../../lib/sections'
+import { docTitle } from '../../../../doc/hub'
+import { asItem } from '../../../../source/meta'
+
+const ctx = await pageCtx(Astro)
+const section = Astro.params.section ?? ''
+const slug = Astro.params.slug ?? ''
+if (!ctx || !isSection(section)) return notFound('section')
+// Old links and the plans list both point plans at /plan/<slug>.
+if (section === 'plans') return Astro.redirect(`/p/${ctx.project.id}/plan/${slug}`, 301)
+const entry = await ctx.store.doc(section, slug)
+if (!entry) return notFound(`${singular(section).toLowerCase()} ${slug}`)
+const planNames = (await ctx.store.entries('plans')).map((e) => e.name)
+---
+
+<HubLayout title={ctx.say(docTitle(asItem(entry)))} active={section} project={ctx.project}>
+  <Crumbs slot="crumbs" items={[{ label: label(section), href: `/p/${ctx.project.id}/${section}` }, { label: singular(section) }]} />
+  <DocView ctx={ctx} section={section} entry={entry} planNames={planNames} />
+</HubLayout>

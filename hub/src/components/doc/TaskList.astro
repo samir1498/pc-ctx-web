@@ -1,0 +1,63 @@
+---
+import type { Task } from '../../doc/types'
+import { countByStatus, groupTasks, taskText } from '../../doc/hub'
+import { stripCodes } from '../../doc/plain'
+
+interface Props {
+  tasks: Task[]
+  plain: boolean
+}
+const { tasks, plain } = Astro.props
+const LABEL: Record<string, string> = { 'in-progress': 'in progress', pending: 'to do', blocked: 'blocked', done: 'done', cancelled: 'cancelled' }
+const COLOR: Record<string, string> = { 'in-progress': 'var(--warn)', blocked: 'var(--bad)', done: 'var(--good)', cancelled: 'var(--dim)', pending: 'var(--dim)' }
+const MARK: Record<string, string> = { done: '✓', 'in-progress': '◐', blocked: '✗', cancelled: '✗' }
+const { open, closed } = groupTasks(tasks)
+const summary = countByStatus(closed).map(([s, n]) => `${n} ${LABEL[s] ?? s}`).join(' · ')
+// Nothing open: the closed list is the whole story, so it stays unfolded.
+const fold = open.length > 0 && closed.length >= 6
+const view = (t: Task) => {
+  const status = t.status ?? 'pending'
+  const raw = taskText(t)
+  return {
+    id: t.id,
+    status,
+    color: COLOR[status] ?? 'var(--dim)',
+    mark: MARK[status] ?? '○',
+    text: (plain ? stripCodes(raw).trim() : raw) || raw,
+    note: t.note ? (plain ? stripCodes(t.note).trim() || t.note : t.note) : '',
+    label: LABEL[status] ?? status,
+  }
+}
+---
+
+{
+  open.length > 0 && (
+    <ol class="task-list">
+      {open.map(view).map((t) => (
+        <li class="task-row" data-status={t.status}>
+          <span class="task-mark" style={{ color: t.color }} aria-hidden="true">{t.mark}</span>
+          <span class="task-id">{t.id}</span>
+          <span class="task-text">{t.text}{t.note && <span class="task-note">{t.note}</span>}</span>
+          <span class="task-status" style={{ color: t.color }}>{t.label}</span>
+        </li>
+      ))}
+    </ol>
+  )
+}
+{
+  closed.length > 0 && (
+    <details class="task-fold" open={!fold}>
+      <summary>{summary}</summary>
+      <ol class="task-list">
+        {closed.map(view).map((t) => (
+          <li class="task-row" data-status={t.status}>
+            <span class="task-mark" style={{ color: t.color }} aria-hidden="true">{t.mark}</span>
+            <span class="task-id">{t.id}</span>
+            <span class="task-text">{t.text}{t.note && <span class="task-note">{t.note}</span>}</span>
+            <span class="task-status" style={{ color: t.color }}>{t.label}</span>
+          </li>
+        ))}
+      </ol>
+    </details>
+  )
+}

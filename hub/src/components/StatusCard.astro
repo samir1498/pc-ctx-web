@@ -1,0 +1,31 @@
+---
+// Rendered as a server island: a cold cache reads every file in the section for
+// its status, so the page shows first and this fills in after.
+import StatusBar from './StatusBar.astro'
+import type { Folder } from '../doc/types'
+import { statusCounts } from '../lib/dashboard'
+import { PLAIN_STATUS } from '../lib/sections'
+
+interface Props {
+  project: string
+  section: Folder
+  title: string
+  href?: string
+}
+const { project, section, title, href } = Astro.props
+const hub = Astro.locals.hub
+const store = await hub.store(project)
+const plain = hub.project(project)?.audience === 'plain'
+const counts = store ? statusCounts(section, await store.allMetas(section)) : null
+const shown = counts?.map((c) => (plain ? { ...c, label: PLAIN_STATUS[c.key] ?? c.label } : c))
+---
+
+<div class="card p-5">
+  <div class="flex items-baseline justify-between">
+    <h2 class="font-display text-lg font-semibold">{title}</h2>
+    {href && <a href={href} class="text-sm text-accent hover:underline">Open</a>}
+  </div>
+  <div class="mt-4">
+    {shown ? <StatusBar statuses={shown} /> : <p class="text-sm text-dim">No status in this section.</p>}
+  </div>
+</div>

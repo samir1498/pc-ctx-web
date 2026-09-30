@@ -1,0 +1,21 @@
+---
+import HubLayout from '../../../../layouts/HubLayout.astro'
+import Crumbs from '../../../../components/Crumbs.astro'
+import DocView from '../../../../components/doc/DocView.astro'
+import { notFound, pageCtx } from '../../../../lib/page'
+import { docTitle } from '../../../../doc/hub'
+import { asItem } from '../../../../source/meta'
+
+const ctx = await pageCtx(Astro)
+const slug = Astro.params.slug ?? ''
+if (!ctx) return notFound('project')
+const live = await ctx.store.doc('plans', slug)
+const entry = live ?? (await ctx.store.doc('plans-archived', slug))
+if (!entry) return notFound(`plan ${slug}`)
+const planNames = (await ctx.store.entries('plans')).map((e) => e.name)
+---
+
+<HubLayout title={ctx.say(docTitle(asItem(entry)))} active="plans" project={ctx.project}>
+  <Crumbs slot="crumbs" items={[{ label: 'Plans', href: `/p/${ctx.project.id}/plans` }, { label: live ? 'Plan' : 'Archived plan' }]} />
+  <DocView ctx={ctx} section="plans" entry={entry} archived={!live} planNames={planNames} />
+</HubLayout>

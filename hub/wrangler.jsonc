@@ -1,0 +1,9 @@
+{
+  "name": "context-hub",
+  "compatibility_date": "2026-09-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "kv_namespaces": [
+    { "binding": "CTX_CACHE", "id": "28916bb043f54753a58262d6ee3feaf8", "remote": true },
+    { "binding": "CTX_CONFIG", "id": "7fc217c529d44b0991ac85c8caa87305", "remote": true }
+  ]
+}

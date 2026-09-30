@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
-import type { UsageRow } from '../mock/usage'
-import { TOOL_LABEL } from '../mock/usage'
-import { byModel, lastDays, previousDays, slotOf, sum, totalTokens, type GroupBy, type Metric } from '../lib/usage'
+import type { UsageRow } from '../lib/usage-types'
+import { TOOL_LABEL } from '../lib/usage-types'
+import { byModel, keysOf, lastDays, previousDays, priceLabel, slotOf, sum, totalTokens, type GroupBy, type Metric } from '../lib/usage'
 import { count, dayLabel, pct, tokens, usd } from '../lib/format'
 import DailyUsageChart from './charts/DailyUsageChart'
 import MiniBars from './charts/MiniBars'
@@ -64,6 +64,8 @@ export default function UsageExplorer({ rows }: { rows: UsageRow[] }) {
   const [metric, setMetric] = useState<Metric>('cost')
   const [view, setView] = useState<'chart' | 'table'>('chart')
 
+  const keys = useMemo(() => keysOf(group, rows), [rows, group])
+  const modelKeys = useMemo(() => keysOf('model', rows), [rows])
   const cur = useMemo(() => lastDays(rows, range), [rows, range])
   const prev = useMemo(() => previousDays(rows, range), [rows, range])
   const t = sum(cur)
@@ -104,7 +106,7 @@ export default function UsageExplorer({ rows }: { rows: UsageRow[] }) {
           </div>
         </div>
         {view === 'chart' ? (
-          <DailyUsageChart rows={cur} group={group} metric={metric} height={300} />
+          <DailyUsageChart rows={cur} group={group} metric={metric} height={300} keys={keys} />
         ) : (
           <div className="max-h-80 overflow-auto">
             <table className="w-full text-sm">
@@ -166,20 +168,23 @@ export default function UsageExplorer({ rows }: { rows: UsageRow[] }) {
             </thead>
             <tbody>
               {models.map((m) => {
-                const free = m.provider === 'opencode-go'
+                const label = priceLabel(m)
                 return (
-                  <tr key={m.model} className="border-b border-border last:border-0 hover:bg-hover">
+                  <tr key={m.key} className="border-b border-border last:border-0 hover:bg-hover">
                     <td className="px-5 py-2.5">
                       <span className="flex items-center gap-2 font-medium">
-                        <span className="size-2.5 rounded-sm" style={{ background: `var(${slotOf('model', m.model)})` }} />
+                        <span className="size-2.5 rounded-sm" style={{ background: `var(${slotOf(modelKeys, m.model)})` }} />
                         {m.model}
                       </span>
                     </td>
                     <td className="py-2.5 text-muted">{TOOL_LABEL[m.tool]}</td>
                     <td className="py-2.5 text-muted">{m.provider}</td>
-                    <td className="num py-2.5 text-right">{count(m.calls)}</td>
-                    {all > 0 && totalTokens(m) === 0 ? (
-                      <td colSpan={4} className="py-2.5 text-right text-xs text-dim">tokens not reported by this model</td>
+                    <td className="num py-2.5 text-right">
+                      {count(m.calls)}
+                      {m.errors > 0 && <span className="block text-xs text-dim">{count(m.errors)} failed</span>}
+                    </td>
+                    {m.calls === 0 ? (
+                      <td colSpan={4} className="py-2.5 text-right text-xs text-dim">every call failed</td>
                     ) : (
                       <>
                         <td className="num py-2.5 text-right">{tokens(m.input)}</td>
@@ -188,7 +193,7 @@ export default function UsageExplorer({ rows }: { rows: UsageRow[] }) {
                         <td className="num py-2.5 text-right">{tokens(m.cacheWrite)}</td>
                       </>
                     )}
-                    <td className="num px-5 py-2.5 text-right">{free ? <span className="text-dim">free</span> : m.cost === 0 ? <span className="text-dim" title="Router alias, the real model is not recorded yet">no price</span> : usd(m.cost)}</td>
+                    <td className="num px-5 py-2.5 text-right">{label ? <span className="text-dim">{label}</span> : <span title={m.pricing === 'reported' ? 'As the tool reports it' : 'At list price'}>{usd(m.cost)}</span>}</td>
                   </tr>
                 )
               })}

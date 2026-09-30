@@ -1,9 +1,11 @@
 import { defineConfig } from 'astro/config'
 import react from '@astrojs/react'
+import cloudflare from '@astrojs/cloudflare'
 import tailwindcss from '@tailwindcss/vite'
 
-// Mockup build is static; the real hub switches to output: 'server' with @astrojs/cloudflare.
 export default defineConfig({
+  output: 'server',
+  adapter: cloudflare({ imageService: 'passthrough' }),
   integrations: [react()],
   vite: { plugins: [tailwindcss()] },
 })

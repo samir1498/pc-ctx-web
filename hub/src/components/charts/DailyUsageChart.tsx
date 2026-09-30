@@ -1,5 +1,5 @@
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import type { UsageRow } from '../../mock/usage'
+import type { UsageRow } from '../../lib/usage-types'
 import { byDay, keysOf, labelOf, slotOf, type GroupBy, type Metric } from '../../lib/usage'
 import { dayLabel, tokens, usd } from '../../lib/format'
 import { BASE_TOKENS, useTokens } from '../../lib/useTokens'
@@ -12,21 +12,24 @@ interface Props {
   group: GroupBy
   metric: Metric
   height?: number
+  /** Colour order for the group, from the whole history so a range change never repaints. */
+  keys?: string[]
 }
 
-export default function DailyUsageChart({ rows, group, metric, height = 280 }: Props) {
+export default function DailyUsageChart({ rows, group, metric, height = 280, keys }: Props) {
   const t = useTokens(ALL)
   const data = byDay(rows, group, metric)
-  const present = keysOf(group).filter((k) => data.some((d) => ((d[k] as number | undefined) ?? 0) > 0))
+  const order = keys ?? keysOf(group, rows)
+  const present = order.filter((k) => data.some((d) => ((d[k] as number | undefined) ?? 0) > 0))
   const fmt = metric === 'cost' ? (n: number) => usd(n) : tokens
-  const color = (k: string) => t[slotOf(group, k) as (typeof SERIES)[number]] || t['--accent']
+  const color = (k: string) => t[slotOf(order, k) as (typeof SERIES)[number]] || t['--accent']
 
   return (
     <div>
       <ul className="mb-3 flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-muted" aria-label="Legend">
         {present.map((k) => (
           <li key={k} className="flex items-center gap-1.5">
-            <span className="size-2.5 rounded-sm" style={{ background: `var(${slotOf(group, k)})` }} />
+            <span className="size-2.5 rounded-sm" style={{ background: `var(${slotOf(order, k)})` }} />
             {labelOf(group, k)}
           </li>
         ))}

@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./reader.css";
 
 /* Every colour, font and radius a component uses is a token below. A theme is one
    [data-theme] block; it works on <html> and on any element (the /themes previews). */

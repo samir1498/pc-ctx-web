@@ -1,17 +1,9 @@
 ---
-import HubLayout from '../layouts/HubLayout.astro'
-import UsageExplorer from '../components/UsageExplorer.tsx'
-import { USAGE } from '../mock/usage'
+// The usage page lives under the project whose store has a usage/ folder.
+const hub = Astro.locals.hub
+for (const p of hub.projects) {
+  const store = p.audience === 'plain' ? null : await hub.store(p.id)
+  if (store && (await store.tree('usage'))) return Astro.redirect(`/p/${p.id}/usage`, 302)
+}
+return new Response('No store has usage files yet.', { status: 404 })
 ---
-
-<HubLayout title="Usage" active="usage">
-  <div class="eyebrow">All projects</div>
-  <h1 class="mt-1 font-display text-3xl font-bold tracking-tight">Token usage</h1>
-  <p class="mt-1 max-w-3xl text-muted">
-    Tokens and cost per day for Claude Code, opencode and Hermes. Collected once a day on the box from counts only, never prompt text.
-    Cost is the API-equivalent at list prices; Claude Code is on a subscription, free opencode models cost nothing.
-  </p>
-  <div class="mt-8">
-    <UsageExplorer client:load rows={USAGE} />
-  </div>
-</HubLayout>

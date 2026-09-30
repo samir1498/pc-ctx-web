@@ -1,0 +1,161 @@
+---
+import TaskList from './TaskList.astro'
+import StoreHtml from './StoreHtml.tsx'
+import Mermaid from './Mermaid.astro'
+import type { Folder, Task } from '../../doc/types'
+import type { FolderEntry } from '../../source/folders'
+import type { PageCtx } from '../../lib/page'
+import { asItem } from '../../source/meta'
+import { displayTitle, docDate, docTitle, formatDate, planProgress, shortDate, shotsOf, splitLeadingHeading } from '../../doc/hub'
+import { resolveStoreUrl } from '../../doc/media'
+import { renderMarkdown } from '../../doc/render'
+import { PLAIN_STATUS, singular } from '../../lib/sections'
+
+interface Props {
+  ctx: PageCtx
+  section: Folder
+  entry: FolderEntry
+  archived?: boolean
+  /** Plan file names, to link plan:<slug> references and roadmap entries. */
+  planNames: string[]
+}
+const { ctx, section, entry, archived = false, planNames } = Astro.props
+const { project, plain, say } = ctx
+const item = asItem(entry)
+const fm = item.frontmatter ?? {}
+const str = (v: unknown) => (typeof v === 'string' && v.trim() ? v : null)
+const strings = (v: unknown) => (Array.isArray(v) ? v.filter((s): s is string => typeof s === 'string' && s.trim() !== '') : [])
+
+const rawTitle = docTitle(item)
+const title = say(displayTitle(item, singular(section)))
+const { heading, rest } = splitLeadingHeading(item.body ?? '')
+const body = say(heading && heading === rawTitle ? rest : (item.body ?? ''))
+const isHtml = fm.kind === 'html'
+const html = !isHtml && body.trim() ? renderMarkdown(body, { project: project.id, docPath: entry.path }) : ''
+const tldr = str(fm.tldr) ? say(String(fm.tldr)) : ''
+const status = archived ? 'archived' : (str(fm.status) ?? (section === 'plans' ? 'active' : null))
+const tasks: Task[] = Array.isArray(fm.tasks) ? (fm.tasks as Task[]) : []
+const pr = planProgress(item)
+const date = section === 'plans' ? null : docDate(item)
+const started = section === 'plans' ? formatDate(fm.created as string | number | undefined) : ''
+const completed = formatDate(typeof fm.completed_at === 'string' || typeof fm.completed_at === 'number' ? fm.completed_at : undefined)
+const acceptance = strings(fm.acceptance)
+const references = plain ? [] : strings(fm.references)
+const tags = strings(fm.tags)
+const shots = shotsOf(item.frontmatter).slice(0, 3).map((s) => resolveStoreUrl(s, project.id, entry.path))
+const entries = (Array.isArray(fm.entries) ? fm.entries : []).filter((e): e is { ref: string; status?: string; note?: string } => typeof e === 'object' && e !== null && typeof (e as { ref?: unknown }).ref === 'string')
+const hasMermaid = html.includes('language-mermaid')
+
+// A plan named by frontmatter slug or "plan:<slug>": match the file whose name ends with it.
+const planHref = (ref: string) => {
+  const slug = ref.replace(/^plan:/, '')
+  const name = planNames.find((n) => n.replace(/\.\w+$/, '') === slug || n.replace(/\.\w+$/, '').endsWith(`-${slug}`))
+  return name ? `/p/${project.id}/plan/${name.replace(/\.\w+$/, '')}` : null
+}
+const planRef = str(fm.plan) ?? str(fm.ref_plan)
+const statusLabel = (s: string) => (plain ? (PLAIN_STATUS[s] ?? s) : s)
+---
+
+<article>
+  <h1 class="page-title">{title}</h1>
+  {tldr && <p class="lede">{tldr}</p>}
+  <div class="meta-row">
+    {status && <span class="pill" data-tone={status}>{statusLabel(status)}</span>}
+    {date && <span>{shortDate(date)}</span>}
+    {started && <span>started {started}</span>}
+    {completed && <span>finished {completed}</span>}
+    {
+      pr.total > 0 && (
+        <span class="flex items-center gap-2">
+          <span class="bar w-24">
+            <span style={{ width: `${Math.round((pr.done / pr.total) * 100)}%` }} />
+          </span>
+          {pr.done} of {pr.total} done
+        </span>
+      )
+    }
+    {str(fm.period) && <span>{fm.period}</span>}
+    {planRef && (planHref(planRef) ? <a class="text-accent hover:underline" href={planHref(planRef)}>plan</a> : <span>plan {planRef}</span>)}
+    {!plain && typeof fm.priority === 'number' && <span>priority {fm.priority}</span>}
+    {!plain && str(fm.roadmap) && <span>roadmap {fm.roadmap}</span>}
+    {str(fm.superseded_by) && <span>superseded by {fm.superseded_by}</span>}
+    {tags.map((t) => <span>#{t}</span>)}
+    {!plain && <span>{entry.path}</span>}
+  </div>
+
+  {
+    shots.length > 0 && (
+      <div class="my-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
+        {shots.map((src, i) => (
+          <a href={src} target="_blank" rel="noreferrer" class="block">
+            <img src={src} alt={`Screenshot ${i + 1}`} loading="lazy" class="aspect-video w-full rounded-card border border-border object-cover object-top" />
+          </a>
+        ))}
+      </div>
+    )
+  }
+
+  {
+    tasks.length > 0 && (
+      <section>
+        <h2 class="section-title">Tasks{pr.total ? ` · ${pr.done} of ${pr.total} done` : ''}</h2>
+        <TaskList tasks={tasks} plain={plain} />
+      </section>
+    )
+  }
+
+  {
+    acceptance.length > 0 && (
+      <section>
+        <h2 class="section-title">Done means</h2>
+        <ul class="check-list">{acceptance.map((a) => <li>{say(a)}</li>)}</ul>
+      </section>
+    )
+  }
+
+  {
+    entries.length > 0 && (
+      <section>
+        <h2 class="section-title">Milestones</h2>
+        <ul class="ref-list">
+          {entries.map((e) => (
+            <li>
+              {planHref(e.ref) ? <a class="font-medium hover:underline" href={planHref(e.ref)}>{e.ref}</a> : <span class="font-medium">{e.ref}</span>}
+              <span class="ml-2 font-mono text-xs text-dim">{e.status ?? 'planned'}</span>
+              {e.note && <span class="block text-sm text-muted">{say(e.note)}</span>}
+            </li>
+          ))}
+        </ul>
+      </section>
+    )
+  }
+
+  {
+    isHtml ? (
+      <section class="mt-6">
+        <StoreHtml client:only="react" html={item.body ?? ''} project={project.id} docPath={entry.path} />
+      </section>
+    ) : html ? (
+      <section class="mt-8">
+        {tasks.length > 0 && <h2 class="section-title">Notes</h2>}
+        <div class="doc-body" set:html={html} />
+      </section>
+    ) : tasks.length === 0 && acceptance.length === 0 && entries.length === 0 ? (
+      <p class="mt-8 text-sm text-muted">This page has a title and nothing else yet.</p>
+    ) : null
+  }
+
+  {
+    references.length > 0 && (
+      <section>
+        <h2 class="section-title">References</h2>
+        <ul class="ref-list">
+          {references.map((r) => (
+            <li>{r.startsWith('plan:') && planHref(r) ? <a class="hover:underline" href={planHref(r)}>{r.slice(5)}</a> : <span class="break-all font-mono text-xs">{r}</span>}</li>
+          ))}
+        </ul>
+      </section>
+    )
+  }
+  {hasMermaid && <Mermaid />}
+</article>

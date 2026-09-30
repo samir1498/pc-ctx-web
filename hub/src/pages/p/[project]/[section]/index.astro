@@ -1,0 +1,72 @@
+---
+import HubLayout from '../../../../layouts/HubLayout.astro'
+import MiniBars from '../../../../components/charts/MiniBars.tsx'
+import SectionList from '../../../../components/SectionList.tsx'
+import StatusCard from '../../../../components/StatusCard.astro'
+import StatusSkeleton from '../../../../components/StatusSkeleton.astro'
+import { notFound, pageCtx } from '../../../../lib/page'
+import { summarize } from '../../../../lib/dashboard'
+import { BLURB, PLAIN_STATUS, STATUS_SECTIONS, isSection, label } from '../../../../lib/sections'
+import { listPage } from '../../../../lib/list'
+import { dayLabel } from '../../../../lib/format'
+
+const ctx = await pageCtx(Astro)
+const section = Astro.params.section ?? ''
+if (!ctx || !isSection(section)) return notFound('section')
+const { project, store, plain } = ctx
+const tree = await store.tree(section)
+const s = summarize(section, tree ?? undefined)
+const first = await listPage(store, project.id, section, { page: 0, plain })
+const statusDefs = STATUS_SECTIONS[section]?.map((d) => (plain ? { ...d, label: PLAIN_STATUS[d.key] ?? d.label } : d))
+const hasStatus = !!statusDefs && section !== 'archive'
+const weeks = s.weekly.map((value, i) => ({ label: s.weekStarts[i] ?? '', value }))
+---
+
+<HubLayout title={label(section)} active={section} project={project}>
+  <div class="eyebrow">{project.name}</div>
+  <h1 class="mt-1 font-display text-3xl font-bold tracking-tight">{label(section)}</h1>
+  <p class="mt-1 text-muted">{BLURB[section]}</p>
+
+  <div class="mt-8 grid grid-cols-2 gap-3 md:grid-cols-4">
+    <div class="card p-4">
+      <div class="eyebrow">Total</div>
+      <div class="num mt-2 text-2xl font-medium">{s.count}</div>
+    </div>
+    <div class="card p-4">
+      <div class="eyebrow">New this week</div>
+      <div class="num mt-2 text-2xl font-medium">{s.newThisWeek}</div>
+    </div>
+    <div class="card p-4">
+      <div class="eyebrow">Last 30 days</div>
+      <div class="num mt-2 text-2xl font-medium">{s.last30}</div>
+    </div>
+    <div class="card p-4">
+      <div class="eyebrow">Latest</div>
+      <div class="num mt-2 text-2xl font-medium">{s.lastDate ? dayLabel(s.lastDate) : 'none dated'}</div>
+    </div>
+  </div>
+
+  <div class:list={['mt-4 grid gap-4', hasStatus && 'lg:grid-cols-5']}>
+    {
+      hasStatus && (
+        <div class="lg:col-span-2">
+          <StatusCard server:defer project={project.id} section={section} title="By status">
+            <StatusSkeleton slot="fallback" title="By status" />
+          </StatusCard>
+        </div>
+      )
+    }
+    <div class:list={['card p-5', hasStatus && 'lg:col-span-3']}>
+      <h2 class="font-display text-lg font-semibold">Added per week</h2>
+      <p class="text-xs text-dim">Last 12 weeks, by the date in the file name</p>
+      <div class="mt-4 min-h-38">
+        <MiniBars client:only="react" data={weeks} format="added" labelFormat="day" height={150} showAxis />
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-8">
+    <h2 class="mb-3 font-display text-lg font-semibold">All {label(section).toLowerCase()}</h2>
+    <SectionList client:load project={project.id} section={section} first={first} statuses={hasStatus ? statusDefs : undefined} />
+  </div>
+</HubLayout>

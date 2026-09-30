@@ -1,0 +1,24 @@
+---
+import HubLayout from '../../../layouts/HubLayout.astro'
+import UsageExplorer from '../../../components/UsageExplorer.tsx'
+import { notFound, pageCtx } from '../../../lib/page'
+import { loadUsage } from '../../../lib/usage-load'
+
+const ctx = await pageCtx(Astro)
+if (!ctx || ctx.plain) return notFound('usage')
+const rows = await loadUsage(ctx.store, 120)
+const days = new Set(rows.map((r) => r.date)).size
+---
+
+<HubLayout title="Usage" active="usage" project={ctx.project}>
+  <div class="eyebrow">{ctx.project.name}</div>
+  <h1 class="mt-1 font-display text-3xl font-bold tracking-tight">Token usage</h1>
+  <p class="mt-1 max-w-3xl text-muted">
+    Tokens and cost per day for Claude Code, opencode, Hermes and other clients of the model router, collected on the box from counts only, never prompt text.
+    Claude Code is priced at the API list price although it runs on a subscription; opencode's cost is its own figure; free models cost nothing.
+    Days are Europe/Berlin, so edges differ from the Anthropic console, which uses UTC.
+  </p>
+  <div class="mt-8 min-h-96">
+    {days > 0 ? <UsageExplorer client:only="react" rows={rows} /> : <p class="text-muted">No usage files in this store yet.</p>}
+  </div>
+</HubLayout>
