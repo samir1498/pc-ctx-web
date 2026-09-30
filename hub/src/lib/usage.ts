@@ -1,5 +1,5 @@
 import type { UsageRow } from './usage-types'
-import { HOST_LABEL, TOOL_LABEL } from './usage-types'
+import { HOST_LABEL, TOOL_LABEL, type Host, type Tool } from './usage-types'
 
 export type GroupBy = 'host' | 'tool' | 'provider' | 'model'
 export type Metric = 'cost' | 'tokens'
@@ -130,4 +130,22 @@ export function priceLabel(m: Pick<ModelTotals, 'cost' | 'pricing'>): string | n
   if (m.pricing === 'free') return 'free'
   if (m.pricing === 'unpriced' && m.cost === 0) return 'no price'
   return null
+}
+
+export type Category = 'all' | 'claude' | 'cowork' | 'opencode' | 'hermes' | 'router'
+export type HostFilter = 'all' | 'wsl' | 'windows'
+
+/** Top-level tabs. Claude Code covers the terminal, the desktop Code tab and the Agent SDK; it alone splits by host. */
+export const CATEGORIES: { key: Category; label: string; tools: readonly Tool[] | null }[] = [
+  { key: 'all', label: 'All', tools: null },
+  { key: 'claude', label: 'Claude Code', tools: ['claude-code', 'claude-desktop', 'claude-sdk'] },
+  { key: 'cowork', label: 'Cowork', tools: ['cowork'] },
+  { key: 'opencode', label: 'opencode', tools: ['opencode'] },
+  { key: 'hermes', label: 'Hermes', tools: ['hermes'] },
+  { key: 'router', label: 'Other router clients', tools: ['router'] },
+]
+
+export function inCategory(category: Category, host: HostFilter = 'all') {
+  const tools = CATEGORIES.find((c) => c.key === category)?.tools ?? null
+  return (r: { tool: Tool; host: Host }) => (!tools || tools.includes(r.tool)) && (host === 'all' || r.host === host)
 }

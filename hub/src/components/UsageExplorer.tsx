@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import type { PlanSample, UsageRow, UsageSession } from '../lib/usage-types'
-import { byModel, keysOf, labelOf, lastDays, previousDays, slotOf, sum, totalTokens, windowDates, type GroupBy, type Metric } from '../lib/usage'
+import { byModel, CATEGORIES, inCategory, keysOf, labelOf, slotOf, sum, totalTokens, windowDates, type Category, type GroupBy, type HostFilter, type Metric } from '../lib/usage'
 import { count, pct, tokens, usd } from '../lib/format'
 import DailyUsageChart from './charts/DailyUsageChart'
 import MiniBars from './charts/MiniBars'
@@ -43,6 +43,27 @@ function Segmented<T extends string | number>({ label, value, options, onChange 
   )
 }
 
+const HOSTS: { key: HostFilter; label: string; note: string }[] = [
+  { key: 'all', label: 'Everywhere', note: 'WSL and Windows' },
+  { key: 'wsl', label: 'WSL', note: 'terminal and Agent SDK' },
+  { key: 'windows', label: 'Windows', note: 'desktop app and terminal' },
+]
+
+function Tab({ on, label, value, share, onClick, small = false }: { on: boolean; label: string; value: string; share?: string; onClick: () => void; small?: boolean }) {
+  return (
+    <button
+      role="tab"
+      aria-selected={on}
+      onClick={onClick}
+      className={`flex min-w-0 flex-col rounded-card border text-left transition-colors ${small ? 'px-3 py-2' : 'px-4 py-3'} ${on ? 'border-accent bg-accent-soft' : 'border-border bg-panel hover:bg-hover'}`}
+    >
+      <span className={`truncate font-medium ${small ? 'text-xs' : 'text-sm'} ${on ? 'text-accent' : 'text-fg'}`}>{label}</span>
+      <span className={`num ${small ? 'text-xs' : 'text-lg'} text-fg`}>{value}</span>
+      {share && <span className="text-xs text-dim">{share}</span>}
+    </button>
+  )
+}
+
 function Kpi({ label, value, delta, note }: { label: string; value: string; delta?: number; note?: string }) {
   return (
     <div className="card p-4">
@@ -63,30 +84,44 @@ const TYPES = [
   { key: 'cacheWrite', label: 'Cache write' },
 ] as const
 
-export default function UsageExplorer({ rows, sessions, plan }: { rows: UsageRow[]; sessions: UsageSession[]; plan: PlanSample[] }) {
+export default function UsageExplorer({ rows: allRows, sessions: allSessions, plan }: { rows: UsageRow[]; sessions: UsageSession[]; plan: PlanSample[] }) {
   const [range, setRange] = useState<number>(14)
   const [group, setGroup] = useState<GroupBy>('tool')
   const [metric, setMetric] = useState<Metric>('tokens')
+  const [category, setCategory] = useState<Category>('all')
+  const [host, setHost] = useState<HostFilter>('all')
 
-  const keys = useMemo(() => keysOf(group, rows), [rows, group])
-  const modelKeys = useMemo(() => keysOf('model', rows), [rows])
-  const cur = useMemo(() => lastDays(rows, range), [rows, range])
-  const prev = useMemo(() => previousDays(rows, range), [rows, range])
-  const inWindow = useMemo(() => new Set(windowDates(rows, range)), [rows, range])
-  const curSessions = useMemo(() => sessions.filter((s) => inWindow.has(s.date)), [sessions, inWindow])
-  const curPlan = useMemo(() => plan.filter((p) => inWindow.has(p.at.slice(0, 10))), [plan, inWindow])
+  // Colours come from the whole history, so switching tabs never repaints a series.
+  const modelKeys = useMemo(() => keysOf('model', allRows), [allRows])
+  const span = useMemo(() => new Set(windowDates(allRows, range)), [allRows, range])
+  const before = useMemo(() => new Set(windowDates(allRows, range, 1)), [allRows, range])
+  const tabTotal = (c: Category, h: HostFilter = 'all') => totalTokens(sum(allRows.filter((r) => span.has(r.date) && inCategory(c, h)(r))))
+  const everything = tabTotal('all')
+  const tabs = CATEGORIES.filter((c) => c.key === 'all' || allRows.some(inCategory(c.key)))
+  const hostTabs = category === 'claude' ? HOSTS : []
+  const hostOn = hostTabs.length ? host : 'all'
+  const rows = useMemo(() => allRows.filter(inCategory(category, hostOn)), [allRows, category, hostOn])
+  const sessions = useMemo(() => allSessions.filter(inCategory(category, hostOn)), [allSessions, category, hostOn])
+  const groupOptions = GROUPS.filter((g) => (g.key === 'host' ? hostTabs.length > 0 && hostOn === 'all' : g.key !== 'tool' || (CATEGORIES.find((c) => c.key === category)?.tools?.length ?? 2) > 1))
+  const groupOn = groupOptions.some((g) => g.key === group) ? group : 'model'
+  const keys = useMemo(() => keysOf(groupOn, allRows), [allRows, groupOn])
+  // Windows are anchored on the whole history, so a quiet category still shows the same days.
+  const cur = useMemo(() => rows.filter((r) => span.has(r.date)), [rows, span])
+  const prev = useMemo(() => rows.filter((r) => before.has(r.date)), [rows, before])
+  const curSessions = useMemo(() => sessions.filter((s) => span.has(s.date)), [sessions, span])
+  const curPlan = useMemo(() => plan.filter((p) => span.has(p.at.slice(0, 10))), [plan, span])
   const t = sum(cur)
   const p = sum(prev)
   const all = totalTokens(t)
   const delta = (a: number, b: number) => (b > 0 ? a / b - 1 : undefined)
   const cacheHit = t.cacheRead / Math.max(1, t.cacheRead + t.input + t.cacheWrite)
   const models = useMemo(() => byModel(cur), [cur])
-  const days = useMemo(() => windowDates(rows, range), [rows, range])
+  const days = useMemo(() => [...span].sort(), [span])
   const perDay = days.map((d) => ({ date: d, ...sum(cur.filter((r) => r.date === d)) }))
   const measure = (x: ReturnType<typeof sum>) => (metric === 'cost' ? x.cost : totalTokens(x))
   const groups = keys
     .map((key) => {
-      const mine = cur.filter((r) => r[group] === key)
+      const mine = cur.filter((r) => r[groupOn] === key)
       return { key, total: measure(sum(mine)), days: days.map((d) => ({ label: d, value: measure(sum(mine.filter((r) => r.date === d))) })) }
     })
     .filter((g) => g.total > 0)
@@ -96,9 +131,33 @@ export default function UsageExplorer({ rows, sessions, plan }: { rows: UsageRow
 
   return (
     <div className="space-y-6">
+      <div role="tablist" aria-label="Category" className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+        {tabs.map((c) => {
+          const n = tabTotal(c.key)
+          return (
+            <Tab
+              key={c.key}
+              on={category === c.key}
+              label={c.label}
+              value={tokens(n)}
+              share={c.key === 'all' ? `${range} days` : everything > 0 ? `${Math.round((n / everything) * 100)}% of all` : undefined}
+              onClick={() => setCategory(c.key)}
+            />
+          )
+        })}
+      </div>
+
+      {hostTabs.length > 0 && (
+        <div role="tablist" aria-label="Where" className="flex flex-wrap gap-2">
+          {hostTabs.map((h) => (
+            <Tab key={h.key} small on={hostOn === h.key} label={`${h.label} · ${h.note}`} value={tokens(tabTotal(category, h.key))} onClick={() => setHost(h.key)} />
+          ))}
+        </div>
+      )}
+
       <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
         <Segmented label="Range" value={range} options={RANGES.map((r) => ({ key: r, label: `${r} days` }))} onChange={setRange} />
-        <Segmented label="Group by" value={group} options={GROUPS} onChange={setGroup} />
+        <Segmented label="Group by" value={groupOn} options={groupOptions} onChange={setGroup} />
         <Segmented label="Show" value={metric} options={METRICS} onChange={setMetric} />
       </div>
 
@@ -111,20 +170,20 @@ export default function UsageExplorer({ rows, sessions, plan }: { rows: UsageRow
 
       <section className="card p-5">
         <h2 className="mb-4 font-display text-lg font-semibold">
-          {metric === 'cost' ? 'API value' : 'Tokens'} per day, by {group}
+          {metric === 'cost' ? 'API value' : 'Tokens'} per day, by {groupOn}
         </h2>
-        <DailyUsageChart rows={cur} group={group} metric={metric} height={300} keys={keys} dates={days} />
+        <DailyUsageChart rows={cur} group={groupOn} metric={metric} height={300} keys={keys} dates={days} />
       </section>
 
       <section>
-        <h2 className="mb-3 font-display text-lg font-semibold">Each {group} on its own scale</h2>
+        <h2 className="mb-3 font-display text-lg font-semibold">Each {groupOn} on its own scale</h2>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {split.map((g) => (
             <div key={g.key} className="card p-4">
               <div className="flex items-baseline justify-between gap-2">
                 <span className="flex min-w-0 items-center gap-2 text-sm">
                   <span className="size-2.5 shrink-0 rounded-sm" style={{ background: `var(${slotOf(keys, g.key)})` }} />
-                  <span className="truncate">{labelOf(group, g.key)}</span>
+                  <span className="truncate">{labelOf(groupOn, g.key)}</span>
                 </span>
                 <span className="num shrink-0 text-sm text-fg">{metric === 'cost' ? usd(g.total) : tokens(g.total)}</span>
               </div>
@@ -134,7 +193,7 @@ export default function UsageExplorer({ rows, sessions, plan }: { rows: UsageRow
             </div>
           ))}
         </div>
-        {hidden > 0 && <p className="mt-2 text-xs text-dim">{hidden} smaller {group === 'model' ? 'models' : 'entries'} are in the table below.</p>}
+        {hidden > 0 && <p className="mt-2 text-xs text-dim">{hidden} smaller {groupOn === 'model' ? 'models' : 'entries'} are in the table below.</p>}
       </section>
 
       <section>
@@ -157,9 +216,9 @@ export default function UsageExplorer({ rows, sessions, plan }: { rows: UsageRow
 
       <ModelTable models={models} colourKeys={modelKeys} />
 
-      <SessionTable sessions={curSessions} />
+      {(category === 'all' || category === 'claude' || category === 'cowork') && <SessionTable sessions={curSessions} />}
 
-      {curPlan.length > 0 && (
+      {curPlan.length > 0 && (category === 'all' || category === 'claude' || category === 'cowork') && (
         <section className="card p-5">
           <h2 className="font-display text-lg font-semibold">Plan limits used</h2>
           <p className="mb-4 text-xs text-dim">The Claude desktop app's own samples of the subscription's 5-hour and 7-day limits. They cover the whole account: chat, Cowork and Code on every device.</p>
