@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react'
 import type { UsageRow } from '../lib/usage-types'
-import { TOOL_LABEL } from '../lib/usage-types'
-import { byModel, keysOf, labelOf, lastDays, previousDays, priceLabel, slotOf, sum, totalTokens, windowDates, type GroupBy, type Metric } from '../lib/usage'
+import { byModel, keysOf, labelOf, lastDays, previousDays, slotOf, sum, totalTokens, windowDates, type GroupBy, type Metric } from '../lib/usage'
 import { count, pct, tokens, usd } from '../lib/format'
 import DailyUsageChart from './charts/DailyUsageChart'
 import MiniBars from './charts/MiniBars'
+import ModelTable from './ModelTable'
 
 const RANGES = [7, 14, 30] as const
 const GROUPS: { key: GroupBy; label: string }[] = [
@@ -74,7 +74,7 @@ export default function UsageExplorer({ rows }: { rows: UsageRow[] }) {
   const all = totalTokens(t)
   const delta = (a: number, b: number) => (b > 0 ? a / b - 1 : undefined)
   const cacheHit = t.cacheRead / Math.max(1, t.cacheRead + t.input + t.cacheWrite)
-  const models = byModel(cur)
+  const models = useMemo(() => byModel(cur), [cur])
   const days = useMemo(() => windowDates(rows, range), [rows, range])
   const perDay = days.map((d) => ({ date: d, ...sum(cur.filter((r) => r.date === d)) }))
   const measure = (x: ReturnType<typeof sum>) => (metric === 'cost' ? x.cost : totalTokens(x))
@@ -149,58 +149,7 @@ export default function UsageExplorer({ rows }: { rows: UsageRow[] }) {
         <p className="mt-2 text-xs text-dim">Each chart has its own scale. Cache reads run about a hundred times larger than the rest.</p>
       </section>
 
-      <section className="card overflow-hidden">
-        <h2 className="px-5 pt-5 font-display text-lg font-semibold">By model</h2>
-        <div className="overflow-x-auto">
-          <table className="mt-3 w-full min-w-[44rem] text-sm">
-            <thead className="text-left text-xs text-dim">
-              <tr className="border-b border-border">
-                <th className="px-5 py-2 font-medium">Model</th>
-                <th className="py-2 font-medium">Tool</th>
-                <th className="py-2 font-medium">Provider</th>
-                <th className="py-2 text-right font-medium">Calls</th>
-                <th className="py-2 text-right font-medium">Input</th>
-                <th className="py-2 text-right font-medium">Output</th>
-                <th className="py-2 text-right font-medium">Cache read</th>
-                <th className="py-2 text-right font-medium">Cache write</th>
-                <th className="px-5 py-2 text-right font-medium">API value</th>
-              </tr>
-            </thead>
-            <tbody>
-              {models.map((m) => {
-                const label = priceLabel(m)
-                return (
-                  <tr key={m.key} className="border-b border-border last:border-0 hover:bg-hover">
-                    <td className="px-5 py-2.5">
-                      <span className="flex items-center gap-2 font-medium">
-                        <span className="size-2.5 rounded-sm" style={{ background: `var(${slotOf(modelKeys, m.model)})` }} />
-                        {m.model}
-                      </span>
-                    </td>
-                    <td className="py-2.5 text-muted">{TOOL_LABEL[m.tool]}</td>
-                    <td className="py-2.5 text-muted">{m.provider}</td>
-                    <td className="num py-2.5 text-right">
-                      {count(m.calls)}
-                      {m.errors > 0 && <span className="block text-xs text-dim">{count(m.errors)} failed</span>}
-                    </td>
-                    {m.calls === 0 ? (
-                      <td colSpan={4} className="py-2.5 text-right text-xs text-dim">every call failed</td>
-                    ) : (
-                      <>
-                        <td className="num py-2.5 text-right">{tokens(m.input)}</td>
-                        <td className="num py-2.5 text-right">{tokens(m.output)}</td>
-                        <td className="num py-2.5 text-right">{tokens(m.cacheRead)}</td>
-                        <td className="num py-2.5 text-right">{tokens(m.cacheWrite)}</td>
-                      </>
-                    )}
-                    <td className="num px-5 py-2.5 text-right">{label ? <span className="text-dim">{label}</span> : <span title={m.pricing === 'reported' ? 'As the tool reports it' : 'At list price'}>{usd(m.cost)}</span>}</td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
-      </section>
+      <ModelTable models={models} colourKeys={modelKeys} />
     </div>
   )
 }
