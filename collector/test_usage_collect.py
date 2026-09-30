@@ -251,6 +251,19 @@ class PublishTest(Base):
         self.assertIn("race", log)
         self.assertIn("usage: test", log)
 
+    def test_inherited_git_dir_cannot_redirect_the_reset(self):
+        with open(os.path.join(self.context, "plan.md"), "w") as fh:
+            fh.write("someone's uncommitted edit\n")
+        os.environ["GIT_DIR"] = os.path.join(self.context, ".git")
+        os.environ["GIT_WORK_TREE"] = self.context
+        try:
+            self.assertTrue(self.publish().startswith("pushed"))
+        finally:
+            del os.environ["GIT_DIR"], os.environ["GIT_WORK_TREE"]
+        with open(os.path.join(self.context, "plan.md")) as fh:
+            self.assertEqual(fh.read(), "someone's uncommitted edit\n")
+        self.assertIn("usage/2026-09-29.json", self.remote_files())
+
     def test_refuses_to_reset_a_shared_checkout(self):
         with self.assertRaises(RuntimeError):
             uc.publish(self.context, self.context, ["2026-09-29"], self.DAYS, "x", pause=0)

@@ -281,8 +281,15 @@ def refresh_prices(prices, keys, models_dev_path):
 
 # ---- main ----------------------------------------------------------------
 
+def git_env():
+    """An inherited GIT_DIR or GIT_WORK_TREE outranks -C and would aim reset --hard elsewhere."""
+    return {k: v for k, v in os.environ.items()
+            if k not in ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_COMMON_DIR", "GIT_OBJECT_DIRECTORY")}
+
+
 def git(repo, *args, check=True):
-    return subprocess.run(["git", "-C", repo, *args], capture_output=True, text=True, check=check).stdout.strip()
+    return subprocess.run(["git", "-C", repo, *args], capture_output=True, text=True, check=check,
+                          env=git_env()).stdout.strip()
 
 
 def ensure_store(store, context):
@@ -302,7 +309,7 @@ def ensure_store(store, context):
 
 def push(store):
     return subprocess.run(["git", "-C", store, "push", "--quiet", "origin", "HEAD:refs/heads/main"],
-                          capture_output=True, text=True)
+                          capture_output=True, text=True, env=git_env())
 
 
 def publish(store, context, window, days, message, attempts=4, pause=5):
@@ -315,7 +322,7 @@ def publish(store, context, window, days, message, attempts=4, pause=5):
         git(store, "clean", "-fdq", "--", "usage")
         write_days(out, window, days)
         git(store, "add", "--", "usage")
-        if subprocess.run(["git", "-C", store, "diff", "--cached", "--quiet"]).returncode == 0:
+        if subprocess.run(["git", "-C", store, "diff", "--cached", "--quiet"], env=git_env()).returncode == 0:
             return "origin/main already has these files"
         git(store, "commit", "--quiet", "-m", message, "--", "usage")
         sha = git(store, "rev-parse", "--short", "HEAD")
