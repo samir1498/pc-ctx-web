@@ -3,5 +3,5 @@ Description=Collect daily token usage for the context hub
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/python3 %h/observeone/projects/pc-ctx-web/collector/usage_collect.py --publish
+ExecStart=/usr/bin/python3 %h/.local/share/usage-collector/usage_collect.py --publish
 Nice=10

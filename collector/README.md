@@ -34,9 +34,13 @@ python3 -m unittest discover collector              # tests
 ## Daily timer
 
 ```
+mkdir -p ~/.local/share/usage-collector
+cp collector/usage_collect.py collector/prices.json ~/.local/share/usage-collector/
 cp collector/systemd/usage-collect.* ~/.config/systemd/user/
 systemctl --user daemon-reload && systemctl --user enable --now usage-collect.timer
 ```
+
+The timer runs a copy, because the shared checkout is fetch-only and would not pick up a merge. Repeat the copy after changing the script or the prices.
 
 The hub reads the context store from GitHub, so the timer runs with `--publish`:
 - It commits only the `usage/` files, as their own commit, straight to the context store's `main`. Usage files are bookkeeping, so they get no branch or PR.
