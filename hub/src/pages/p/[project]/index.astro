@@ -1,0 +1,107 @@
+---
+import HubLayout from '../../../layouts/HubLayout.astro'
+import Sparkline from '../../../components/Sparkline.astro'
+import StatusCard from '../../../components/StatusCard.astro'
+import StatusSkeleton from '../../../components/StatusSkeleton.astro'
+import UsageCard from '../../../components/UsageCard.astro'
+import { notFound, pageCtx } from '../../../lib/page'
+import { recent, summarizeAll } from '../../../lib/dashboard'
+import { PRIMARY, SECONDARY, label } from '../../../lib/sections'
+import { loadUsage } from '../../../lib/usage-load'
+import { dayLabel } from '../../../lib/format'
+import { firstParagraphs, splitLeadingHeading } from '../../../doc/hub'
+import { renderMarkdown } from '../../../doc/render'
+
+const ctx = await pageCtx(Astro)
+if (!ctx) return notFound('project')
+const { project, store, plain, say } = ctx
+const base = `/p/${project.id}`
+const trees = await store.trees()
+const summaries = summarizeAll(trees)
+const shown = summaries.filter((s) => s.count > 0)
+const tiles = shown.filter((s) => PRIMARY.includes(s.key))
+const docs = shown.reduce((n, s) => n + s.count, 0)
+const fresh = shown.reduce((n, s) => n + s.newThisWeek, 0)
+const usage = plain ? [] : await loadUsage(store, 28)
+const activity = recent(trees, [...PRIMARY, ...SECONDARY].filter((k) => k !== 'archive'))
+
+// A plain reader gets the store's own "where it stands" note first.
+let lede = ''
+if (plain) {
+  const now = await store.doc('progress', 'now')
+  if (now?.body) {
+    const { rest } = splitLeadingHeading(now.body)
+    lede = renderMarkdown(say(firstParagraphs(rest || now.body, 2)), { project: project.id, docPath: now.path })
+  }
+}
+---
+
+<HubLayout title={plain ? 'Overview' : 'Dashboard'} active="dashboard" project={project}>
+  <div class="eyebrow">{project.name}</div>
+  <h1 class="mt-1 font-display text-3xl font-bold tracking-tight">{plain ? project.name : 'Dashboard'}</h1>
+  <p class="mt-1 text-muted">
+    <span class="num text-fg">{docs}</span> documents across {shown.length} sections, <span class="num text-fg">{fresh}</span> new this week
+  </p>
+
+  {
+    lede && (
+      <section class="card mt-8 p-5">
+        <h2 class="font-display text-lg font-semibold">Where it stands</h2>
+        <div class="doc-body mt-2" set:html={lede} />
+        <a href={`${base}/progress/now`} class="mt-3 inline-block text-sm text-accent hover:underline">
+          Full status
+        </a>
+      </section>
+    )
+  }
+
+  {usage.length > 0 && <div class="mt-8"><UsageCard rows={usage} href={`${base}/usage`} /></div>}
+
+  <section class="mt-10">
+    <h2 class="font-display text-lg font-semibold">Sections</h2>
+    <div class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      {
+        tiles.map((s) => (
+          <a href={`${base}/${s.key}`} class="card block p-4 transition-colors hover:border-line">
+            <div class="flex items-baseline justify-between">
+              <span class="font-medium">{label(s.key)}</span>
+              {s.newThisWeek > 0 && <span class="text-xs text-dim">+{s.newThisWeek} this week</span>}
+            </div>
+            <div class="num mt-2 text-3xl font-medium">{s.count}</div>
+            <div class="mt-3">
+              <Sparkline values={s.weekly} label={`${label(s.key)}, files added per week over 12 weeks`} />
+            </div>
+          </a>
+        ))
+      }
+    </div>
+  </section>
+
+  <section class="mt-10 grid gap-4 lg:grid-cols-2">
+    {
+      (trees.plans?.entries.length ?? 0) > 0 ? (
+        <StatusCard server:defer project={project.id} section="plans" title="Plans by status" href={`${base}/plans`}>
+          <StatusSkeleton slot="fallback" title="Plans by status" />
+        </StatusCard>
+      ) : null
+    }
+    <div class="card p-5">
+      <h2 class="font-display text-lg font-semibold">Recent activity</h2>
+      <ol class="mt-3 divide-y divide-border">
+        {
+          activity.map((r) => (
+            <li>
+              <a href={r.section === 'plans' ? `${base}/plan/${r.slug}` : `${base}/${r.section}/${r.slug}`} class="flex items-center justify-between gap-3 py-2 text-sm hover:text-accent">
+                <span class="min-w-0 truncate">
+                  <span class="mr-2 text-xs text-dim">{label(r.section)}</span>
+                  {say(r.title)}
+                </span>
+                <span class="num shrink-0 text-xs text-dim">{dayLabel(r.date)}</span>
+              </a>
+            </li>
+          ))
+        }
+      </ol>
+    </div>
+  </section>
+</HubLayout>

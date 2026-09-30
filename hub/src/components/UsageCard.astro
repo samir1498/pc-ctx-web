@@ -1,0 +1,85 @@
+---
+import DailyUsageChart from './charts/DailyUsageChart.tsx'
+import type { UsageRow } from '../lib/usage-types'
+import { TOOL_LABEL } from '../lib/usage-types'
+import { byModel, keysOf, lastDays, previousDays, priceLabel, slotOf, sum, totalTokens } from '../lib/usage'
+import { count, pct, tokens, usd } from '../lib/format'
+
+interface Props {
+  rows: UsageRow[]
+  href: string
+}
+const { rows, href } = Astro.props
+const cur = lastDays(rows, 14)
+const t = sum(cur)
+const p = sum(previousDays(rows, 14))
+const models = byModel(cur)
+const modelKeys = keysOf('model', rows)
+const maxTokens = Math.max(1, ...models.map(totalTokens))
+const tools = (['claude-code', 'opencode', 'hermes', 'router'] as const).map((k) => ({ k, ...sum(cur.filter((r) => r.tool === k)) })).filter((x) => x.calls > 0)
+const price = (m: Parameters<typeof priceLabel>[0]) => priceLabel(m) ?? usd(m.cost)
+---
+
+<section class="grid gap-4 xl:grid-cols-3">
+  <div class="card p-5 xl:col-span-2">
+    <div class="flex flex-wrap items-start justify-between gap-4">
+      <div>
+        <h2 class="font-display text-lg font-semibold">Token usage, last 14 days</h2>
+        <p class="text-xs text-dim">Claude Code at API list price (it runs on a subscription), opencode as it reports, free models at 0.</p>
+      </div>
+      <a href={href} class="text-sm text-accent hover:underline">Open usage</a>
+    </div>
+    <div class="mt-5 flex flex-wrap gap-x-10 gap-y-3">
+      <div>
+        <div class="eyebrow">Cost</div>
+        <div class="num mt-1 text-4xl font-medium">{usd(t.cost)}</div>
+        {p.cost > 0 && <div class="mt-1 text-xs text-dim">{pct(t.cost / p.cost - 1)} vs the 14 days before</div>}
+      </div>
+      <div>
+        <div class="eyebrow">Tokens</div>
+        <div class="num mt-1 text-4xl font-medium">{tokens(totalTokens(t))}</div>
+        <div class="mt-1 text-xs text-dim">{tokens(t.input + t.output)} in and out, the rest cache</div>
+      </div>
+      <div class="flex flex-wrap gap-6">
+        {
+          tools.map((x) => (
+            <div>
+              <div class="eyebrow">{TOOL_LABEL[x.k]}</div>
+              <div class="num mt-1 text-lg">{x.cost > 0 ? usd(x.cost) : <span class="text-dim">$0</span>}</div>
+              <div class="num text-xs text-dim">{count(x.calls)} calls</div>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+    <div class="mt-6 min-h-75">
+      <DailyUsageChart client:only="react" rows={cur} group="model" metric="cost" height={300} keys={modelKeys} />
+    </div>
+  </div>
+
+  <div class="card p-5">
+    <h2 class="font-display text-lg font-semibold">By model</h2>
+    <p class="text-xs text-dim">Bar shows tokens, figure shows cost</p>
+    <ul class="mt-4 space-y-3.5">
+      {
+        models.slice(0, 9).map((m) => (
+          <li>
+            <div class="flex items-baseline justify-between gap-3 text-sm">
+              <span class="flex min-w-0 items-center gap-2">
+                <span class="size-2.5 shrink-0 rounded-sm" style={{ background: `var(${slotOf(modelKeys, m.model)})` }} />
+                <span class="truncate">{m.model}</span>
+              </span>
+              <span class="num shrink-0">{price(m)}</span>
+            </div>
+            <div class="mt-1.5 h-1.5 rounded-full bg-hover">
+              <div class="h-1.5 rounded-full" style={{ width: `${Math.max(1, (totalTokens(m) / maxTokens) * 100)}%`, background: `var(${slotOf(modelKeys, m.model)})` }} />
+            </div>
+            <div class="num mt-1 text-xs text-dim">
+              {m.calls === 0 ? `${count(m.errors)} failed calls · ${TOOL_LABEL[m.tool]}` : `${tokens(totalTokens(m))} tokens · ${TOOL_LABEL[m.tool]}`}
+            </div>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</section>

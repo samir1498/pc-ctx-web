@@ -1,0 +1,91 @@
+---
+import type { Project } from '../source/projects'
+import type { SectionSummary } from '../lib/dashboard'
+import { PRIMARY, SECONDARY, label } from '../lib/sections'
+
+interface Props {
+  project: Project
+  projects: Project[]
+  summaries: SectionSummary[]
+  hasUsage: boolean
+  active: string
+  mobile?: boolean
+}
+const { project, projects, summaries, hasUsage, active, mobile = false } = Astro.props
+const base = `/p/${project.id}`
+const count = new Map(summaries.map((s) => [s.key, s.count]))
+const primary = PRIMARY.filter((k) => (count.get(k) ?? 0) > 0)
+const secondary = SECONDARY.filter((k) => (count.get(k) ?? 0) > 0)
+const top = [{ href: base, label: project.audience === 'plain' ? 'Overview' : 'Dashboard', key: 'dashboard' }, ...(hasUsage ? [{ href: `${base}/usage`, label: 'Usage', key: 'usage' }] : [])]
+const row = (on: boolean) => ['flex items-center justify-between rounded-lg px-3 py-1.5 transition-colors', on ? 'bg-accent-soft font-medium text-accent' : 'text-muted hover:bg-hover hover:text-fg']
+const id = mobile ? 'project-m' : 'project-d'
+---
+
+<nav
+  class:list={['flex flex-col bg-rail text-sm', mobile ? 'max-h-[70dvh] overflow-y-auto' : 'hidden border-r border-border lg:flex lg:h-dvh lg:overflow-y-auto']}
+  aria-label="Sections"
+>
+  <a href={base} class="flex items-center gap-2.5 px-5 pb-4 pt-5">
+    <span class="grid size-8 place-items-center rounded-card bg-accent font-display font-bold text-accent-fg">{project.name.charAt(0).toLowerCase()}</span>
+    <span>
+      <span class="block font-display font-semibold leading-tight">Context hub</span>
+      <span class="block text-xs text-dim">{project.name}</span>
+    </span>
+  </a>
+
+  {
+    projects.length > 1 && (
+      <div class="px-5 pb-3">
+        <label class="eyebrow mb-1.5 block" for={id}>
+          Project
+        </label>
+        <select id={id} data-project-switch class="w-full rounded-lg border border-border bg-panel px-2.5 py-1.5 text-fg">
+          {projects.map((p) => (
+            <option value={`/p/${p.id}`} selected={p.id === project.id}>
+              {p.name}
+            </option>
+          ))}
+        </select>
+      </div>
+    )
+  }
+
+  <ul class="space-y-0.5 px-3">
+    {top.map((t) => <li><a href={t.href} class:list={row(active === t.key)}>{t.label}</a></li>)}
+  </ul>
+
+  <ul class="mt-4 space-y-0.5 px-3">
+    {
+      primary.map((k) => (
+        <li>
+          <a href={`${base}/${k}`} class:list={row(active === k)}>
+            <span>{label(k)}</span>
+            <span class="num text-xs text-dim">{count.get(k)}</span>
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+
+  {
+    secondary.length > 0 && (
+      <>
+        <div class="eyebrow mt-5 px-5">More</div>
+        <ul class="mt-1.5 space-y-0.5 px-3">
+          {secondary.map((k) => (
+            <li>
+              <a href={`${base}/${k}`} class:list={row(active === k)}>
+                <span>{label(k)}</span>
+                <span class="num text-xs text-dim">{count.get(k)}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </>
+    )
+  }
+
+  <div class="mt-auto border-t border-border px-5 py-4 text-xs text-dim">
+    <a href={`/themes?p=${project.id}`} class:list={['block hover:text-fg', active === 'themes' && 'font-medium text-accent']}>Themes</a>
+  </div>
+</nav>

@@ -1,0 +1,4 @@
+---
+const first = Astro.locals.hub.projects[0]
+return first ? Astro.redirect(`/p/${first.id}`, 302) : new Response('No project is configured.', { status: 500 })
+---
