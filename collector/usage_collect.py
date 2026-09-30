@@ -16,6 +16,7 @@ import json
 import os
 import re
 import sqlite3
+import subprocess
 import sys
 from collections import defaultdict
 from zoneinfo import ZoneInfo
@@ -276,6 +277,34 @@ def refresh_prices(prices, keys, models_dev_path):
 
 # ---- main ----------------------------------------------------------------
 
+def git(repo, *args, check=True):
+    return subprocess.run(["git", "-C", repo, *args], capture_output=True, text=True, check=check).stdout.strip()
+
+
+def publish(out_dir):
+    """Commit only the usage files, straight to main, and push when that is safe.
+
+    Other sessions share this checkout: never push their commits, never rebase their tree.
+    """
+    repo = git(out_dir, "rev-parse", "--show-toplevel")
+    rel = os.path.relpath(out_dir, repo)
+    if git(repo, "branch", "--show-current") != "main":
+        return "skipped: context store is not on main"
+    git(repo, "add", "--", rel)
+    if subprocess.run(["git", "-C", repo, "diff", "--cached", "--quiet", "--", rel]).returncode == 0:
+        return "nothing to commit"
+    git(repo, "fetch", "--quiet", "origin", "main")
+    ahead = git(repo, "rev-list", "origin/main..HEAD")
+    git(repo, "commit", "--quiet", "-m", f"usage: daily token usage {dt.date.today().isoformat()}", "--", rel)
+    sha = git(repo, "rev-parse", "--short", "HEAD")
+    if ahead:
+        return f"committed {sha}, not pushed: main holds other unpushed commits"
+    if subprocess.run(["git", "-C", repo, "merge-base", "--is-ancestor", "origin/main", "HEAD"]).returncode:
+        return f"committed {sha}, not pushed: origin/main moved ahead"
+    res = subprocess.run(["git", "-C", repo, "push", "--quiet", "origin", "HEAD:main"], capture_output=True, text=True)
+    return f"committed {sha}, " + ("pushed" if res.returncode == 0 else f"push failed: {res.stderr.strip()[:200]}")
+
+
 def write_day(out_dir, date, rows):
     path = os.path.join(out_dir, f"{date}.json")
     body = json.dumps({"date": date, "tz": "Europe/Berlin", "rows": rows}, indent=1) + "\n"
@@ -298,6 +327,7 @@ def main(argv=None):
     p.add_argument("--backfill", action="store_true", help="every day the sources still hold")
     p.add_argument("--refresh-prices", action="store_true", help="update prices.json from models.dev")
     p.add_argument("--dry-run", action="store_true", help="print totals, write nothing")
+    p.add_argument("--publish", action="store_true", help="commit usage/ to the context store's main and push")
     for name, default in DEFAULTS.items():
         p.add_argument(f"--{name.replace('_', '-')}", default=default)
     a = p.parse_args(argv)
@@ -337,6 +367,12 @@ def main(argv=None):
             changed += write_day(a.out, date, rows)
     print(f"usage-collect: days={len(window)} changed={changed} rows={sum(len(v) for v in days.values())}"
           f" unpriced={','.join(sorted(unpriced)) or 'none'}", file=sys.stderr)
+    if a.publish and not a.dry_run:
+        try:
+            print(f"usage-collect: git {publish(a.out)}", file=sys.stderr)
+        except subprocess.CalledProcessError as e:
+            print(f"usage-collect: git failed: {' '.join(e.cmd[3:])}: {e.stderr.strip()[:200]}", file=sys.stderr)
+            return 1
     return 0
 
 

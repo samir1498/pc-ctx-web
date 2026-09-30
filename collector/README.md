@@ -25,6 +25,7 @@ python3 collector/usage_collect.py                  # last 3 days, overwrite
 python3 collector/usage_collect.py --backfill       # every day the sources still hold
 python3 collector/usage_collect.py --refresh-prices # re-read ~/.hermes/models_dev_cache.json into prices.json
 python3 collector/usage_collect.py --dry-run        # print per-day totals only
+python3 collector/usage_collect.py --publish        # also commit usage/ to the store's main and push
 python3 -m unittest discover collector              # tests
 ```
 
@@ -37,6 +38,10 @@ cp collector/systemd/usage-collect.* ~/.config/systemd/user/
 systemctl --user daemon-reload && systemctl --user enable --now usage-collect.timer
 ```
 
-The timer only writes the day files. It does not commit or push the context store.
+The hub reads the context store from GitHub, so the timer runs with `--publish`:
+- It commits only the `usage/` files, as their own commit, straight to the context store's `main`. Usage files are bookkeeping, so they get no branch or PR.
+- It then pushes, but only when that push carries nothing but its own commit. If `main` holds another session's unpushed commits, or `origin/main` has moved ahead, it commits and leaves the push to the next push of `main`.
+- It never rebases, so another session's working tree is never touched.
+- Each run logs one `usage-collect: git ...` line to the journal (`journalctl --user -u usage-collect`).
 
 Claude Code deletes transcripts after `cleanupPeriodDays`, and OmniRoute keeps its log for 90 days. Days the collector has already written survive both.

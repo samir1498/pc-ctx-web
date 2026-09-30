@@ -2,6 +2,7 @@ import datetime as dt
 import json
 import os
 import sqlite3
+import subprocess
 import tempfile
 import unittest
 
@@ -185,6 +186,43 @@ class MainTest(Base):
         self.assertNotIn("never leaves", body)
         self.assertEqual(json.loads(body)["rows"][0]["output"], 3)
         self.assertFalse(uc.write_day(out, name[:-5], json.loads(body)["rows"]))
+
+
+class PublishTest(Base):
+    def setUp(self):
+        super().setUp()
+        run = lambda *a, cwd=self.dir: subprocess.run(a, cwd=cwd, check=True, capture_output=True)
+        self.run = run
+        run("git", "init", "-q", "--bare", "-b", "main", "remote.git")
+        run("git", "clone", "-q", "remote.git", "store")
+        self.store = os.path.join(self.dir, "store")
+        for k, v in (("user.email", "t@t"), ("user.name", "t"), ("commit.gpgsign", "false")):
+            run("git", "config", k, v, cwd=self.store)
+        run("git", "commit", "-q", "--allow-empty", "-m", "init", cwd=self.store)
+        run("git", "push", "-q", "origin", "main", cwd=self.store)
+        self.usage = os.path.join(self.store, "usage")
+        os.makedirs(self.usage)
+
+    def remote_log(self):
+        return subprocess.run(["git", "--git-dir", os.path.join(self.dir, "remote.git"), "log",
+                               "--name-only", "--format=%s", "main"], capture_output=True, text=True).stdout
+
+    def test_commits_and_pushes_only_usage_files(self):
+        with open(os.path.join(self.store, "plan.md"), "w") as fh:
+            fh.write("another session's work\n")
+        self.run("git", "add", "plan.md", cwd=self.store)
+        uc.write_day(self.usage, "2026-09-29", [])
+        self.assertTrue(uc.publish(self.usage).endswith("pushed"))
+        log = self.remote_log()
+        self.assertIn("usage/2026-09-29.json", log)
+        self.assertNotIn("plan.md", log)
+        self.assertEqual(uc.publish(self.usage), "nothing to commit")
+
+    def test_does_not_push_other_unpushed_commits(self):
+        self.run("git", "commit", "-q", "--allow-empty", "-m", "theirs", cwd=self.store)
+        uc.write_day(self.usage, "2026-09-29", [])
+        self.assertIn("not pushed", uc.publish(self.usage))
+        self.assertNotIn("theirs", self.remote_log())
 
 
 if __name__ == "__main__":
