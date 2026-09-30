@@ -189,40 +189,71 @@ class MainTest(Base):
 
 
 class PublishTest(Base):
+    DAYS = {"2026-09-29": [{"tool": "opencode", "calls": 1}]}
+
     def setUp(self):
         super().setUp()
-        run = lambda *a, cwd=self.dir: subprocess.run(a, cwd=cwd, check=True, capture_output=True)
-        self.run = run
-        run("git", "init", "-q", "--bare", "-b", "main", "remote.git")
-        run("git", "clone", "-q", "remote.git", "store")
-        self.store = os.path.join(self.dir, "store")
+        self.remote = os.path.join(self.dir, "remote.git")
+        self.git(self.dir, "init", "-q", "--bare", "-b", "main", self.remote)
+        self.context = self.clone("context")
+        with open(os.path.join(self.context, "plan.md"), "w") as fh:
+            fh.write("v1\n")
+        self.git(self.context, "add", "plan.md")
+        self.git(self.context, "commit", "-q", "-m", "init")
+        self.git(self.context, "push", "-q", "origin", "main")
+        self.store = os.path.join(self.dir, "night", "usage-store")
+
+    def git(self, cwd, *args):
+        return subprocess.run(["git", "-C", cwd, *args], check=True, capture_output=True, text=True).stdout
+
+    def clone(self, name):
+        path = os.path.join(self.dir, name)
+        self.git(self.dir, "clone", "-q", self.remote, path)
         for k, v in (("user.email", "t@t"), ("user.name", "t"), ("commit.gpgsign", "false")):
-            run("git", "config", k, v, cwd=self.store)
-        run("git", "commit", "-q", "--allow-empty", "-m", "init", cwd=self.store)
-        run("git", "push", "-q", "origin", "main", cwd=self.store)
-        self.usage = os.path.join(self.store, "usage")
-        os.makedirs(self.usage)
+            self.git(path, "config", k, v)
+        return path
 
-    def remote_log(self):
-        return subprocess.run(["git", "--git-dir", os.path.join(self.dir, "remote.git"), "log",
-                               "--name-only", "--format=%s", "main"], capture_output=True, text=True).stdout
+    def remote_files(self):
+        return self.git(self.remote, "ls-tree", "-r", "--name-only", "main")
 
-    def test_commits_and_pushes_only_usage_files(self):
-        with open(os.path.join(self.store, "plan.md"), "w") as fh:
-            fh.write("another session's work\n")
-        self.run("git", "add", "plan.md", cwd=self.store)
-        uc.write_day(self.usage, "2026-09-29", [])
-        self.assertTrue(uc.publish(self.usage).endswith("pushed"))
-        log = self.remote_log()
-        self.assertIn("usage/2026-09-29.json", log)
-        self.assertNotIn("plan.md", log)
-        self.assertEqual(uc.publish(self.usage), "nothing to commit")
+    def publish(self):
+        return uc.publish(self.store, self.context, ["2026-09-29"], self.DAYS, "usage: test", pause=0)
 
-    def test_does_not_push_other_unpushed_commits(self):
-        self.run("git", "commit", "-q", "--allow-empty", "-m", "theirs", cwd=self.store)
-        uc.write_day(self.usage, "2026-09-29", [])
-        self.assertIn("not pushed", uc.publish(self.usage))
-        self.assertNotIn("theirs", self.remote_log())
+    def test_pushes_usage_and_leaves_the_shared_checkout_alone(self):
+        with open(os.path.join(self.context, "plan.md"), "w") as fh:
+            fh.write("someone's uncommitted edit\n")
+        self.git(self.context, "commit", "-q", "--allow-empty", "-m", "someone's unpushed commit")
+        self.assertTrue(self.publish().startswith("pushed"))
+        self.assertIn("usage/2026-09-29.json", self.remote_files())
+        self.assertNotIn("unpushed", self.git(self.remote, "log", "--format=%s", "main"))
+        with open(os.path.join(self.context, "plan.md")) as fh:
+            self.assertEqual(fh.read(), "someone's uncommitted edit\n")
+        self.assertFalse(os.path.exists(os.path.join(self.context, "usage")))
+        self.assertEqual(self.publish(), "origin/main already has these files")
+
+    def test_rejected_push_refetches_and_retries(self):
+        other = self.clone("other")
+        real, calls = uc.push, []
+
+        def racing_push(store):
+            if not calls:  # another session lands a commit between our fetch and our push
+                self.git(other, "commit", "-q", "--allow-empty", "-m", "race")
+                self.git(other, "push", "-q", "origin", "main")
+            calls.append(1)
+            return real(store)
+
+        uc.push = racing_push
+        try:
+            self.assertEqual(self.publish()[-8:], "on try 2")
+        finally:
+            uc.push = real
+        log = self.git(self.remote, "log", "--format=%s", "main")
+        self.assertIn("race", log)
+        self.assertIn("usage: test", log)
+
+    def test_refuses_to_reset_a_shared_checkout(self):
+        with self.assertRaises(RuntimeError):
+            uc.publish(self.context, self.context, ["2026-09-29"], self.DAYS, "x", pause=0)
 
 
 if __name__ == "__main__":

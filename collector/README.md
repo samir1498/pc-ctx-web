@@ -21,11 +21,11 @@ Cost:
 ## Run
 
 ```
-python3 collector/usage_collect.py                  # last 3 days, overwrite
-python3 collector/usage_collect.py --backfill       # every day the sources still hold
+python3 collector/usage_collect.py --publish        # last 3 days, pushed to the store (what the timer runs)
+python3 collector/usage_collect.py --backfill --publish  # every day the sources still hold
 python3 collector/usage_collect.py --refresh-prices # re-read ~/.hermes/models_dev_cache.json into prices.json
 python3 collector/usage_collect.py --dry-run        # print per-day totals only
-python3 collector/usage_collect.py --publish        # also commit usage/ to the store's main and push
+python3 collector/usage_collect.py --out DIR        # write the files to DIR, no git
 python3 -m unittest discover collector              # tests
 ```
 
@@ -42,10 +42,11 @@ systemctl --user daemon-reload && systemctl --user enable --now usage-collect.ti
 
 The timer runs a copy, because the shared checkout is fetch-only and would not pick up a merge. Repeat the copy after changing the script or the prices.
 
-The hub reads the context store from GitHub, so the timer runs with `--publish`:
-- It commits only the `usage/` files, as their own commit, straight to the context store's `main`. Usage files are bookkeeping, so they get no branch or PR.
-- It then pushes, but only when that push carries nothing but its own commit. If `main` holds another session's unpushed commits, or `origin/main` has moved ahead, it commits and leaves the push to the next push of `main`.
-- It never rebases, so another session's working tree is never touched.
-- Each run logs one `usage-collect: git ...` line to the journal (`journalctl --user -u usage-collect`).
+The hub reads the context store from GitHub, so the timer runs with `--publish` and pushes every day:
+- It works in its own detached worktree of the context store, `~/.dz-night/usage-store`, and creates it on first use.
+- Each run fetches, resets that worktree to `origin/main`, writes the day files, commits only `usage/` straight to `main`, and pushes. Usage files are bookkeeping, so they get no branch or PR.
+- A rejected push, because someone else pushed first, means fetch, reset, rewrite and retry, up to 4 times.
+- It never touches the shared store checkout or anyone's uncommitted work. It refuses to reset any path that is not a linked worktree.
+- Each run logs one `usage-collect: ... pushed <sha>` or `FAILED` line (`journalctl --user -u usage-collect`).
 
 Claude Code deletes transcripts after `cleanupPeriodDays`, and OmniRoute keeps its log for 90 days. Days the collector has already written survive both.

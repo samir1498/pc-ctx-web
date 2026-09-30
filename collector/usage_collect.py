@@ -5,8 +5,9 @@ Reads Claude Code transcripts, opencode.db and the OmniRoute router log, and
 writes one <out>/YYYY-MM-DD.json per Europe/Berlin day. Only counts, model and
 provider ids, tool and date leave this script; prompt text is never read out.
 
-  usage_collect.py                 recompute the last 3 days (daily run)
-  usage_collect.py --backfill      every day any source still has
+  usage_collect.py --publish        recompute the last 3 days and push them (daily run)
+  usage_collect.py --backfill --publish   every day any source still has
+  usage_collect.py --out DIR       write the files to DIR only
   usage_collect.py --refresh-prices   update prices.json from the models.dev cache
 """
 import argparse
@@ -18,6 +19,7 @@ import re
 import sqlite3
 import subprocess
 import sys
+import time
 from collections import defaultdict
 from zoneinfo import ZoneInfo
 
@@ -31,7 +33,9 @@ DEFAULTS = {
     "hermes": os.path.join(HOME, ".hermes", "state.db"),
     "models_dev": os.path.join(HOME, ".hermes", "models_dev_cache.json"),
     "prices": os.path.join(HERE, "prices.json"),
-    "out": os.path.join(HOME, "observeone", "observeone-context", "usage"),
+    "context": os.path.join(HOME, "observeone", "observeone-context"),
+    "store": os.path.join(HOME, ".dz-night", "usage-store"),
+    "out": None,
 }
 ROUTER_ADDR = "127.0.0.1:20128"
 # Router provider names that models.dev files under another id.
@@ -281,28 +285,56 @@ def git(repo, *args, check=True):
     return subprocess.run(["git", "-C", repo, *args], capture_output=True, text=True, check=check).stdout.strip()
 
 
-def publish(out_dir):
-    """Commit only the usage files, straight to main, and push when that is safe.
+def ensure_store(store, context):
+    """The timer's own detached worktree of the context store; created on first use.
 
-    Other sessions share this checkout: never push their commits, never rebase their tree.
+    Refuses anything that is not a linked worktree, so a reset can never hit a shared checkout.
     """
-    repo = git(out_dir, "rev-parse", "--show-toplevel")
-    rel = os.path.relpath(out_dir, repo)
-    if git(repo, "branch", "--show-current") != "main":
-        return "skipped: context store is not on main"
-    git(repo, "add", "--", rel)
-    if subprocess.run(["git", "-C", repo, "diff", "--cached", "--quiet", "--", rel]).returncode == 0:
-        return "nothing to commit"
-    git(repo, "fetch", "--quiet", "origin", "main")
-    ahead = git(repo, "rev-list", "origin/main..HEAD")
-    git(repo, "commit", "--quiet", "-m", f"usage: daily token usage {dt.date.today().isoformat()}", "--", rel)
-    sha = git(repo, "rev-parse", "--short", "HEAD")
-    if ahead:
-        return f"committed {sha}, not pushed: main holds other unpushed commits"
-    if subprocess.run(["git", "-C", repo, "merge-base", "--is-ancestor", "origin/main", "HEAD"]).returncode:
-        return f"committed {sha}, not pushed: origin/main moved ahead"
-    res = subprocess.run(["git", "-C", repo, "push", "--quiet", "origin", "HEAD:main"], capture_output=True, text=True)
-    return f"committed {sha}, " + ("pushed" if res.returncode == 0 else f"push failed: {res.stderr.strip()[:200]}")
+    if not os.path.exists(store):
+        git(context, "fetch", "--quiet", "origin", "main")
+        git(context, "worktree", "add", "--quiet", "--detach", store, "origin/main")
+    common = os.path.realpath(os.path.join(store, git(store, "rev-parse", "--git-common-dir")))
+    own = os.path.realpath(os.path.join(store, git(store, "rev-parse", "--git-dir")))
+    top = os.path.realpath(git(store, "rev-parse", "--show-toplevel"))
+    if own == common or top != os.path.realpath(store) or top == os.path.realpath(context):
+        raise RuntimeError(f"{store} is not a linked worktree of its own; refusing to reset it")
+
+
+def push(store):
+    return subprocess.run(["git", "-C", store, "push", "--quiet", "origin", "HEAD:refs/heads/main"],
+                          capture_output=True, text=True)
+
+
+def publish(store, context, window, days, message, attempts=4, pause=5):
+    """Fetch, reset to origin/main, write, commit only usage/, push; retry when the push is rejected."""
+    ensure_store(store, context)
+    out, err = os.path.join(store, "usage"), ""
+    for attempt in range(1, attempts + 1):
+        git(store, "fetch", "--quiet", "origin", "main")
+        git(store, "reset", "--quiet", "--hard", "origin/main")
+        git(store, "clean", "-fdq", "--", "usage")
+        write_days(out, window, days)
+        git(store, "add", "--", "usage")
+        if subprocess.run(["git", "-C", store, "diff", "--cached", "--quiet"]).returncode == 0:
+            return "origin/main already has these files"
+        git(store, "commit", "--quiet", "-m", message, "--", "usage")
+        sha = git(store, "rev-parse", "--short", "HEAD")
+        res = push(store)
+        if res.returncode == 0:
+            return f"pushed {sha}" + (f" on try {attempt}" if attempt > 1 else "")
+        err = res.stderr.strip()[:200]
+        time.sleep(pause * attempt)
+    raise RuntimeError(f"push rejected {attempts} times: {err}")
+
+
+def write_days(out, window, days):
+    changed = 0
+    for date in window:
+        rows = days.get(date, [])
+        if rows or os.path.exists(os.path.join(out, f"{date}.json")):
+            os.makedirs(out, exist_ok=True)
+            changed += write_day(out, date, rows)
+    return changed
 
 
 def write_day(out_dir, date, rows):
@@ -327,7 +359,8 @@ def main(argv=None):
     p.add_argument("--backfill", action="store_true", help="every day the sources still hold")
     p.add_argument("--refresh-prices", action="store_true", help="update prices.json from models.dev")
     p.add_argument("--dry-run", action="store_true", help="print totals, write nothing")
-    p.add_argument("--publish", action="store_true", help="commit usage/ to the context store's main and push")
+    p.add_argument("--publish", action="store_true",
+                   help="write through --store, the timer's own worktree of the context store, and push to main")
     for name, default in DEFAULTS.items():
         p.add_argument(f"--{name.replace('_', '-')}", default=default)
     a = p.parse_args(argv)
@@ -354,25 +387,24 @@ def main(argv=None):
 
     window = sorted(days) if a.backfill else [
         (today - dt.timedelta(days=i)).isoformat() for i in range(a.days - 1, -1, -1)]
-    changed = 0
-    for date in window:
-        rows = days.get(date, [])
-        if a.dry_run:
-            cost = sum(r["cost"] for r in rows)
-            calls = sum(r["calls"] for r in rows)
-            print(f"{date} rows={len(rows)} calls={calls} cost=${cost:,.2f}")
-            continue
-        if rows or os.path.exists(os.path.join(a.out, f"{date}.json")):
-            os.makedirs(a.out, exist_ok=True)
-            changed += write_day(a.out, date, rows)
-    print(f"usage-collect: days={len(window)} changed={changed} rows={sum(len(v) for v in days.values())}"
-          f" unpriced={','.join(sorted(unpriced)) or 'none'}", file=sys.stderr)
-    if a.publish and not a.dry_run:
+    total = f"days={len(window)} rows={sum(len(days.get(d, [])) for d in window)} unpriced={','.join(sorted(unpriced)) or 'none'}"
+    if a.dry_run:
+        for date in window:
+            rows = days.get(date, [])
+            print(f"{date} rows={len(rows)} calls={sum(r['calls'] for r in rows)} cost=${sum(r['cost'] for r in rows):,.2f}")
+    elif a.publish:
+        what = f"backfill from {window[0]}" if a.backfill and window else f"daily token usage {today.isoformat()}"
         try:
-            print(f"usage-collect: git {publish(a.out)}", file=sys.stderr)
-        except subprocess.CalledProcessError as e:
-            print(f"usage-collect: git failed: {' '.join(e.cmd[3:])}: {e.stderr.strip()[:200]}", file=sys.stderr)
+            result = publish(a.store, a.context, window, days, f"usage: {what}")
+        except (subprocess.CalledProcessError, RuntimeError) as e:
+            detail = e.stderr.strip()[:200] if isinstance(e, subprocess.CalledProcessError) else str(e)
+            print(f"usage-collect: {total} FAILED: {detail}", file=sys.stderr)
             return 1
+        print(f"usage-collect: {total} {result}", file=sys.stderr)
+    elif a.out:
+        print(f"usage-collect: {total} changed={write_days(a.out, window, days)}", file=sys.stderr)
+    else:
+        p.error("pass --publish, --out DIR or --dry-run")
     return 0
 
 
