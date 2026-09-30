@@ -23,7 +23,7 @@ cpSync(join(dist, 'server'), join(out, '_worker.js'), { recursive: true })
 rmSync(join(out, '_worker.js', 'wrangler.json'), { force: true })
 writeFileSync(join(out, '_worker.js', 'index.js'), "export { default } from './entry.mjs'; export * from './entry.mjs'\n")
 // Hashed assets never need the Worker.
-writeFileSync(join(out, '_routes.json'), JSON.stringify({ version: 1, include: ['/*'], exclude: ['/_astro/*'] }) + '\n')
+writeFileSync(join(out, '_routes.json'), JSON.stringify({ version: 1, include: ['/*'], exclude: ['/_astro/*', '/favicon.svg'] }) + '\n')
 
 // Bindings come from wrangler.jsonc so dev and Pages cannot drift; `remote` is a dev-only flag.
 const worker = JSON.parse(readFileSync(join(root, 'wrangler.jsonc'), 'utf8').replace(/^\s*\/\/.*$/gm, ''))
