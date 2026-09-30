@@ -1,0 +1,178 @@
+@import "tailwindcss";
+
+/* Every colour, font and radius a component uses is a token below. A theme is one
+   [data-theme] block; it works on <html> and on any element (the /themes previews). */
+
+@theme inline {
+  --color-page: var(--page);
+  --color-rail: var(--rail);
+  --color-panel: var(--panel);
+  --color-hover: var(--hover);
+  --color-border: var(--border);
+  --color-line: var(--line);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-dim: var(--dim);
+  --color-accent: var(--accent);
+  --color-accent-fg: var(--accent-fg);
+  --color-accent-soft: var(--accent-soft);
+  --color-good: var(--good);
+  --color-warn: var(--warn);
+  --color-bad: var(--bad);
+  --font-display: var(--font-display-stack);
+  --font-sans: var(--font-body-stack);
+  --font-mono: var(--font-mono-stack);
+  --radius-card: var(--radius);
+}
+
+/* ---- light (also the system default) ---- */
+:root,
+[data-theme="light"] {
+  color-scheme: light;
+  --page: #f7f7f4;
+  --rail: #efefea;
+  --panel: #ffffff;
+  --hover: #eaeae4;
+  --border: #e3e3dc;
+  --line: #d4d4cc;
+  --fg: #1b1b19;
+  --muted: #55554f;
+  --dim: #7a7a72;
+  --accent: #1d54b8;
+  --accent-fg: #ffffff;
+  --accent-soft: rgba(29, 84, 184, 0.1);
+  --good: #1f7a46;
+  --warn: #a9711a;
+  --bad: #b83a1d;
+  --font-display-stack: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-body-stack: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono-stack: "JetBrains Mono", ui-monospace, monospace;
+  --radius: 0.75rem;
+  /* dataviz reference palette, light steps, validated as a set */
+  --series-1: #2a78d6; --series-2: #eb6834; --series-3: #1baf7a; --series-4: #eda100;
+  --series-5: #e87ba4; --series-6: #008300; --series-7: #4a3aa7; --series-8: #e34948;
+  --series-other: #a8a7a0;
+}
+
+/* ---- dark tokens, shared by the system-dark default and the explicit choice ---- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]),
+  :root[data-theme="system"] {
+    color-scheme: dark;
+    --page: #141415; --rail: #0f0f10; --panel: #1b1b1d; --hover: #232326;
+    --border: #28282c; --line: #35353a;
+    --fg: #ececea; --muted: #a8a8a1; --dim: #7d7d76;
+    --accent: #8db2ff; --accent-fg: #0f1320; --accent-soft: rgba(141, 178, 255, 0.14);
+    --good: #4fc27f; --warn: #e0a94a; --bad: #ef7a5c;
+    --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70; --series-4: #c98500;
+    --series-5: #d55181; --series-6: #008300; --series-7: #9085e9; --series-8: #e66767;
+    --series-other: #5d5c57;
+  }
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #141415; --rail: #0f0f10; --panel: #1b1b1d; --hover: #232326;
+  --border: #28282c; --line: #35353a;
+  --fg: #ececea; --muted: #a8a8a1; --dim: #7d7d76;
+  --accent: #8db2ff; --accent-fg: #0f1320; --accent-soft: rgba(141, 178, 255, 0.14);
+  --good: #4fc27f; --warn: #e0a94a; --bad: #ef7a5c;
+  --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70; --series-4: #c98500;
+  --series-5: #d55181; --series-6: #008300; --series-7: #9085e9; --series-8: #e66767;
+  --series-other: #5d5c57;
+}
+
+/* ---- midnight: the June dashboard direction, near-black with a violet accent ---- */
+[data-theme="midnight"] {
+  color-scheme: dark;
+  --page: #0b0b10; --rail: #08080c; --panel: #12121a; --hover: #1a1a25;
+  --border: #1f1f2b; --line: #2c2c3c;
+  --fg: #f1f0f7; --muted: #a09fb2; --dim: #6f6e82;
+  --accent: #8b7cf6; --accent-fg: #0b0b10; --accent-soft: rgba(139, 124, 246, 0.16);
+  --good: #34d399; --warn: #fbbf24; --bad: #f87171;
+  --radius: 1rem;
+  --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70; --series-4: #c98500;
+  --series-5: #d55181; --series-6: #008300; --series-7: #9085e9; --series-8: #e66767;
+  --series-other: #4b4a5c;
+}
+
+/* ---- paper: warm cream, serif headings, ink blue ---- */
+[data-theme="paper"] {
+  color-scheme: light;
+  --page: #f4efe3; --rail: #ebe4d3; --panel: #fbf8f0; --hover: #e6dfcc;
+  --border: #ddd4bf; --line: #cbc0a6;
+  --fg: #2a241a; --muted: #5f5645; --dim: #857a64;
+  --accent: #1f3f7a; --accent-fg: #fbf8f0; --accent-soft: rgba(31, 63, 122, 0.1);
+  --good: #3c6e2f; --warn: #9a6512; --bad: #9e2f1d;
+  --font-display-stack: "Newsreader", Georgia, serif;
+  --font-body-stack: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --radius: 0.375rem;
+  --series-1: #2a78d6; --series-2: #eb6834; --series-3: #1baf7a; --series-4: #eda100;
+  --series-5: #e87ba4; --series-6: #008300; --series-7: #4a3aa7; --series-8: #e34948;
+  --series-other: #b3aa94;
+}
+
+/* ---- fjord: cool slate dark, frost accent ---- */
+[data-theme="fjord"] {
+  color-scheme: dark;
+  --page: #232a36; --rail: #1d232d; --panel: #2b3341; --hover: #333c4c;
+  --border: #38414f; --line: #465061;
+  --fg: #e8edf4; --muted: #b3bdcc; --dim: #8490a3;
+  --accent: #88c0d0; --accent-fg: #1d232d; --accent-soft: rgba(136, 192, 208, 0.16);
+  --good: #a3be8c; --warn: #ebcb8b; --bad: #d08770;
+  --radius: 0.5rem;
+  --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70; --series-4: #c98500;
+  --series-5: #d55181; --series-6: #008300; --series-7: #9085e9; --series-8: #e66767;
+  --series-other: #5a6475;
+}
+
+/* ---- terminal: black, phosphor green, monospace everywhere ---- */
+[data-theme="terminal"] {
+  color-scheme: dark;
+  --page: #050806; --rail: #030504; --panel: #0a100c; --hover: #102016;
+  --border: #16281c; --line: #1f3a28;
+  --fg: #c8f5d2; --muted: #7fc491; --dim: #4f8a60;
+  --accent: #39ff88; --accent-fg: #050806; --accent-soft: rgba(57, 255, 136, 0.12);
+  --good: #39ff88; --warn: #ffd166; --bad: #ff6b6b;
+  --font-display-stack: "JetBrains Mono", ui-monospace, monospace;
+  --font-body-stack: "JetBrains Mono", ui-monospace, monospace;
+  --radius: 0.125rem;
+  --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70; --series-4: #c98500;
+  --series-5: #d55181; --series-6: #008300; --series-7: #9085e9; --series-8: #e66767;
+  --series-other: #2e4a36;
+}
+
+html,
+body {
+  background: var(--page);
+  color: var(--fg);
+  font-family: var(--font-body-stack);
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: "cv11", "ss01";
+}
+
+.num {
+  font-family: var(--font-mono-stack);
+  font-variant-numeric: tabular-nums;
+}
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.eyebrow {
+  font-family: var(--font-mono-stack);
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+.recharts-wrapper *:focus {
+  outline: none;
+}

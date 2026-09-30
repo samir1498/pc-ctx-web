@@ -1,0 +1,68 @@
+---
+import HubLayout from '../../layouts/HubLayout.astro'
+import MiniBars from '../../components/charts/MiniBars.tsx'
+import SectionList from '../../components/SectionList.tsx'
+import StatusBar from '../../components/StatusBar.astro'
+import { SECTIONS, type Section } from '../../mock/sections'
+
+export function getStaticPaths() {
+  return SECTIONS.map((s) => ({ params: { section: s.key }, props: { s } }))
+}
+
+const { s } = Astro.props as { s: Section }
+const weeks = s.weekly.map((v, i) => ({ label: `W${28 + i}`, value: v }))
+const last30 = s.items.filter((i) => i.date >= '2026-08-31').length
+const lastDate = s.items[0]?.date
+const active = s.statuses?.find((x) => x.key === 'active')
+const done = s.statuses?.find((x) => x.key === 'done')
+---
+
+<HubLayout title={s.label} active={s.key}>
+  <div class="eyebrow">ObserveOne</div>
+  <h1 class="mt-1 font-display text-3xl font-bold tracking-tight">{s.label}</h1>
+  <p class="mt-1 text-muted">{s.blurb}</p>
+
+  <div class="mt-8 grid grid-cols-2 gap-3 md:grid-cols-4">
+    <div class="card p-4">
+      <div class="eyebrow">Total</div>
+      <div class="num mt-2 text-2xl font-medium">{s.count}</div>
+    </div>
+    <div class="card p-4">
+      <div class="eyebrow">New this week</div>
+      <div class="num mt-2 text-2xl font-medium">{s.newThisWeek}</div>
+    </div>
+    <div class="card p-4">
+      <div class="eyebrow">{active ? 'Active' : 'Last 30 days'}</div>
+      <div class="num mt-2 text-2xl font-medium">{active ? active.count : last30}</div>
+    </div>
+    <div class="card p-4">
+      <div class="eyebrow">{done ? 'Done' : 'Last update'}</div>
+      <div class="num mt-2 text-2xl font-medium">{done ? done.count : lastDate}</div>
+    </div>
+  </div>
+
+  <div class:list={['mt-4 grid gap-4', s.statuses && 'lg:grid-cols-5']}>
+    {
+      s.statuses && (
+        <div class="card p-5 lg:col-span-2">
+          <h2 class="font-display text-lg font-semibold">By status</h2>
+          <div class="mt-4">
+            <StatusBar statuses={s.statuses} />
+          </div>
+        </div>
+      )
+    }
+    <div class:list={['card p-5', s.statuses && 'lg:col-span-3']}>
+      <h2 class="font-display text-lg font-semibold">Added per week</h2>
+      <p class="text-xs text-dim">Last 12 weeks, by the date in the file name</p>
+      <div class="mt-4">
+        <MiniBars client:load data={weeks} format="added" height={150} showAxis />
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-8">
+    <h2 class="mb-3 font-display text-lg font-semibold">All {s.label.toLowerCase()}</h2>
+    <SectionList client:load items={s.items} statuses={s.statuses} total={s.count} />
+  </div>
+</HubLayout>

@@ -1,0 +1,15 @@
+---
+import HubLayout from '../layouts/HubLayout.astro'
+import ThemeGallery from '../components/ThemeGallery.tsx'
+---
+
+<HubLayout title="Themes" active="themes">
+  <h1 class="font-display text-3xl font-bold tracking-tight">Themes</h1>
+  <p class="mt-1 max-w-2xl text-muted">
+    Six themes plus System. Each is one set of colour, font and corner tokens; the choice is kept in this browser.
+    Chart colours stay the same hues in every theme so a model keeps its colour, stepped for light or dark backgrounds.
+  </p>
+  <div class="mt-8">
+    <ThemeGallery client:load />
+  </div>
+</HubLayout>

@@ -1,0 +1,56 @@
+---
+import '../styles/global.css'
+import Sidebar from '../components/Sidebar.astro'
+import ThemeSwitcher from '../components/ThemeSwitcher.tsx'
+import { THEME_STORAGE_KEY } from '../lib/themes'
+
+interface Props {
+  title: string
+  active: string
+}
+const { title, active } = Astro.props
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title} · Context hub</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Space+Grotesk:wght@500;600;700&display=swap"
+    />
+    <!-- Applies the stored theme before first paint, so there is no flash. -->
+    <script is:inline define:vars={{ key: THEME_STORAGE_KEY }}>
+      try {
+        const t = localStorage.getItem(key)
+        if (t && t !== 'system') document.documentElement.setAttribute('data-theme', t)
+      } catch (e) {}
+    </script>
+  </head>
+  <body class="min-h-dvh">
+    <div class="lg:grid lg:h-dvh lg:grid-cols-[16rem_1fr]">
+      <Sidebar active={active} />
+      <div class="flex min-w-0 flex-col lg:h-dvh lg:overflow-y-auto">
+        <header class="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-border bg-page/85 px-4 py-3 backdrop-blur sm:px-8">
+          <div class="flex min-w-0 items-center gap-3">
+            <details class="relative lg:hidden">
+              <summary class="cursor-pointer list-none rounded-card border border-border bg-panel px-3 py-1.5 text-sm">Menu</summary>
+              <div class="absolute left-0 top-11 z-20 w-64 overflow-hidden rounded-card border border-border shadow-xl">
+                <Sidebar active={active} mobile />
+              </div>
+            </details>
+            <span class="rounded-full border border-warn/40 bg-warn/10 px-2.5 py-0.5 text-xs font-medium text-warn">Mockup, sample data</span>
+          </div>
+          <ThemeSwitcher client:load />
+        </header>
+        <main class="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-8">
+          <slot />
+        </main>
+      </div>
+    </div>
+  </body>
+</html>

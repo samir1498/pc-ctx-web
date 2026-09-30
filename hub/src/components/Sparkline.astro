@@ -1,0 +1,19 @@
+---
+interface Props {
+  values: number[]
+  label: string
+}
+const { values, label } = Astro.props
+const w = 120
+const h = 32
+const max = Math.max(1, ...values)
+const step = w / Math.max(1, values.length - 1)
+const pts = values.map((v, i) => `${(i * step).toFixed(1)},${(h - 2 - (v / max) * (h - 4)).toFixed(1)}`)
+const area = `0,${h} ${pts.join(' ')} ${w},${h}`
+---
+
+<svg viewBox={`0 0 ${w} ${h}`} class="h-8 w-full" preserveAspectRatio="none" role="img" aria-label={label}>
+  <title>{label}</title>
+  <polygon points={area} fill="var(--accent-soft)" />
+  <polyline points={pts.join(' ')} fill="none" stroke="var(--accent)" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" />
+</svg>
