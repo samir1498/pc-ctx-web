@@ -1,4 +1,4 @@
-// Repackages the Astro Worker build as a Pages advanced-mode project in .pages/:
+// Repackages the Astro Worker build as a Pages advanced-mode project in ../.hub-pages/:
 // the Cloudflare adapter dropped Pages output, and the hub stays on Pages for Access and its URL.
 import { cpSync, existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
@@ -12,7 +12,8 @@ const ACCESS = {
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const dist = join(root, 'dist')
-const pages = join(root, '.pages')
+// Outside hub/: wrangler refuses a Pages config under the adapter's .wrangler/deploy redirect.
+const pages = join(root, '..', '.hub-pages')
 const out = join(pages, 'out')
 if (!existsSync(join(dist, 'server', 'entry.mjs'))) throw new Error('Run `pnpm build` first: dist/server/entry.mjs is missing')
 
@@ -41,4 +42,4 @@ writeFileSync(
     2,
   ) + '\n',
 )
-console.log(`Pages bundle in ${pages}. Deploy: cd .pages && npx wrangler pages deploy --project-name ${worker.name} --branch <branch>`)
+console.log(`Pages bundle in ${pages}. Deploy: cd .hub-pages && npx wrangler pages deploy --project-name ${worker.name} --branch <branch>`)

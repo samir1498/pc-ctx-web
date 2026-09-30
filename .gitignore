@@ -11,3 +11,4 @@ dist-server/
 
 # repo installs with bun (see package.json build script) — keep pnpm out
 pnpm-lock.yaml
+.hub-pages
