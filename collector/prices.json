@@ -1,0 +1,273 @@
+{
+ "models": {
+  "anthropic/claude-fable-5": {
+   "input": 10,
+   "output": 50,
+   "cache_read": 1,
+   "cache_write": 12.5
+  },
+  "anthropic/claude-fable-5-1": {
+   "input": 10,
+   "output": 50,
+   "cache_read": 0.25,
+   "cache_write": 12.5
+  },
+  "anthropic/claude-haiku-4-5": {
+   "input": 1,
+   "output": 5,
+   "cache_read": 0.1,
+   "cache_write": 1.25
+  },
+  "anthropic/claude-opus-4-7": {
+   "input": 5,
+   "output": 25,
+   "cache_read": 0.5,
+   "cache_write": 6.25
+  },
+  "anthropic/claude-opus-4-8": {
+   "input": 5,
+   "output": 25,
+   "cache_read": 0.5,
+   "cache_write": 6.25
+  },
+  "anthropic/claude-opus-5": {
+   "input": 5,
+   "output": 25,
+   "cache_read": 0.5,
+   "cache_write": 6.25
+  },
+  "anthropic/claude-opus-5-5": {
+   "input": 4,
+   "output": 20,
+   "cache_read": 0.2,
+   "cache_write": 5
+  },
+  "anthropic/claude-sonnet-5": {
+   "input": 2,
+   "output": 10,
+   "cache_read": 0.2,
+   "cache_write": 2.5
+  },
+  "anthropic/claude-sonnet-5-5": {
+   "input": 2,
+   "output": 10,
+   "cache_read": 0.2,
+   "cache_write": 2.5
+  },
+  "cloudflare-ai-gateway/openai/gpt-4o-mini": {
+   "input": 0.075,
+   "output": 0.3,
+   "cache_read": 0.0375
+  },
+  "cloudflare-workers-ai/@cf/openai/gpt-oss-120b": {
+   "input": 0.35,
+   "output": 0.75
+  },
+  "cloudflare-workers-ai/@cf/openai/gpt-oss-20b": {
+   "input": 0.2,
+   "output": 0.3
+  },
+  "cohere/command-a-03-2025": {
+   "input": 2.5,
+   "output": 10
+  },
+  "cohere/command-a-vision-07-2025": {
+   "input": 2.5,
+   "output": 10
+  },
+  "google/gemini-2.5-flash": {
+   "input": 0.3,
+   "output": 2.5,
+   "cache_read": 0.03
+  },
+  "google/gemini-2.5-flash-lite": {
+   "input": 0.1,
+   "output": 0.4,
+   "cache_read": 0.01
+  },
+  "google/gemini-2.5-pro": {
+   "input": 1.25,
+   "output": 10,
+   "cache_read": 0.125
+  },
+  "google/gemini-3-flash-preview": {
+   "input": 0.5,
+   "output": 3,
+   "cache_read": 0.05
+  },
+  "google/gemini-3.1-flash-lite": {
+   "input": 0.25,
+   "output": 1.5,
+   "cache_read": 0.025
+  },
+  "google/gemini-3.1-flash-tts-preview": {
+   "input": 1,
+   "output": 20
+  },
+  "google/gemini-3.1-pro-preview": {
+   "input": 2,
+   "output": 12,
+   "cache_read": 0.2
+  },
+  "google/gemini-3.7-flash": {
+   "input": 0.75,
+   "output": 3.75,
+   "cache_read": 0.075
+  },
+  "groq/openai/gpt-oss-120b": {
+   "input": 0.15,
+   "output": 0.6,
+   "cache_read": 0.075
+  },
+  "opencode-go/deepseek-v4-flash": {
+   "input": 0.15,
+   "output": 0.6,
+   "cache_read": 0.003
+  },
+  "opencode-go/deepseek-v4.1-flash": {
+   "input": 0.15,
+   "output": 0.6,
+   "cache_read": 0.003
+  },
+  "opencode-go/glm-5.2": {
+   "input": 1.4,
+   "output": 4.4,
+   "cache_read": 0.26
+  },
+  "opencode-go/kimi-k3": {
+   "input": 3,
+   "output": 15,
+   "cache_read": 0.3
+  },
+  "opencode-go/longcat-2.5-preview-free": {
+   "input": 0,
+   "output": 0,
+   "cache_read": 0
+  },
+  "opencode-go/mimo-v2.6-flash": {
+   "input": 0.14,
+   "output": 0.28,
+   "cache_read": 0.0028
+  },
+  "opencode-go/muse-spark-1.2-contributor": {
+   "input": 0.1,
+   "output": 0.2,
+   "cache_read": 0.002
+  },
+  "opencode-go/muse-spark-1.3-contributor": {
+   "input": 0.1,
+   "output": 0.2,
+   "cache_read": 0.002
+  },
+  "opencode-go/qwen3.7-max": {
+   "input": 2.5,
+   "output": 7.5,
+   "cache_read": 0.5,
+   "cache_write": 3.125
+  },
+  "opencode-go/space-bunny-free": {
+   "input": 0,
+   "output": 0,
+   "cache_read": 0,
+   "cache_write": 0
+  },
+  "opencode/big-pickle": {
+   "input": 0,
+   "output": 0,
+   "cache_read": 0,
+   "cache_write": 0
+  },
+  "opencode/deepseek-v4-flash-free": {
+   "input": 0,
+   "output": 0,
+   "cache_read": 0
+  },
+  "opencode/ling-3.0-flash-fin-free": {
+   "input": 0,
+   "output": 0,
+   "cache_read": 0
+  },
+  "opencode/longcat-2.0-free": {
+   "input": 0,
+   "output": 0,
+   "cache_read": 0
+  },
+  "opencode/longcat-2.5-preview-free": {
+   "input": 0,
+   "output": 0,
+   "cache_read": 0
+  },
+  "opencode/mimo-v2.5-free": {
+   "input": 0,
+   "output": 0,
+   "cache_read": 0
+  },
+  "opencode/mimo-v2.6-flash-free": {
+   "input": 0,
+   "output": 0,
+   "cache_read": 0
+  },
+  "opencode/minimax-m2.5-free": {
+   "input": 0,
+   "output": 0,
+   "cache_read": 0
+  },
+  "opencode/muse-spark-1.2-contributor-free": {
+   "input": 0,
+   "output": 0,
+   "cache_read": 0
+  },
+  "opencode/muse-spark-1.3-contributor-free": {
+   "input": 0,
+   "output": 0,
+   "cache_read": 0
+  },
+  "opencode/nemotron-3-ultra-free": {
+   "input": 0,
+   "output": 0,
+   "cache_read": 0
+  },
+  "opencode/nemotron-3.5-lightning-free": {
+   "input": 0,
+   "output": 0,
+   "cache_read": 0
+  },
+  "opencode/space-bunny-free": {
+   "input": 0,
+   "output": 0,
+   "cache_read": 0,
+   "cache_write": 0
+  },
+  "openrouter/google/gemini-3-flash-preview": {
+   "input": 0.5,
+   "output": 3,
+   "cache_read": 0.05,
+   "cache_write": 0.083333
+  },
+  "openrouter/google/gemini-3.1-flash-lite": {
+   "input": 0.25,
+   "output": 1.5,
+   "cache_read": 0.025,
+   "cache_write": 0.083333
+  },
+  "openrouter/nvidia/nemotron-3-super-120b-a12b:free": {
+   "input": 0,
+   "output": 0
+  },
+  "openrouter/nvidia/nemotron-3.5-lightning:free": {
+   "input": 0,
+   "output": 0
+  },
+  "openrouter/openrouter/free": {
+   "input": 0,
+   "output": 0
+  },
+  "openrouter/qwen/qwen3.8-27b:free": {
+   "input": 0,
+   "output": 0
+  }
+ },
+ "overrides": {},
+ "source": "models.dev, USD per million tokens",
+ "updated": "2026-09-30"
+}

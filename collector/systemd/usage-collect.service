@@ -1,0 +1,7 @@
+[Unit]
+Description=Collect daily token usage for the context hub
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 %h/observeone/projects/pc-ctx-web/collector/usage_collect.py
+Nice=10
