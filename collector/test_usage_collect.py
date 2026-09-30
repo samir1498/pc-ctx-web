@@ -188,6 +188,17 @@ class MainTest(Base):
         self.assertFalse(uc.write_day(out, name[:-5], json.loads(body)["rows"]))
 
 
+    def test_backfill_adds_missing_days_and_keeps_old_ones(self):
+        out = os.path.join(self.dir, "out")
+        os.makedirs(out)
+        with open(os.path.join(out, "2026-01-01.json"), "w") as fh:
+            fh.write("complete\n")
+        days = {"2026-01-01": [{"calls": 1}], "2026-01-02": [{"calls": 2}], "2026-09-29": [{"calls": 3}]}
+        self.assertEqual(uc.write_days(out, sorted(days), days, keep_before="2026-09-28"), 2)
+        with open(os.path.join(out, "2026-01-01.json")) as fh:
+            self.assertEqual(fh.read(), "complete\n")
+
+
 class PublishTest(Base):
     DAYS = {"2026-09-29": [{"tool": "opencode", "calls": 1}]}
 

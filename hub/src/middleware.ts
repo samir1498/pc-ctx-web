@@ -5,6 +5,13 @@ import { createHub, hubEnv } from './server/hub'
 export const onRequest = defineMiddleware(async (ctx, next) => {
   const team = hubEnv.ACCESS_TEAM_DOMAIN
   const aud = hubEnv.ACCESS_AUD
+  // Fail closed: a deploy that lost its Access vars must not serve the store to anyone.
+  if (!(team && aud) && !import.meta.env.DEV && hubEnv.HUB_AUTH !== 'off') {
+    return new Response('Access is not configured for this deployment.', {
+      status: 500,
+      headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' },
+    })
+  }
   if (team && aud) {
     const who = await verifyAccess(accessToken(ctx.request), team, aud).catch(() => null)
     if (!who) {

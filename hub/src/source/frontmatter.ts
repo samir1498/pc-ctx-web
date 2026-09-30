@@ -1,4 +1,4 @@
-import { load as parseYaml } from 'js-yaml'
+import { CORE_SCHEMA, load } from 'js-yaml'
 import type { FolderEntry, FolderKey } from './folders'
 import { folderPath, isHtml, isRecord } from './folders'
 
@@ -55,7 +55,8 @@ export function recoverTasks(yaml: string): Record<string, string>[] {
 // undefined = YAML error, null = parsed but not a mapping
 function tryYaml(yaml: string): Record<string, unknown> | null | undefined {
   try {
-    const parsed: unknown = parseYaml(yaml)
+    // CORE_SCHEMA keeps `date: 2026-09-30` a string; the default schema makes it a Date.
+    const parsed: unknown = load(yaml, { schema: CORE_SCHEMA })
     return isRecord(parsed) ? parsed : null
   } catch {
     return undefined

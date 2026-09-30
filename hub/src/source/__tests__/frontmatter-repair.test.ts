@@ -78,3 +78,10 @@ describe('parseFrontmatter keeps tasks despite a stray apostrophe', () => {
     expect(parsed?.body).toBe('Body.')
   })
 })
+
+describe('parseFrontmatter dates', () => {
+  it('keeps an unquoted date as the string it was written as', () => {
+    const fm = parseFrontmatter('---\ndate: 2026-09-30\n---\nbody')?.frontmatter
+    expect(fm?.date).toBe('2026-09-30')
+  })
+})

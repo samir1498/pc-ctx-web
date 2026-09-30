@@ -6,7 +6,7 @@ writes one <out>/YYYY-MM-DD.json per Europe/Berlin day. Only counts, model and
 provider ids, tool and date leave this script; prompt text is never read out.
 
   usage_collect.py --publish        recompute the last 3 days and push them (daily run)
-  usage_collect.py --backfill --publish   every day any source still has
+  usage_collect.py --backfill --publish   add every missing day the sources still hold
   usage_collect.py --out DIR       write the files to DIR only
   usage_collect.py --refresh-prices   update prices.json from the models.dev cache
 """
@@ -312,7 +312,7 @@ def push(store):
                           capture_output=True, text=True, env=git_env())
 
 
-def publish(store, context, window, days, message, attempts=4, pause=5):
+def publish(store, context, window, days, message, attempts=4, pause=5, keep_before=None):
     """Fetch, reset to origin/main, write, commit only usage/, push; retry when the push is rejected."""
     ensure_store(store, context)
     out, err = os.path.join(store, "usage"), ""
@@ -320,7 +320,7 @@ def publish(store, context, window, days, message, attempts=4, pause=5):
         git(store, "fetch", "--quiet", "origin", "main")
         git(store, "reset", "--quiet", "--hard", "origin/main")
         git(store, "clean", "-fdq", "--", "usage")
-        write_days(out, window, days)
+        write_days(out, window, days, keep_before)
         git(store, "add", "--", "usage")
         if subprocess.run(["git", "-C", store, "diff", "--cached", "--quiet"], env=git_env()).returncode == 0:
             return "origin/main already has these files"
@@ -334,10 +334,13 @@ def publish(store, context, window, days, message, attempts=4, pause=5):
     raise RuntimeError(f"push rejected {attempts} times: {err}")
 
 
-def write_days(out, window, days):
+def write_days(out, window, days, keep_before=None):
+    """keep_before: an existing file for an earlier day stays as it is (pruned transcripts undercount)."""
     changed = 0
     for date in window:
         rows = days.get(date, [])
+        if keep_before and date < keep_before and os.path.exists(os.path.join(out, f"{date}.json")):
+            continue
         if rows or os.path.exists(os.path.join(out, f"{date}.json")):
             os.makedirs(out, exist_ok=True)
             changed += write_day(out, date, rows)
@@ -363,7 +366,7 @@ def write_day(out_dir, date, rows):
 def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--days", type=int, default=3, help="recompute this many days ending today")
-    p.add_argument("--backfill", action="store_true", help="every day the sources still hold")
+    p.add_argument("--backfill", action="store_true", help="also add older days that have no file yet; existing ones are kept")
     p.add_argument("--refresh-prices", action="store_true", help="update prices.json from models.dev")
     p.add_argument("--dry-run", action="store_true", help="print totals, write nothing")
     p.add_argument("--publish", action="store_true",
@@ -376,6 +379,7 @@ def main(argv=None):
     end = dt.datetime.combine(today + dt.timedelta(days=1), dt.time(), TZ)
     start = EPOCH if a.backfill else dt.datetime.combine(today - dt.timedelta(days=a.days - 1), dt.time(), TZ)
 
+    missing = [n for n in ("claude", "opencode", "router", "hermes") if not os.path.exists(getattr(a, n))]
     tally = Tally()
     read_claude(a.claude, start, end, tally)
     read_opencode(a.opencode, start, end, tally)
@@ -394,7 +398,9 @@ def main(argv=None):
 
     window = sorted(days) if a.backfill else [
         (today - dt.timedelta(days=i)).isoformat() for i in range(a.days - 1, -1, -1)]
-    total = f"days={len(window)} rows={sum(len(days.get(d, [])) for d in window)} unpriced={','.join(sorted(unpriced)) or 'none'}"
+    # A backfill only adds days; the recompute window is the one place a day is rewritten.
+    keep = (today - dt.timedelta(days=a.days - 1)).isoformat() if a.backfill else None
+    total = f"days={len(window)} rows={sum(len(days.get(d, [])) for d in window)} unpriced={','.join(sorted(unpriced)) or 'none'} missing={','.join(missing) or 'none'}"
     if a.dry_run:
         for date in window:
             rows = days.get(date, [])
@@ -402,14 +408,14 @@ def main(argv=None):
     elif a.publish:
         what = f"backfill from {window[0]}" if a.backfill and window else f"daily token usage {today.isoformat()}"
         try:
-            result = publish(a.store, a.context, window, days, f"usage: {what}")
+            result = publish(a.store, a.context, window, days, f"usage: {what}", keep_before=keep)
         except (subprocess.CalledProcessError, RuntimeError) as e:
             detail = e.stderr.strip()[:200] if isinstance(e, subprocess.CalledProcessError) else str(e)
             print(f"usage-collect: {total} FAILED: {detail}", file=sys.stderr)
             return 1
         print(f"usage-collect: {total} {result}", file=sys.stderr)
     elif a.out:
-        print(f"usage-collect: {total} changed={write_days(a.out, window, days)}", file=sys.stderr)
+        print(f"usage-collect: {total} changed={write_days(a.out, window, days, keep)}", file=sys.stderr)
     else:
         p.error("pass --publish, --out DIR or --dry-run")
     return 0
