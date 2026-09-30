@@ -1,13 +1,16 @@
 import { useMemo, useState } from 'react'
-import type { UsageRow } from '../lib/usage-types'
+import type { PlanSample, UsageRow, UsageSession } from '../lib/usage-types'
 import { byModel, keysOf, labelOf, lastDays, previousDays, slotOf, sum, totalTokens, windowDates, type GroupBy, type Metric } from '../lib/usage'
 import { count, pct, tokens, usd } from '../lib/format'
 import DailyUsageChart from './charts/DailyUsageChart'
 import MiniBars from './charts/MiniBars'
 import ModelTable from './ModelTable'
+import SessionTable from './SessionTable'
+import PlanChart from './charts/PlanChart'
 
 const RANGES = [7, 14, 30] as const
 const GROUPS: { key: GroupBy; label: string }[] = [
+  { key: 'host', label: 'Host' },
   { key: 'tool', label: 'Tool' },
   { key: 'provider', label: 'Provider' },
   { key: 'model', label: 'Model' },
@@ -60,7 +63,7 @@ const TYPES = [
   { key: 'cacheWrite', label: 'Cache write' },
 ] as const
 
-export default function UsageExplorer({ rows }: { rows: UsageRow[] }) {
+export default function UsageExplorer({ rows, sessions, plan }: { rows: UsageRow[]; sessions: UsageSession[]; plan: PlanSample[] }) {
   const [range, setRange] = useState<number>(14)
   const [group, setGroup] = useState<GroupBy>('tool')
   const [metric, setMetric] = useState<Metric>('tokens')
@@ -69,6 +72,9 @@ export default function UsageExplorer({ rows }: { rows: UsageRow[] }) {
   const modelKeys = useMemo(() => keysOf('model', rows), [rows])
   const cur = useMemo(() => lastDays(rows, range), [rows, range])
   const prev = useMemo(() => previousDays(rows, range), [rows, range])
+  const inWindow = useMemo(() => new Set(windowDates(rows, range)), [rows, range])
+  const curSessions = useMemo(() => sessions.filter((s) => inWindow.has(s.date)), [sessions, inWindow])
+  const curPlan = useMemo(() => plan.filter((p) => inWindow.has(p.at.slice(0, 10))), [plan, inWindow])
   const t = sum(cur)
   const p = sum(prev)
   const all = totalTokens(t)
@@ -150,6 +156,16 @@ export default function UsageExplorer({ rows }: { rows: UsageRow[] }) {
       </section>
 
       <ModelTable models={models} colourKeys={modelKeys} />
+
+      <SessionTable sessions={curSessions} />
+
+      {curPlan.length > 0 && (
+        <section className="card p-5">
+          <h2 className="font-display text-lg font-semibold">Plan limits used</h2>
+          <p className="mb-4 text-xs text-dim">The Claude desktop app's own samples of the subscription's 5-hour and 7-day limits. They cover the whole account: chat, Cowork and Code on every device.</p>
+          <PlanChart samples={curPlan} />
+        </section>
+      )}
     </div>
   )
 }

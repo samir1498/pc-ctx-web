@@ -4,13 +4,15 @@ Writes one `usage/YYYY-MM-DD.json` per Europe/Berlin day into the context store,
 
 | Source | Read from | Counted as |
 |---|---|---|
-| Claude Code | `~/.claude/projects/**/*.jsonl` (subagents included) | one call per `message.id`, last line wins |
+| Claude Code (WSL) | `~/.claude/projects/**/*.jsonl` (subagents included) | one call per `message.id`, last line wins; the transcript's `entrypoint` splits terminal (`claude-code`) from Agent SDK (`claude-sdk`) |
+| Claude on Windows | `/mnt/c/Users/*/.claude/projects` | same, host `windows`; the desktop app's Code tab is `claude-desktop` |
+| Cowork | the desktop app's `local-agent-mode-sessions/**/*.jsonl` | tool `cowork`, host `windows` |
 | opencode | `~/.local/share/opencode/opencode.db`, table `message` | one call per assistant message; cost as opencode reports it |
 | Hermes | OmniRoute `~/.omniroute/storage.sqlite`, `call_logs` with key `hermes` | one call per `correlation_id`, real model from `requested_model` |
 | Other router clients | same table, no API key | tool `router` |
 | Hermes, direct | `~/.hermes/state.db`, provider rows that did not go through the router | tool `hermes`; dated by the row's last use, so a long-lived row lands on one day |
 
-Only counts, model and provider ids, tool and date are written. No prompt text, paths, titles or request bodies are read out, and `~/.omniroute/call_logs/` is never opened. Databases are opened read-only.
+Written: counts, model and provider ids, tool, host and date. Each day also lists `sessions` (per Claude session: tokens, calls, models, list cost, and from the desktop app's session records its title, scheduled task id and PR link; a terminal session shows its folder name) and `plan` (the desktop app's own samples of the 5-hour and 7-day plan limits, in percent, from `plan-usage-history.json`). No prompt text, paths or request bodies are read out, and `~/.omniroute/call_logs/` is never opened. Databases are opened read-only.
 
 Cost:
 - **Claude Code** is shown at the API list price (`list`). A 1-hour cache write bills at 2x input, which is more than Claude Code's own counter shows.

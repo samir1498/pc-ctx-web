@@ -72,3 +72,23 @@ describe('day windows', () => {
     expect(byDay(lastDays(rows, 3), 'tool', 'tokens', windowDates(rows, 3)).map((p) => p.date)).toEqual(['2026-09-18', '2026-09-19', '2026-09-20'])
   })
 })
+
+describe('host, sessions and plan samples', () => {
+  const file = JSON.stringify({
+    date: '2026-09-29',
+    rows: [row(), row({ host: 'windows', tool: 'claude-desktop' }), row({ tool: 'mystery' })],
+    sessions: [{ id: 's1', host: 'windows', tool: 'cowork', title: 'Weekly report', models: ['claude-opus-5-5', 7], calls: 3, output: 10 }, { tool: 'cowork' }],
+    plan: [{ at: '12:00', fiveHour: 12, sevenDay: 40 }, { at: 'noon' }],
+  })
+
+  it('keeps host, defaulting old rows to WSL, and drops unknown tools', () => {
+    const day = parseUsageDay(file)!
+    expect(day.rows.map((r) => [r.host, r.tool])).toEqual([['wsl', 'opencode'], ['windows', 'claude-desktop']])
+  })
+
+  it('parses sessions and plan samples, dropping malformed ones', () => {
+    const day = parseUsageDay(file)!
+    expect(day.sessions).toEqual([expect.objectContaining({ id: 's1', date: '2026-09-29', host: 'windows', title: 'Weekly report', models: ['claude-opus-5-5'], output: 10 })])
+    expect(day.plan).toEqual([{ at: '2026-09-29T12:00', fiveHour: 12, sevenDay: 40 }])
+  })
+})
