@@ -17,10 +17,10 @@ PRICES = {"models": {
 }, "overrides": {}}
 
 
-def assistant(mid, out, ts="2026-09-29T10:00:00Z", model="claude-opus-5-5", w1h=0):
+def assistant(mid, out, ts="2026-09-29T10:00:00Z", model="claude-opus-5-5", w1h=0, **top):
     usage = {"input_tokens": 10, "output_tokens": out, "cache_read_input_tokens": 1000,
              "cache_creation_input_tokens": 200, "cache_creation": {"ephemeral_1h_input_tokens": w1h}}
-    return json.dumps({"type": "assistant", "timestamp": ts,
+    return json.dumps({**top, "type": "assistant", "timestamp": ts,
                        "message": {"id": mid, "model": model, "usage": usage,
                                    "content": [{"type": "text", "text": "never leaves"}]}})
 
@@ -166,6 +166,32 @@ class PricingTest(Base):
         self.assertEqual(out["overrides"], {"a/b": {"input": 0}})
 
 
+class WindowsTest(Base):
+    write = ClaudeTest.write
+
+    def test_host_and_app_split_sessions_carry_the_desktop_title(self):
+        self.write("a.jsonl", [assistant("m1", 5, entrypoint="claude-desktop", sessionId="s1", cwd="C:\\Users\\x\\observeone"),
+                               assistant("m2", 7, entrypoint="local-agent", sessionId="s2", cwd="C:\\tmp\\outputs")])
+        uc.read_claude(self.dir, START, END, self.tally, host="windows")
+        days, _ = self.rows()
+        self.assertEqual({(r["host"], r["tool"]) for r in days["2026-09-29"]}, {("windows", "claude-desktop"), ("windows", "cowork")})
+        desk = os.path.join(self.dir, "desk")
+        os.makedirs(os.path.join(desk, "claude-code-sessions", "a", "b"))
+        with open(os.path.join(desk, "claude-code-sessions", "a", "b", "local_1.json"), "w") as fh:
+            json.dump({"cliSessionId": "s1", "title": "Fix the hub", "scheduledTaskId": "nightly"}, fh)
+        sessions = uc.priced_sessions(self.tally, PRICES, uc.session_meta(desk))["2026-09-29"]
+        s1 = next(x for x in sessions if x["id"] == "s1")
+        self.assertEqual((s1["title"], s1["task"], s1["project"], s1["output"]), ("Fix the hub", "nightly", "observeone", 5))
+        self.assertGreater(s1["cost"], 0)
+        self.assertNotIn("never leaves", json.dumps(sessions))
+
+    def test_plan_samples_by_day(self):
+        with open(os.path.join(self.dir, "plan-usage-history.json"), "w") as fh:
+            json.dump({"samples": [{"t": 1790676000000, "u": {"fh": 12, "sd": 40}}, {"t": 1, "u": {}}]}, fh)
+        plan = uc.read_plan(self.dir, START, END)
+        self.assertEqual(list(plan.values()), [[{"at": "12:00", "fiveHour": 12, "sevenDay": 40}]])
+
+
 class MainTest(Base):
     def test_daily_run_writes_counts_only_and_is_idempotent(self):
         now = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -178,7 +204,7 @@ class MainTest(Base):
         out = os.path.join(self.dir, "out")
         missing = os.path.join(self.dir, "none")
         args = ["--claude", self.dir, "--opencode", missing, "--router", missing,
-                "--hermes", missing, "--prices", prices, "--out", out]
+                "--hermes", missing, "--win-claude", missing, "--desktop", missing, "--prices", prices, "--out", out]
         uc.main(args)
         (name,) = os.listdir(out)
         with open(os.path.join(out, name)) as fh:

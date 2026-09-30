@@ -31,6 +31,9 @@ DEFAULTS = {
     "opencode": os.path.join(HOME, ".local", "share", "opencode", "opencode.db"),
     "router": os.path.join(HOME, ".omniroute", "storage.sqlite"),
     "hermes": os.path.join(HOME, ".hermes", "state.db"),
+    # The Windows side, seen from WSL: Claude Code on Windows and the Claude desktop app (MSIX).
+    "win_claude": next(iter(sorted(glob.glob("/mnt/c/Users/*/.claude/projects"))), ""),
+    "desktop": next(iter(sorted(glob.glob("/mnt/c/Users/*/AppData/Local/Packages/Claude_*/LocalCache/Roaming/Claude"))), ""),
     "models_dev": os.path.join(HOME, ".hermes", "models_dev_cache.json"),
     "prices": os.path.join(HERE, "prices.json"),
     "context": os.path.join(HOME, "observeone", "observeone-context"),
@@ -44,15 +47,17 @@ EPOCH = dt.datetime(2000, 1, 1, tzinfo=TZ)
 
 
 class Tally:
-    """Token counts per (date, tool, provider, model), before pricing."""
+    """Token counts per (date, host, tool, provider, model), before pricing; per session for Claude."""
 
     def __init__(self):
         self.rows = defaultdict(lambda: defaultdict(int))
         self.meta = {}
+        self.sessions = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))
+        self.session_info = {}
 
-    def add(self, date, tool, provider, model, *, ok=True, input=0, output=0,
+    def add(self, date, tool, provider, model, *, host="wsl", ok=True, input=0, output=0,
             cache_read=0, cache_write=0, cache_write_1h=0, reported_cost=None, calls=1):
-        key = (date, tool, provider, model)
+        key = (date, host, tool, provider, model)
         r = self.rows[key]
         if reported_cost is not None:
             self.meta[key] = "reported"
@@ -81,8 +86,14 @@ def norm_claude_model(model):
     return re.sub(r"-\d{8}$", "", model)
 
 
-def read_claude(root, start, end, tally):
+# Which app wrote a transcript, from its entrypoint field.
+SURFACE = {"claude-desktop": "claude-desktop", "local-agent": "cowork", "sdk-py": "claude-sdk", "sdk-ts": "claude-sdk"}
+
+
+def read_claude(root, start, end, tally, host="wsl"):
     """Dedup by message.id, keeping the last line: output_tokens grows per content block."""
+    if not root or not os.path.isdir(root):
+        return
     cutoff = start.timestamp() - 86400
     seen = {}
     for path in glob.iglob(os.path.join(root, "**", "*.jsonl"), recursive=True):
@@ -106,8 +117,9 @@ def read_claude(root, start, end, tally):
                 model, usage = msg.get("model"), msg.get("usage")
                 if not model or model == "<synthetic>" or not isinstance(usage, dict):
                     continue
-                seen[msg.get("id") or f"{path}:{n}"] = (d.get("timestamp"), model, usage)
-    for stamp, model, u in seen.values():
+                seen[msg.get("id") or f"{path}:{n}"] = (d.get("timestamp"), model, usage, d.get("entrypoint"),
+                                                         d.get("sessionId"), d.get("cwd"))
+    for stamp, model, u, entry, session, cwd in seen.values():
         try:
             ts = dt.datetime.fromisoformat(str(stamp).replace("Z", "+00:00"))
         except ValueError:
@@ -116,10 +128,18 @@ def read_claude(root, start, end, tally):
             continue
         write = u.get("cache_creation_input_tokens") or 0
         write_1h = min((u.get("cache_creation") or {}).get("ephemeral_1h_input_tokens") or 0, write)
-        tally.add(local_date(ts), "claude-code", "anthropic", norm_claude_model(model),
-                  input=u.get("input_tokens"), output=u.get("output_tokens"),
-                  cache_read=u.get("cache_read_input_tokens"), cache_write=write,
-                  cache_write_1h=write_1h)
+        tool, model, date = SURFACE.get(entry, "claude-code"), norm_claude_model(model), local_date(ts)
+        parts = dict(input=u.get("input_tokens"), output=u.get("output_tokens"),
+                     cache_read=u.get("cache_read_input_tokens"), cache_write=write, cache_write_1h=write_1h)
+        tally.add(date, tool, "anthropic", model, host=host, **parts)
+        if session:
+            s = tally.sessions[(date, session)][model]
+            s["calls"] += 1
+            for k, v in parts.items():
+                s[k] += max(int(v or 0), 0)
+            info = tally.session_info.setdefault(session, {"host": host, "tool": tool, "cwd": cwd})
+            info["first"] = min(info.get("first") or stamp, stamp)
+            info["last"] = max(info.get("last") or stamp, stamp)
 
 
 def read_opencode(path, start, end, tally):
@@ -238,7 +258,7 @@ def list_cost(price, r):
 def priced_rows(tally, prices):
     days, unpriced = defaultdict(list), set()
     for key, r in tally.rows.items():
-        date, tool, provider, model = key
+        date, host, tool, provider, model = key
         price = price_for(prices, provider, model)
         if is_free(model, price):
             pricing, cost = "free", 0.0
@@ -251,15 +271,81 @@ def priced_rows(tally, prices):
             if r["calls"]:
                 unpriced.add(f"{provider}/{model}")
         days[date].append({
-            "tool": tool, "provider": provider, "model": model,
+            "host": host, "tool": tool, "provider": provider, "model": model,
             "calls": r["calls"], "errors": r["errors"],
             "input": r["input"], "output": r["output"],
             "cacheRead": r["cacheRead"], "cacheWrite": r["cacheWrite"],
             "cost": round(cost, 6), "pricing": pricing,
         })
     for rows in days.values():
-        rows.sort(key=lambda x: (x["tool"], x["provider"], x["model"]))
+        rows.sort(key=lambda x: (x["host"], x["tool"], x["provider"], x["model"]))
     return days, unpriced
+
+
+def session_meta(desktop):
+    """The desktop app's own record of each Code and Cowork session, by transcript session id."""
+    out = {}
+    if not desktop:
+        return out
+    for pattern in ("claude-code-sessions/*/*/local_*.json", "local-agent-mode-sessions/*/*/local_*.json"):
+        for path in glob.glob(os.path.join(desktop, pattern)):
+            try:
+                with open(path) as fh:
+                    m = json.load(fh)
+            except (OSError, ValueError):
+                continue
+            if isinstance(m, dict) and m.get("cliSessionId"):
+                out[m["cliSessionId"]] = {"title": m.get("title"), "task": m.get("scheduledTaskId"), "pr": m.get("prUrl"),
+                                          "cowork": pattern.startswith("local-agent")}
+    return out
+
+
+def project_of(cwd):
+    return re.split(r"[\\/]", cwd.rstrip("\\/"))[-1] if cwd else None
+
+
+def priced_sessions(tally, prices, meta):
+    """One row per session and day: tokens, calls, the models used and their list cost."""
+    days = defaultdict(list)
+    for (date, sid), models in tally.sessions.items():
+        info, m = tally.session_info.get(sid, {}), meta.get(sid, {})
+        row = {"id": sid, "host": info.get("host"), "tool": "cowork" if m.get("cowork") else info.get("tool"),
+               "title": m.get("title"), "task": m.get("task"), "pr": m.get("pr"),
+               "project": None if m.get("cowork") else project_of(info.get("cwd")),
+               "first": info.get("first"), "last": info.get("last"), "models": sorted(models),
+               "calls": 0, "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0, "cost": 0.0}
+        for model, r in models.items():
+            for k, src in (("calls", "calls"), ("input", "input"), ("output", "output"),
+                           ("cacheRead", "cache_read"), ("cacheWrite", "cache_write")):
+                row[k] += r[src]
+            price = price_for(prices, "anthropic", model)
+            if price:
+                row["cost"] += list_cost(price, {"input": r["input"], "output": r["output"], "cacheRead": r["cache_read"],
+                                                 "cacheWrite": r["cache_write"], "cacheWrite1h": r["cache_write_1h"]})
+        row["cost"] = round(row["cost"], 4)
+        days[date].append({k: v for k, v in row.items() if v is not None})
+    for rows in days.values():
+        rows.sort(key=lambda x: -(x["input"] + x["output"] + x["cacheRead"] + x["cacheWrite"]))
+    return days
+
+
+def read_plan(desktop, start, end):
+    """The desktop app's samples of plan quota used, in percent: 5-hour and 7-day windows, per day."""
+    days = defaultdict(list)
+    try:
+        with open(os.path.join(desktop, "plan-usage-history.json")) as fh:
+            samples = json.load(fh).get("samples") or []
+    except (OSError, ValueError, TypeError, AttributeError):
+        return days
+    for x in samples:
+        try:
+            ts = dt.datetime.fromtimestamp(x["t"] / 1000, TZ)
+        except (KeyError, TypeError, ValueError):
+            continue
+        if start <= ts < end:
+            u = x.get("u") or {}
+            days[local_date(ts)].append({"at": ts.strftime("%H:%M"), "fiveHour": u.get("fh"), "sevenDay": u.get("sd")})
+    return days
 
 
 def refresh_prices(prices, keys, models_dev_path):
@@ -312,7 +398,7 @@ def push(store):
                           capture_output=True, text=True, env=git_env())
 
 
-def publish(store, context, window, days, message, attempts=4, pause=5, keep_before=None):
+def publish(store, context, window, days, message, attempts=4, pause=5, keep_before=None, extra=None):
     """Fetch, reset to origin/main, write, commit only usage/, push; retry when the push is rejected."""
     ensure_store(store, context)
     out, err = os.path.join(store, "usage"), ""
@@ -320,7 +406,7 @@ def publish(store, context, window, days, message, attempts=4, pause=5, keep_bef
         git(store, "fetch", "--quiet", "origin", "main")
         git(store, "reset", "--quiet", "--hard", "origin/main")
         git(store, "clean", "-fdq", "--", "usage")
-        write_days(out, window, days, keep_before)
+        write_days(out, window, days, keep_before, extra)
         git(store, "add", "--", "usage")
         if subprocess.run(["git", "-C", store, "diff", "--cached", "--quiet"], env=git_env()).returncode == 0:
             return "origin/main already has these files"
@@ -334,7 +420,7 @@ def publish(store, context, window, days, message, attempts=4, pause=5, keep_bef
     raise RuntimeError(f"push rejected {attempts} times: {err}")
 
 
-def write_days(out, window, days, keep_before=None):
+def write_days(out, window, days, keep_before=None, extra=None):
     """keep_before: an existing file for an earlier day stays as it is (pruned transcripts undercount)."""
     changed = 0
     for date in window:
@@ -343,13 +429,13 @@ def write_days(out, window, days, keep_before=None):
             continue
         if rows or os.path.exists(os.path.join(out, f"{date}.json")):
             os.makedirs(out, exist_ok=True)
-            changed += write_day(out, date, rows)
+            changed += write_day(out, date, rows, (extra or {}).get(date))
     return changed
 
 
-def write_day(out_dir, date, rows):
+def write_day(out_dir, date, rows, extra=None):
     path = os.path.join(out_dir, f"{date}.json")
-    body = json.dumps({"date": date, "tz": "Europe/Berlin", "rows": rows}, indent=1) + "\n"
+    body = json.dumps({"date": date, "tz": "Europe/Berlin", "rows": rows, **(extra or {})}, indent=1) + "\n"
     try:
         with open(path) as fh:
             if fh.read() == body:
@@ -379,9 +465,14 @@ def main(argv=None):
     end = dt.datetime.combine(today + dt.timedelta(days=1), dt.time(), TZ)
     start = EPOCH if a.backfill else dt.datetime.combine(today - dt.timedelta(days=a.days - 1), dt.time(), TZ)
 
-    missing = [n for n in ("claude", "opencode", "router", "hermes") if not os.path.exists(getattr(a, n))]
+    missing = [n for n in ("claude", "opencode", "router", "hermes", "win_claude", "desktop")
+               if not getattr(a, n) or not os.path.exists(getattr(a, n))]
     tally = Tally()
     read_claude(a.claude, start, end, tally)
+    read_claude(a.win_claude, start, end, tally, host="windows")
+    if a.desktop:
+        # Cowork keeps each session's transcript under its own folder.
+        read_claude(os.path.join(a.desktop, "local-agent-mode-sessions"), start, end, tally, host="windows")
     read_opencode(a.opencode, start, end, tally)
     read_router(a.router, start, end, tally)
     read_hermes_direct(a.hermes, start, end, tally)
@@ -395,6 +486,10 @@ def main(argv=None):
                 json.dump(prices, fh, indent=1)
                 fh.write("\n")
     days, unpriced = priced_rows(tally, prices)
+    sessions = priced_sessions(tally, prices, session_meta(a.desktop))
+    plan = read_plan(a.desktop, start, end) if a.desktop else {}
+    extra = {d: {k: v for k, v in (("sessions", sessions.get(d)), ("plan", plan.get(d))) if v}
+             for d in set(sessions) | set(plan)}
 
     window = sorted(days) if a.backfill else [
         (today - dt.timedelta(days=i)).isoformat() for i in range(a.days - 1, -1, -1)]
@@ -408,14 +503,14 @@ def main(argv=None):
     elif a.publish:
         what = f"backfill from {window[0]}" if a.backfill and window else f"daily token usage {today.isoformat()}"
         try:
-            result = publish(a.store, a.context, window, days, f"usage: {what}", keep_before=keep)
+            result = publish(a.store, a.context, window, days, f"usage: {what}", keep_before=keep, extra=extra)
         except (subprocess.CalledProcessError, RuntimeError) as e:
             detail = e.stderr.strip()[:200] if isinstance(e, subprocess.CalledProcessError) else str(e)
             print(f"usage-collect: {total} FAILED: {detail}", file=sys.stderr)
             return 1
         print(f"usage-collect: {total} {result}", file=sys.stderr)
     elif a.out:
-        print(f"usage-collect: {total} changed={write_days(a.out, window, days, keep)}", file=sys.stderr)
+        print(f"usage-collect: {total} changed={write_days(a.out, window, days, keep, extra)}", file=sys.stderr)
     else:
         p.error("pass --publish, --out DIR or --dry-run")
     return 0

@@ -1,13 +1,14 @@
 import type { UsageRow } from './usage-types'
-import { TOOL_LABEL } from './usage-types'
+import { HOST_LABEL, TOOL_LABEL } from './usage-types'
 
-export type GroupBy = 'tool' | 'provider' | 'model'
+export type GroupBy = 'host' | 'tool' | 'provider' | 'model'
 export type Metric = 'cost' | 'tokens'
 
 // Colour follows the entity: known keys own fixed slots, new ones follow by name,
 // so a filter never repaints the survivors. Past eight, keys share the Other colour.
 const KNOWN: Record<GroupBy, string[]> = {
-  tool: ['claude-code', 'opencode', 'hermes', 'router'],
+  host: ['wsl', 'windows'],
+  tool: ['claude-code', 'opencode', 'claude-desktop', 'hermes', 'cowork', 'claude-sdk', 'router'],
   provider: ['anthropic', 'opencode', 'opencode-go', 'google', 'openrouter'],
   model: [],
 }
@@ -32,6 +33,7 @@ export function slotOf(keys: string[], key: string): string {
 
 export function labelOf(group: GroupBy, key: string): string {
   if (group === 'tool') return TOOL_LABEL[key as keyof typeof TOOL_LABEL] ?? key
+  if (group === 'host') return HOST_LABEL[key as keyof typeof HOST_LABEL] ?? key
   return key
 }
 
