@@ -50,6 +50,11 @@ describe('stripCodes', () => {
     expect(stripCodes('See [the PR](https://github.com/Dinar-dz/dz-pos/pull/223) and [the route](crates/api/src/routes.rs).')).toBe('See the PR and the route.')
   })
 
+  it('keeps a GitHub release download as a link', () => {
+    const line = '| Android | [download](https://github.com/o/r/releases/download/v1/app.apk) |'
+    expect(stripCodes(line)).toBe(line)
+  })
+
   it('preserves paragraph breaks and heading lines', () => {
     const input = '## Where it stands\n\nThe app is live. Anouar can invoice a sale.\n\nNext up is receipts.'
     expect(stripCodes(input)).toBe('## Where it stands\n\nThe app is live. Anouar can invoice a sale.\n\nNext up is receipts.')
