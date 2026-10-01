@@ -101,7 +101,9 @@
 .doc-body pre { font-family: var(--font-mono-stack); font-size: 0.8125rem; line-height: 1.6; padding: 0.9rem 1rem; border-radius: var(--radius); background: var(--rail); border: 1px solid var(--border); overflow-x: auto; }
 .doc-body blockquote { border-left: 3px solid var(--line); padding-left: 1rem; color: var(--muted); }
 .doc-body table { display: block; overflow-x: auto; border-collapse: collapse; font-size: 0.875rem; }
-.doc-body :where(th, td) { border: 1px solid var(--border); padding: 0.4rem 0.7rem; text-align: left; vertical-align: top; }
+/* .doc-body wraps anywhere so a long path cannot widen the page; in a table that would let
+   the browser squeeze a column down to one letter, so cells break at word ends only. */
+.doc-body :where(th, td) { border: 1px solid var(--border); padding: 0.4rem 0.7rem; text-align: left; vertical-align: top; overflow-wrap: break-word; }
 .doc-body th { background: var(--rail); font-weight: 600; }
 .doc-body hr { border: 0; border-top: 1px solid var(--border); margin: 2em 0; }
 .doc-body figure { margin: 1.5em 0; }
