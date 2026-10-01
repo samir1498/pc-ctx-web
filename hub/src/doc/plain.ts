@@ -26,8 +26,8 @@ const SENTENCE_SPLIT_RE = /(?<=[.!?])\s+/
 const MD_LINK_RE = /(!?)\[([^\]]*)\]\(([^)]*)\)/g
 const HOLE = '\u0000'
 // A link into the code (GitHub, a repo path, a plan by slug) is flattened to
-// its words; a picture, a web page or a store page stays a link.
-const CODE_LINK_RE = /github\.com|^plan:|\.(ts|tsx|rs|md)#|^(?!https?:|\.\.?\/|media\/)[\w.-]+\/[\w./-]*$/i
+// its words; a picture, a web page, a store page or a release download stays a link.
+const CODE_LINK_RE = /github\.com(?!\/[\w.-]+\/[\w.-]+\/releases\/)|^plan:|\.(ts|tsx|rs|md)#|^(?!https?:|\.\.?\/|media\/)[\w.-]+\/[\w./-]*$/i
 
 function stripLine(line: string): string {
   const kept: string[] = []
