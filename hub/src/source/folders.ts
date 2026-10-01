@@ -40,8 +40,9 @@ export function isHtml(name: string): boolean {
 }
 
 // Folders whose pages may be a picture rather than prose: kept as HTML in
-// the store and rendered in a sandbox.
-const HTML_FOLDERS: readonly FolderKey[] = ['designs', 'mockups']
+// the store and rendered in a sandbox. 'reports' holds dashboard-style
+// generated pages, so it belongs here too.
+const HTML_FOLDERS: readonly FolderKey[] = ['designs', 'mockups', 'reports']
 
 // A folder's README describes the folder; it is not one of its documents.
 export function isDocument(name: string, folder?: FolderKey): boolean {
