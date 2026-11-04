@@ -25,9 +25,16 @@ export default function StoreHtml({ html, project, docPath }: { html: string; pr
     const el = frame.current
     if (!el) return
     let observer: ResizeObserver | undefined
+    // A page wider than the frame (a mockup of a 1366px screen) is scaled down to fit,
+    // so the whole picture shows instead of being cut at the frame's right edge.
     const measure = () => {
       const root = el.contentDocument?.documentElement
-      if (root) setHeight(Math.max(240, root.scrollHeight))
+      const body = el.contentDocument?.body
+      if (!root || !body) return
+      body.style.zoom = ''
+      const fit = root.scrollWidth > root.clientWidth ? root.clientWidth / root.scrollWidth : 1
+      if (fit < 1) body.style.zoom = String(fit)
+      setHeight(Math.max(240, root.scrollHeight))
     }
     const watch = () => {
       measure()
