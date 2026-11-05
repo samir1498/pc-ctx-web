@@ -13,6 +13,8 @@ export interface HubEnv {
   PROJECTS?: string
   ACCESS_TEAM_DOMAIN?: string
   ACCESS_AUD?: string
+  /** Personal key links, `name:key,name:key` (a Pages secret). See server/keys.ts. */
+  HUB_KEYS?: string
   /** 'off' serves without Access outside dev: local preview and the T1 timings only. */
   HUB_AUTH?: string
   CTX_CACHE?: KVLike
