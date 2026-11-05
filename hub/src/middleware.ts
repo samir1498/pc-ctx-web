@@ -1,21 +1,33 @@
 import { defineMiddleware } from 'astro:middleware'
 import { accessToken, verifyAccess } from './server/access'
+import { KEY_COOKIE, KEY_COOKIE_MAX_AGE, keyFromCookie, parseKeys, whoHasKey } from './server/keys'
 import { createHub, hubEnv, LAST_PROJECT } from './server/hub'
 
 export const onRequest = defineMiddleware(async (ctx, next) => {
   const team = hubEnv.ACCESS_TEAM_DOMAIN
   const aud = hubEnv.ACCESS_AUD
-  // Fail closed: a deploy that lost its Access vars must not serve the store to anyone.
-  if (!(team && aud) && !import.meta.env.DEV && hubEnv.HUB_AUTH !== 'off') {
-    return new Response('Access is not configured for this deployment.', {
+  const keys = parseKeys(hubEnv.HUB_KEYS)
+  // Fail closed: a deploy with neither key links nor Access must not serve the store to anyone.
+  if (!keys.size && !(team && aud) && !import.meta.env.DEV && hubEnv.HUB_AUTH !== 'off') {
+    return new Response('Sign-in is not configured for this deployment.', {
       status: 500,
       headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' },
     })
   }
-  if (team && aud) {
-    const who = await verifyAccess(accessToken(ctx.request), team, aud).catch(() => null)
+  if (keys.size || (team && aud)) {
+    // A key link: remember the key in a cookie, then drop it from the address bar.
+    const linkKey = ctx.url.searchParams.get('key')
+    const linkWho = whoHasKey(linkKey, keys)
+    if (linkKey && linkWho) {
+      ctx.cookies.set(KEY_COOKIE, linkKey, { path: '/', httpOnly: true, secure: true, sameSite: 'lax', maxAge: KEY_COOKIE_MAX_AGE })
+      const clean = new URL(ctx.url)
+      clean.searchParams.delete('key')
+      return ctx.redirect(clean.pathname + clean.search, 302)
+    }
+    let who = whoHasKey(keyFromCookie(ctx.request), keys)
+    if (!who && team && aud) who = await verifyAccess(accessToken(ctx.request), team, aud).catch(() => null)
     if (!who) {
-      return new Response('Sign in through the hub address; this URL is not behind Cloudflare Access.', {
+      return new Response('Open the hub with your personal link once; after that it remembers you.', {
         status: 403,
         headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' },
       })
