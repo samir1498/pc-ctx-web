@@ -12,6 +12,7 @@ export type Folder =
   | 'loops'
   | 'research'
   | 'designs'
+  | 'docs'
 
 export const FOLDERS: readonly Folder[] = [
   'plans',
@@ -27,6 +28,7 @@ export const FOLDERS: readonly Folder[] = [
   'loops',
   'research',
   'designs',
+  'docs',
 ]
 
 export function isFolder(value: string): value is Folder {
@@ -82,6 +84,7 @@ export const FOLDER_LABELS: Record<Folder, string> = {
   loops: 'Loops',
   research: 'Research',
   designs: 'Designs',
+  docs: 'Docs',
 }
 
 // Singular, for a page heading and a breadcrumb ("Report", "Standup").
@@ -99,4 +102,5 @@ export const FOLDER_SINGULAR: Record<Folder, string> = {
   loops: 'Loop',
   research: 'Research note',
   designs: 'Design page',
+  docs: 'Guide',
 }

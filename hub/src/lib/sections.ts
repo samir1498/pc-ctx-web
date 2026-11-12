@@ -1,7 +1,7 @@
 import type { Folder } from '../doc/types'
 import { FOLDER_LABELS, FOLDER_SINGULAR } from '../doc/types'
 
-export const PRIMARY: Folder[] = ['plans', 'progress', 'reports', 'designs', 'ideas', 'research', 'references', 'handoffs']
+export const PRIMARY: Folder[] = ['docs', 'plans', 'progress', 'reports', 'designs', 'ideas', 'research', 'references', 'handoffs']
 export const SECONDARY: Folder[] = ['standups', 'roadmaps', 'processes', 'loops', 'archive']
 export const SECTIONS: Folder[] = [...PRIMARY, ...SECONDARY]
 
@@ -19,6 +19,7 @@ export const BLURB: Record<Folder, string> = {
   processes: 'How the team builds, tests and ships.',
   loops: 'Repeated runs of a plan, one page per run.',
   archive: 'Finished or dropped, kept for the record.',
+  docs: 'How to use what was built: steps, pictures and clips.',
 }
 
 export const label = (f: Folder) => FOLDER_LABELS[f]

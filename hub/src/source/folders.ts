@@ -12,6 +12,7 @@ export const FOLDERS = [
   'loops',
   'research',
   'designs',
+  'docs',
 ] as const
 
 export type BaseFolderKey = (typeof FOLDERS)[number]
