@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { keyFromCookie, parseKeys, whoHasKey } from '../keys'
+import { checkPassword, keyFromCookie, parseKeys, parsePasswords, safeNext, whoHasKey } from '../keys'
 
 const K1 = 'k1-aaaaaaaaaaaaaaaaaaaaaaaaaaaa'
 const K2 = 'k2-bbbbbbbbbbbbbbbbbbbbbbbbbbbb'
@@ -25,5 +25,19 @@ describe('key links', () => {
     const req = new Request('https://hub.test/', { headers: { cookie: `a=1; hub-key=${K1}; b=2` } })
     expect(keyFromCookie(req)).toBe(K1)
     expect(keyFromCookie(new Request('https://hub.test/'))).toBeNull()
+  })
+})
+
+describe('passwords', () => {
+  it('refuses a wrong password, another name\'s password, a short password and an off-site next', () => {
+    const pw = parsePasswords('anwar:chrome-saves-it-1, samir:other-pass-22, x:short')
+    expect(checkPassword('Anwar', 'chrome-saves-it-1', pw)).toBe('anwar')
+    expect(checkPassword('anwar', 'chrome-saves-it-2', pw)).toBeNull()
+    expect(checkPassword('anwar', 'other-pass-22', pw)).toBeNull()
+    expect(checkPassword('x', 'short', pw)).toBeNull()
+    expect(checkPassword(null, null, pw)).toBeNull()
+    expect(safeNext('//evil.example/p')).toBe('/')
+    expect(safeNext('https://evil.example')).toBe('/')
+    expect(safeNext('/p/dinar/docs')).toBe('/p/dinar/docs')
   })
 })

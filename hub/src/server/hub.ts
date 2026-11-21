@@ -15,6 +15,8 @@ export interface HubEnv {
   ACCESS_AUD?: string
   /** Personal key links, `name:key,name:key` (a Pages secret). See server/keys.ts. */
   HUB_KEYS?: string
+  /** Sign-in passwords, `name:password,name:password` (a Pages secret). See server/keys.ts. */
+  HUB_PASSWORDS?: string
   /** 'off' serves without Access outside dev: local preview and the T1 timings only. */
   HUB_AUTH?: string
   CTX_CACHE?: KVLike
