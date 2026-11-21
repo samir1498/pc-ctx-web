@@ -42,3 +42,49 @@ export function keyFromCookie(req: Request): string | null {
   const m = cookie.match(new RegExp(`(?:^|;\\s*)${KEY_COOKIE}=([^;]+)`))
   return m?.[1] ? decodeURIComponent(m[1]) : null
 }
+
+// Passwords (owner, 2026-11-20: "a normal password that I save in my Chrome is very
+// sufficient"). HUB_PASSWORDS is `name:password,name:password`; the sign-in page takes
+// a name and a password, so a phone's password manager offers to save and fill them.
+// The key links above keep working beside it.
+
+/** Shortest password the hub accepts; anything shorter is refused, not served behind. */
+export const MIN_PASSWORD = 10
+
+/** HUB_PASSWORDS as name -> password. */
+export function parsePasswords(raw: string | undefined): Map<string, string> {
+  const out = new Map<string, string>()
+  for (const pair of (raw ?? '').split(',')) {
+    const i = pair.indexOf(':')
+    if (i <= 0) continue
+    const name = pair.slice(0, i).trim().toLowerCase()
+    const password = pair.slice(i + 1).trim()
+    if (name && password.length >= MIN_PASSWORD) out.set(name, password)
+  }
+  return out
+}
+
+/** The name when name and password match, else null. Compares in full whatever the input. */
+export function checkPassword(
+  name: string | null | undefined,
+  password: string | null | undefined,
+  passwords: Map<string, string>,
+): string | null {
+  const n = (name ?? '').trim().toLowerCase()
+  const p = password ?? ''
+  let who: string | null = null
+  for (const [k, v] of passwords) if (sameText(k, n) && sameText(v, p) && p.length >= MIN_PASSWORD) who = k
+  return who
+}
+
+/** What the cookie may hold: a key, or a password (it names its owner the same way). */
+export function cookieSecrets(keys: Map<string, string>, passwords: Map<string, string>): Map<string, string> {
+  const all = new Map(keys)
+  for (const [name, password] of passwords) all.set(password, name)
+  return all
+}
+
+/** Only a path on this site: no scheme, no `//host`, no backslash tricks. */
+export function safeNext(next: string | null | undefined): string {
+  return next && /^\/(?![\/\\])/.test(next) ? next : '/'
+}
