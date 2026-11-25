@@ -229,5 +229,6 @@
       "title": "Ad leads",
       "note": "From the first message to an installed cabinet."
     }
-  }
+  },
+  "chat_whitelist": "^(Tabib|Bassma|EMDR|Safa|Dinar|Saydali|Project Dinar|Standalone EMDR|Compile EMDR|Fix EMDR|Besma)\\b"
 }

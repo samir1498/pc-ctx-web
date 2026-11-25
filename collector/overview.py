@@ -519,6 +519,12 @@ def loops_from_schedules(rules, now):
     return loops, other, plumbing
 
 
+def generic_chat(rules, title):
+    """A title outside the whitelist is replaced, so nothing free-form leaves the box."""
+    pid = words_product(rules, title)
+    return f"the owner's chat about {rules['products'][pid]['name']}" if pid else "a chat"
+
+
 def loops_from_chats(rules, now):
     """The owner's desktop chats about our apps, by title; the rest only counted."""
     keys = re.compile(rules["chat_keys"])
@@ -538,6 +544,8 @@ def loops_from_chats(rules, now):
         if not keys.search(title):
             other += 1
             continue
+        if not re.search(rules["chat_whitelist"], title):
+            title = generic_chat(rules, title)
         t = dt.datetime.fromtimestamp(last / 1000)
         age = (now - t).total_seconds()
         if age > rules["chat_days"] * 86400:
@@ -551,7 +559,23 @@ def loops_from_chats(rules, now):
 
 # ---- assemble ---------------------------------------------------------------
 
+def valid_date(value):
+    """The first ten characters as an ISO date, or None."""
+    try:
+        d = str(value)[:10]
+        dt.date.fromisoformat(d)
+        return d
+    except ValueError:
+        return None
+
+
 def finish_dots(pid, dots):
+    kept = []
+    for d in dots:
+        d["date"] = valid_date(d.get("date"))
+        if d["date"]:
+            kept.append(d)
+    dots[:] = kept
     dots.sort(key=lambda d: (d["date"], KINDS.index(d["kind"]), d["title"]))
     counter = defaultdict(int)
     for d in dots:
@@ -666,9 +690,21 @@ def refusal(text, names):
     return ""
 
 
+TITLE_RE = re.compile(r"\b(?:Dr|Dre|Docteur|Doctor|Docteure|Pr)\.?\s+[A-ZÀ-Ý][\w'-]+(?:\s+[A-ZÀ-Ý][\w'-]+)?")
+SECRET_RE = re.compile(r"\b(?:sk-|ghp_|gho_|eyJ)[\w.-]{6,}|\b(?:key|token|password|secret)\s*[=:]\s*\S+|\b[0-9a-fA-F]{24,}\b|\b[A-Za-z0-9+/_-]{32,}={0,2}")
+
+
+def scrub_text(text):
+    """Drops 'Dr Name', phone numbers and token-like strings from free text."""
+    text = TITLE_RE.sub("a doctor", text)
+    text = PHONE_RE.sub("", text)
+    return SECRET_RE.sub("", text)
+
+
 def scrub(value, names):
-    """Every string with the people's names swapped for 'the owner'."""
+    """Every string with the people's names swapped for 'the owner' and risky text dropped."""
     if isinstance(value, str):
+        value = scrub_text(value)
         for n in names:
             value = re.sub(r"\b" + re.escape(n) + r"\b", "the owner", value)
         return value

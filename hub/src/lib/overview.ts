@@ -68,8 +68,8 @@ const matches = (words: string[], ...fields: string[]) => {
   return words.every((w) => hay.includes(w))
 }
 
-function dotHit(project: string, p: Product, d: Dot): Hit {
-  return { title: `${p.name}: ${d.title}`, summary: d.detail, href: `${overviewBase(project)}/${p.id}#${d.id}`, group: 'dots', chip: 'Overview', meta: dm(d.date) }
+function dotHit(project: string, p: Product, d: Dot, say: (s: string) => string): Hit {
+  return { title: say(`${p.name}: ${d.title}`), summary: say(d.detail), href: `${overviewBase(project)}/${p.id}#${d.id}`, group: 'dots', chip: 'Overview', meta: dm(d.date) }
 }
 
 /**
@@ -81,26 +81,34 @@ export async function searchHub(store: Store, project: string, q: string, say: (
   if (!words.length) return []
   const groups: HitGroup[] = []
   const add = (key: string, title: string, hits: Hit[]) => hits.length && groups.push({ key, title, hits: hits.slice(0, MAX_PER_GROUP) })
-  const overview = await loadOverview(store)
-  if (overview) {
-    const products = await loadProducts(store, overview.products.map((p) => p.id))
-    add('dots', 'Roadmap dots', products.flatMap((p) => p.dots.filter((d) => matches(words, p.name, d.title, d.detail)).map((d) => dotHit(project, p, d))))
-    add(
-      'loops',
-      'Loops',
-      overview.loops
-        .filter((l) => matches(words, l.name, l.what))
-        .map((l) => ({ title: l.name, summary: l.what, href: `${overviewBase(project)}/loops#${l.id}`, group: 'loops', chip: 'Overview', meta: l.state })),
-    )
-    add(
-      'docs',
-      'Docs',
-      overview.docs.filter((d) => matches(words, d.title, d.note)).map((d) => ({ title: d.title, summary: d.note, href: `${overviewBase(project)}/docs/${d.slug}`, group: 'docs', chip: 'Overview docs' })),
-    )
+  // A malformed Overview file must not take the other sections' search down with it.
+  try {
+    const overview = await loadOverview(store)
+    if (overview) {
+      const products = await loadProducts(store, overview.products.map((p) => p.id))
+      add('dots', 'Roadmap dots', products.flatMap((p) => p.dots.filter((d) => matches(words, p.name, d.title, d.detail)).map((d) => dotHit(project, p, d, say))))
+      add(
+        'loops',
+        'Loops',
+        overview.loops
+          .filter((l) => matches(words, l.name, l.what))
+          .map((l) => ({ title: say(l.name), summary: say(l.what), href: `${overviewBase(project)}/loops#${l.id}`, group: 'loops', chip: 'Overview', meta: l.state })),
+      )
+      add(
+        'docs',
+        'Docs',
+        overview.docs.filter((d) => matches(words, d.title, d.note)).map((d) => ({ title: say(d.title), summary: say(d.note), href: `${overviewBase(project)}/docs/${d.slug}`, group: 'docs', chip: 'Overview docs' })),
+      )
+    }
+  } catch (err) {
+    console.error('overview search skipped', err)
   }
   // One section at a time: a cold store would otherwise open every section's GitHub reads at once.
   for (const s of SECTIONS) {
-    const metas = await store.allMetas(s)
+    const metas = await store.allMetas(s).catch((err) => {
+      console.error('search skipped section', s, err)
+      return []
+    })
     add(
       s,
       label(s),
