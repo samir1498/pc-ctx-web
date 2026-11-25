@@ -230,5 +230,19 @@
       "note": "From the first message to an installed cabinet."
     }
   },
-  "chat_whitelist": "^(Tabib|Bassma|EMDR|Safa|Dinar|Saydali|Project Dinar|Standalone EMDR|Compile EMDR|Fix EMDR|Besma)\\b"
+  "chat_whitelist": "^(Tabib|Bassma|EMDR|Safa|Dinar|Saydali|Project Dinar|Standalone EMDR|Compile EMDR|Fix EMDR|Besma)\\b",
+  "contacts_sent": "/mnt/c/dz-software/dinar-outreach/sent.csv",
+  "contacts_replies": "/mnt/c/dz-software/dinar-outreach/replies.csv",
+  "leads_url": "https://logidar-rule-of-100-production.up.railway.app",
+  "leads_token_file": "/mnt/c/dz-software/logidar-tools/secrets.local.txt",
+  "form_sources": [
+    "ad form",
+    "page message"
+  ],
+  "install_stages": [
+    "demo",
+    "trial",
+    "customer"
+  ],
+  "decline_words": "pas int[ée]ress|non merci|no thanks|not interested|stop|ne plus|désabonn|unsubscribe"
 }
