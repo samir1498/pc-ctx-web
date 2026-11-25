@@ -1,0 +1,234 @@
+{
+  "repo": "Dinar-dz/dz-pos",
+  "repo_dir": "~/dz-pos",
+  "branch": "main",
+  "hub_project": "dinar",
+  "commit_plan": "humans-corner-on-the-context-hub",
+  "default_product": "dinar",
+  "products": {
+    "tabib": {
+      "name": "Tabib",
+      "tagline": "A doctor's cabinet: reception, consultation, prescriptions, till",
+      "releases_repo": "Dinar-dz/tabib-releases",
+      "tag_prefix": "tabib-v",
+      "words": [
+        "tabib",
+        "doctor",
+        "cabinet",
+        "consultation",
+        "ordonnance",
+        "prescription"
+      ]
+    },
+    "bassma": {
+      "name": "Bassma",
+      "tagline": "The speech therapist's cabinet",
+      "releases_repo": "Dinar-dz/bassma-releases",
+      "tag_prefix": "bassma-v",
+      "words": [
+        "bassma",
+        "orthophon"
+      ]
+    },
+    "emdr": {
+      "name": "EMDR+",
+      "tagline": "EMDR sessions for the therapist's cabinet",
+      "releases_repo": "Dinar-dz/emdr-releases",
+      "tag_prefix": "emdr-v",
+      "words": [
+        "emdr"
+      ]
+    },
+    "dinar": {
+      "name": "Dinar",
+      "tagline": "Inventory, sales and invoicing for Algerian shops",
+      "releases_repo": "Dinar-dz/dinar-retail-releases",
+      "tag_prefix": "v",
+      "words": [
+        "dinar",
+        "saydali",
+        "retail",
+        "shop",
+        "till"
+      ]
+    },
+    "safa": {
+      "name": "Safa",
+      "tagline": "Dialysis centre follow-up",
+      "releases_repo": "",
+      "tag_prefix": "safa-v",
+      "words": [
+        "safa",
+        "dialys",
+        "dialyse"
+      ]
+    }
+  },
+  "scopes": {
+    "tabib": "tabib",
+    "tabib-clinique": "tabib",
+    "bassma": "bassma",
+    "emdr": "emdr",
+    "safa": "safa",
+    "dinar": "dinar",
+    "saydali": "dinar",
+    "retail": "dinar",
+    "till": "dinar",
+    "pwa": "dinar",
+    "personnel": "dinar",
+    "clinic": "shared",
+    "desktop": "shared",
+    "licence": "shared",
+    "licence-server": "shared",
+    "licence-admin": "shared",
+    "licence-tool": "shared",
+    "shared": "shared",
+    "core": "shared",
+    "api": "shared",
+    "mobile": "shared",
+    "phone": "shared",
+    "relay": "shared",
+    "landing": "shared",
+    "backups": "shared",
+    "thermal": "shared",
+    "import": "shared",
+    "i18n": "shared",
+    "users": "shared",
+    "link": "shared",
+    "seed": "shared",
+    "m6": "shared",
+    "m7": "shared",
+    "context": "skip",
+    "ci": "skip",
+    "gates": "skip",
+    "factory": "skip",
+    "sonar": "skip",
+    "box": "skip",
+    "tests": "skip",
+    "e2e": "skip",
+    "agents": "skip",
+    "just": "skip",
+    "build": "skip",
+    "tooling": "skip",
+    "scripts": "skip",
+    "train": "skip",
+    "qa": "skip",
+    "research": "skip",
+    "design": "skip",
+    "release": "skip",
+    "products": "skip",
+    "auth": "shared",
+    "consult": "shared",
+    "expenses": "shared",
+    "installer": "shared",
+    "join": "shared",
+    "lan": "shared",
+    "pairing": "shared",
+    "queue": "shared",
+    "settings": "shared",
+    "staff": "shared",
+    "updater": "shared",
+    "voice": "shared",
+    "tabib-phone": "tabib",
+    "ortho": "bassma",
+    "lots": "dinar",
+    "growth": "skip"
+  },
+  "install_words": [
+    "installed",
+    "install test",
+    "hand-over",
+    "on the real build",
+    "handover"
+  ],
+  "demo_words": [
+    "demo",
+    "test",
+    "team",
+    "qa",
+    "sample",
+    "trial"
+  ],
+  "licence_url": "https://dinar-licence.observeone.com",
+  "licence_token_files": [
+    "~/dz-pos/.dinar/secrets/licence-server.env"
+  ],
+  "lead_name_files": [],
+  "session_titles": {
+    "claude": "Watcher",
+    "worker": "Leads desk",
+    "usage": "Usage counts per cabinet",
+    "hubhumans": "Overview of the hub"
+  },
+  "scheduled_what": {
+    "dz-outreach-slots": "Every 10 minutes, sends one outreach message per slot.",
+    "dz-outreach-precheck": "Morning check before the outreach slots.",
+    "dz-build-day": "Builds the day's artefacts on the box.",
+    "dz-opencode-health": "Checks that the OpenCode service is up.",
+    "dz-clean-temp": "Clears temporary files on the Windows side.",
+    "dz-chrome-watchdog": "Keeps the outreach Chrome windows alive.",
+    "dz-fast-disk": "Mounts the fast disk for builds.",
+    "dz-shot": "Takes a screenshot on request.",
+    "dz-click-shot": "Clicks and takes a screenshot on request.",
+    "dz-clip": "Cuts a clip on request.",
+    "dinar-outreach": "Sends the day's WhatsApp outreach to doctors from the run sheet.",
+    "dinar-r100-learn": "One-off: learned the Rule of 100 app screen by screen.",
+    "dinar-replies": "Read-only check of who replied and whether we answered. Sends nothing.",
+    "dinar-stats": "Daily reply statistics per message variant, channel and language. Reads files only."
+  },
+  "cowork_dirs": [
+    "/mnt/c/Users/Anwender/Claude/Scheduled"
+  ],
+  "cowork_ours_prefix": "dinar-",
+  "chats_root": "/mnt/c/Users/Anwender/AppData/Local/Claude-Data/claude_pzs8sxrjxfjjc",
+  "chat_keys": "(?i)emdr|tabib|bassma|safa|dialy|h[ée]modial|saydali|pharma|dinar|caisse|shop|quiz|reception|licen[cs]e|clinique|clinic",
+  "running_minutes": 30,
+  "quiet_hours": 24,
+  "stale_days": 5,
+  "scheduled_skip": "^(dz-.*chrome.*|dz-(shot2?|click-shot|clip|wa-shot|zip-test|fast-disk|clean-temp|open-main-profile|profile2-fb|pick-search-engine|whatsapp-app)|dinar-.*-now|dinar-find|dinar-backfill-now|dinar-profiles-now)$",
+  "chat_days": 14,
+  "customers_outside_ledger": {
+    "tabib": 1
+  },
+  "customers_outside_since": "2026-11-03",
+  "docs_fallback": [
+    "context/docs/20261112-affiliate-system-guide.md",
+    "context/docs/20261119-ad-lead-replies.md",
+    "context/guides/20261124-tabib-screen-map.md",
+    "context/processes/20261124-demo-script.md",
+    "context/processes/20261118-ad-lead-replies.md"
+  ],
+  "person_names": [
+    "Samir",
+    "Anouar",
+    "Anwar"
+  ],
+  "session_what": {
+    "worker": "Handles the doctors who answer the ad forms: drafts replies, books installs.",
+    "usage": "Plans and builds the daily usage counts per cabinet.",
+    "hubhumans": "Builds this Overview section of the hub."
+  },
+  "doc_notes": {
+    "20261112-affiliate-system-guide": {
+      "title": "How to use the affiliate system",
+      "note": "How the partner commission and the affiliate links work, step by step."
+    },
+    "20261119-ad-lead-replies": {
+      "title": "Ad leads, how we answer doctors",
+      "note": "Reply wording for the doctors who answer the ads; holds the Tabib module sheet."
+    },
+    "20261124-tabib-screen-map": {
+      "title": "Tabib screen map",
+      "note": "Every Tabib screen and button in plain words."
+    },
+    "20261124-demo-script": {
+      "title": "Démo Tabib, 5 minutes",
+      "note": "The five-minute demo script."
+    },
+    "20261118-ad-lead-replies": {
+      "title": "Ad leads",
+      "note": "From the first message to an installed cabinet."
+    }
+  },
+  "chat_whitelist": "^(Tabib|Bassma|EMDR|Safa|Dinar|Saydali|Project Dinar|Standalone EMDR|Compile EMDR|Fix EMDR|Besma)\\b"
+}

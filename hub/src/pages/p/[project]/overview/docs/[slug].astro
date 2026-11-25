@@ -1,0 +1,22 @@
+---
+import HubLayout from '../../../../../layouts/HubLayout.astro'
+import Crumbs from '../../../../../components/Crumbs.astro'
+import DocView from '../../../../../components/doc/DocView.astro'
+import { notFound, pageCtx } from '../../../../../lib/page'
+import { findOverviewDoc, overviewBase } from '../../../../../lib/overview'
+import { docTitle } from '../../../../../doc/hub'
+import { asItem } from '../../../../../source/meta'
+
+const ctx = await pageCtx(Astro)
+const slug = Astro.params.slug ?? ''
+if (!ctx) return notFound('project')
+const entry = await findOverviewDoc(ctx.store, slug)
+if (!entry) return notFound(`doc ${slug}`)
+const planNames = (await ctx.store.entries('plans')).map((e) => e.name)
+const base = overviewBase(ctx.project.id)
+---
+
+<HubLayout title={ctx.say(docTitle(asItem(entry)))} active="overview" project={ctx.project}>
+  <Crumbs slot="crumbs" items={[{ label: ctx.project.name, href: `/p/${ctx.project.id}` }, { label: 'Overview', href: base }, { label: 'Docs for us', href: `${base}/docs` }, { label: 'Doc' }]} />
+  <DocView ctx={ctx} section="docs" entry={entry} planNames={planNames} />
+</HubLayout>

@@ -1,0 +1,93 @@
+---
+import { ArrowUpRight, BookOpen } from 'lucide-react'
+import HubLayout from '../../../../layouts/HubLayout.astro'
+import Crumbs from '../../../../components/Crumbs.astro'
+import SearchBox from '../../../../components/SearchBox.astro'
+import Chip from '../../../../components/overview/Chip.astro'
+import Legend from '../../../../components/overview/Legend.astro'
+import MiniLine from '../../../../components/overview/MiniLine.astro'
+import OverviewHead from '../../../../components/overview/OverviewHead.astro'
+import { notFound, pageCtx } from '../../../../lib/page'
+import { dm, lastLabel, loadOverview, overviewBase } from '../../../../lib/overview'
+
+const ctx = await pageCtx(Astro)
+if (!ctx) return notFound('project')
+const { project, store } = ctx
+const overview = await loadOverview(store)
+if (!overview) return notFound('overview')
+const base = overviewBase(project.id)
+const today = new Date().toISOString().slice(0, 10)
+const count = (s: string) => overview.loops.filter((l) => l.state === s).length
+const running = overview.loops.filter((l) => l.state === 'running')
+const live = [...running.filter((l) => l.owner === 'ours').slice(0, 3), ...running.filter((l) => l.owner === 'owner').slice(0, 2)]
+const customers = (n: number) => `${n} customer${n === 1 ? '' : 's'}`
+---
+
+<HubLayout title="Overview" active="overview" project={project}>
+  <Crumbs slot="crumbs" items={[{ label: project.name, href: `/p/${project.id}` }, { label: 'Overview' }]} />
+  <OverviewHead title="Overview" sub={`Where the apps stand and what is running, for the two of us. Updated ${lastLabel(overview.generatedAt)}.`} />
+  <SearchBox project={project.id} big />
+
+  <div class="mb-3 mt-8 flex flex-wrap items-center justify-between gap-2">
+    <h2 class="eyebrow">Products, from the first build to today</h2>
+    <Legend />
+  </div>
+  <div class="grid gap-4 md:grid-cols-2">
+    {
+      overview.products.map((p) => (
+        <a href={`${base}/${p.id}`} class="card block p-5 transition-colors hover:border-line">
+          <div class="flex items-baseline justify-between">
+            <span class="font-display text-xl font-semibold">{p.name}</span>
+            <span class="flex items-center gap-1 text-sm font-medium text-accent">Open <ArrowUpRight className="size-4" /></span>
+          </div>
+          <p class="mb-4 mt-0.5 line-clamp-1 text-sm text-muted">{p.tagline}</p>
+          <MiniLine dots={p.strip} today={today} />
+          <div class="num mt-2 flex justify-between text-[11px] text-dim"><span>{dm(p.first)}</span><span>today</span></div>
+          <div class="mt-4 flex flex-wrap gap-2">
+            {p.latest && <Chip tone="accent">latest {p.latest}</Chip>}
+            <Chip>{p.dots} dots</Chip>
+            <Chip tone={p.customers ? 'good' : 'dim'}>{customers(p.customers)}</Chip>
+            {p.contactWeeks > 0 && <Chip>{p.contactWeeks} contact weeks</Chip>}
+          </div>
+        </a>
+      ))
+    }
+    <div class="card flex flex-col justify-center border-dashed p-5 text-sm text-muted">
+      <div class="font-display text-base font-semibold text-fg">Dots</div>
+      A dot is a version, a feature released, an install, a customer count or a week of contacts. Open a product to read them.
+    </div>
+  </div>
+
+  <div class="mt-8 grid gap-6 lg:grid-cols-5">
+    <section class="lg:col-span-3">
+      <div class="mb-3 flex items-center justify-between"><h2 class="eyebrow">Running now</h2><a href={`${base}/loops`} class="text-sm font-medium text-accent">All {overview.loops.length} loops</a></div>
+      <div class="mb-3 flex flex-wrap gap-2"><Chip tone="good">{count('running')} running</Chip><Chip tone="accent">{count('scheduled')} scheduled</Chip><Chip tone="warn">{count('stale')} stale</Chip><Chip tone="dim">{count('quiet')} quiet</Chip></div>
+      <div class="card divide-y divide-border">
+        {
+          live.map((l) => (
+            <a href={`${base}/loops#${l.id}`} class="flex items-center gap-3 px-4 py-3 text-sm hover:bg-hover">
+              <span class="size-2 shrink-0 rounded-full bg-good"></span>
+              <div class="min-w-0 flex-1"><div class="font-medium">{l.name}</div><div class="truncate text-xs text-muted">{l.what}</div></div>
+              <Chip tone={l.owner === 'ours' ? 'plain' : 'accent'}>{l.owner === 'ours' ? 'ours' : "the owner's"}</Chip>
+              <span class="num whitespace-nowrap text-xs text-dim">{lastLabel(l.last)}</span>
+            </a>
+          ))
+        }
+        {live.length === 0 && <p class="px-4 py-6 text-sm text-dim">Nothing is running this minute.</p>}
+      </div>
+    </section>
+    <section class="lg:col-span-2">
+      <div class="mb-3 flex items-center justify-between"><h2 class="eyebrow">Docs for us</h2><a href={`${base}/docs`} class="text-sm font-medium text-accent">All {overview.docs.length}</a></div>
+      <div class="card divide-y divide-border">
+        {
+          overview.docs.map((d) => (
+            <a href={`${base}/docs/${d.slug}`} class="block px-4 py-3 text-sm hover:bg-hover">
+              <div class="flex items-center gap-2 font-medium"><BookOpen className="size-4 text-accent" />{d.title}</div>
+              <div class="mt-0.5 pl-6 text-xs text-muted">{d.note}</div>
+            </a>
+          ))
+        }
+      </div>
+    </section>
+  </div>
+</HubLayout>

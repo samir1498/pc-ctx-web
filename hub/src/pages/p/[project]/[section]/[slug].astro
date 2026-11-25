@@ -14,6 +14,8 @@ if (!ctx || !isSection(section)) return notFound('section')
 // Old links and the plans list both point plans at /plan/<slug>.
 if (section === 'plans') return Astro.redirect(`/p/${ctx.project.id}/plan/${slug}`, 301)
 const entry = await ctx.store.doc(section, slug)
+// A how-to page that moved into the Overview section keeps its old address.
+if (!entry && (section === 'docs' || section === 'processes') && (await ctx.store.doc('overview-docs', slug))) return Astro.redirect(`/p/${ctx.project.id}/overview/docs/${slug}`, 301)
 if (!entry) return notFound(`${singular(section).toLowerCase()} ${slug}`)
 const planNames = (await ctx.store.entries('plans')).map((e) => e.name)
 ---

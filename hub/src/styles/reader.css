@@ -121,3 +121,13 @@
 .hljs-addition { color: var(--good); }
 
 .store-frame { display: block; width: 100%; border: 0; background: transparent; }
+
+/* Anchors: an id gets a link icon on hover; a jump leaves room for the sticky bar. */
+:where(.doc-body, article, details.dot) [id], [id]:where(h1, h2, h3, h4, figure, details) { scroll-margin-top: 5rem; }
+.anchor-link { display: inline-flex; margin-left: 0.4rem; vertical-align: middle; color: var(--dim); opacity: 0; transition: opacity 0.15s; text-decoration: none; }
+:where(h1, h2, h3, h4, summary):hover > .anchor-link, .anchor-link:focus-visible, .anchor-link[data-copied] { opacity: 1; }
+figure[id] { position: relative; }
+figure[id] > .anchor-link { position: absolute; top: 0.4rem; left: 0.4rem; margin: 0; padding: 0.3rem; border-radius: 0.5rem; background: var(--panel); border: 1px solid var(--border); }
+figure[id]:hover > .anchor-link { opacity: 1; }
+.anchor-link[data-copied]::after { content: 'copied'; margin-left: 0.35rem; font-size: 0.7rem; color: var(--good); }
+details.dot:target { outline: 2px solid color-mix(in srgb, var(--accent) 45%, transparent); }

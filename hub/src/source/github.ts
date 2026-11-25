@@ -8,6 +8,8 @@ export interface RepoRef {
   branch: string
   /** Context folder inside the repo; '' or '.' is the repo root. */
   folder: string
+  /** Another GitHub API root, for a local run (scripts/local-github.mjs). */
+  api?: string
 }
 
 /** Counts GitHub requests for one hub request; the T1 numbers come from this. */
@@ -34,6 +36,7 @@ export interface BlobText {
 }
 
 const UA = 'context-hub/2.0'
+const apiRoot = (ref: RepoRef) => ref.api ?? 'https://api.github.com'
 
 export function repoPath(ref: RepoRef, sub: string): string {
   const base = ref.folder.replace(/^\.\/*$/, '').replace(/\/+$/, '')
@@ -42,7 +45,7 @@ export function repoPath(ref: RepoRef, sub: string): string {
 
 async function graphql(ref: RepoRef, meter: Meter, query: string): Promise<Record<string, unknown>> {
   meter.github++
-  const res = await fetch('https://api.github.com/graphql', {
+  const res = await fetch(`${apiRoot(ref)}/graphql`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${ref.token}`, 'Content-Type': 'application/json', 'User-Agent': UA },
     body: JSON.stringify({ query, variables: { owner: ref.owner, repo: ref.repo } }),
@@ -107,7 +110,7 @@ export async function fetchBlobs(ref: RepoRef, meter: Meter, oids: string[]): Pr
 
 async function fetchRawBlob(ref: RepoRef, meter: Meter, oid: string): Promise<string> {
   meter.github++
-  const res = await fetch(`https://api.github.com/repos/${ref.owner}/${ref.repo}/git/blobs/${oid}`, {
+  const res = await fetch(`${apiRoot(ref)}/repos/${ref.owner}/${ref.repo}/git/blobs/${oid}`, {
     headers: { Authorization: `Bearer ${ref.token}`, Accept: 'application/vnd.github.raw+json', 'User-Agent': UA },
   })
   if (!res.ok) throw new Error(`GitHub blob ${oid.slice(0, 7)}: ${res.status}`)
@@ -119,7 +122,7 @@ export async function fetchMedia(ref: RepoRef, meter: Meter, path: string): Prom
   if (!MEDIA_PATH_RE.test(path) || path.includes('..')) return null
   meter.github++
   const full = repoPath(ref, `media/${path}`)
-  const url = `https://api.github.com/repos/${ref.owner}/${ref.repo}/contents/${full.split('/').map(encodeURIComponent).join('/')}?ref=${encodeURIComponent(ref.branch)}`
+  const url = `${apiRoot(ref)}/repos/${ref.owner}/${ref.repo}/contents/${full.split('/').map(encodeURIComponent).join('/')}?ref=${encodeURIComponent(ref.branch)}`
   const res = await fetch(url, { headers: { Authorization: `Bearer ${ref.token}`, Accept: 'application/vnd.github.raw+json', 'User-Agent': UA } })
   if (res.status === 404) return null
   if (!res.ok) throw new Error(`GitHub contents ${res.status}`)

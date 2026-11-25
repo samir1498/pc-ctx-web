@@ -20,6 +20,12 @@
   --color-good: var(--good);
   --color-warn: var(--warn);
   --color-bad: var(--bad);
+  /* The five kinds of roadmap dot in the Overview section; the same on every theme. */
+  --color-k-version: #2a78d6;
+  --color-k-feature: #1baf7a;
+  --color-k-install: #eda100;
+  --color-k-customer: #e87ba4;
+  --color-k-contacts: #6b5bd6;
   --font-display: var(--font-display-stack);
   --font-sans: var(--font-body-stack);
   --font-mono: var(--font-mono-stack);

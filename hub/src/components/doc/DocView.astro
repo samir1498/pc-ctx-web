@@ -98,7 +98,7 @@ const statusLabel = (s: string) => (plain ? (PLAIN_STATUS[s] ?? s) : s)
   {
     tasks.length > 0 && (
       <section>
-        <h2 class="section-title">Tasks{pr.total ? ` · ${pr.done} of ${pr.total} done` : ''}</h2>
+        <h2 id="tasks" class="section-title">Tasks{pr.total ? ` · ${pr.done} of ${pr.total} done` : ''}</h2>
         <TaskList tasks={tasks} plain={plain} />
       </section>
     )
@@ -107,7 +107,7 @@ const statusLabel = (s: string) => (plain ? (PLAIN_STATUS[s] ?? s) : s)
   {
     acceptance.length > 0 && (
       <section>
-        <h2 class="section-title">Done means</h2>
+        <h2 id="done-means" class="section-title">Done means</h2>
         <ul class="check-list">{acceptance.map((a) => <li>{say(a)}</li>)}</ul>
       </section>
     )
@@ -116,7 +116,7 @@ const statusLabel = (s: string) => (plain ? (PLAIN_STATUS[s] ?? s) : s)
   {
     entries.length > 0 && (
       <section>
-        <h2 class="section-title">Milestones</h2>
+        <h2 id="milestones" class="section-title">Milestones</h2>
         <ul class="ref-list">
           {entries.map((e) => (
             <li>
@@ -148,7 +148,7 @@ const statusLabel = (s: string) => (plain ? (PLAIN_STATUS[s] ?? s) : s)
   {
     references.length > 0 && (
       <section>
-        <h2 class="section-title">References</h2>
+        <h2 id="reference-list" class="section-title">References</h2>
         <ul class="ref-list">
           {references.map((r) => (
             <li>{r.startsWith('plan:') && planHref(r) ? <a class="hover:underline" href={planHref(r)}>{r.slice(5)}</a> : <span class="break-all font-mono text-xs">{r}</span>}</li>

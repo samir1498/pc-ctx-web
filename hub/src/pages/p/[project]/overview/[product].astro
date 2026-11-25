@@ -1,0 +1,115 @@
+---
+import { Clock, FileText, GitPullRequest, Link2 } from 'lucide-react'
+import HubLayout from '../../../../layouts/HubLayout.astro'
+import Crumbs from '../../../../components/Crumbs.astro'
+import Chip from '../../../../components/overview/Chip.astro'
+import Dot from '../../../../components/overview/Dot.astro'
+import Legend from '../../../../components/overview/Legend.astro'
+import MiniLine from '../../../../components/overview/MiniLine.astro'
+import OverviewHead from '../../../../components/overview/OverviewHead.astro'
+import { notFound, pageCtx } from '../../../../lib/page'
+import { dm, loadOverview, loadProduct, overviewBase } from '../../../../lib/overview'
+import { KINDS, KIND_LABEL, kindCounts, kindOfId } from '../../../../lib/overview-types'
+
+const ctx = await pageCtx(Astro)
+if (!ctx) return notFound('project')
+const { project, store } = ctx
+const product = await loadProduct(store, Astro.params.product ?? '')
+if (!product) return notFound(`product ${Astro.params.product}`)
+const overview = await loadOverview(store)
+const base = overviewBase(project.id)
+const today = new Date().toISOString().slice(0, 10)
+const kinds = kindCounts(product.dots)
+const names = new Map((overview?.products ?? []).map((p) => [p.id, p.name]))
+const isCode = (href: string) => href.includes('github.com')
+---
+
+<HubLayout title={product.name} active="overview" project={project}>
+  <Crumbs slot="crumbs" items={[{ label: project.name, href: `/p/${project.id}` }, { label: 'Overview', href: base }, { label: product.name }]} />
+  <OverviewHead title={product.name} sub={product.tagline}>
+    <div class="flex gap-2">
+      {product.latest && <Chip tone="accent">latest {product.latest}</Chip>}
+      <Chip tone={product.customers ? 'good' : 'dim'}>{product.customers} customer{product.customers === 1 ? '' : 's'}</Chip>
+    </div>
+  </OverviewHead>
+
+  <div class="card mb-6 p-5">
+    <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+      <span class="eyebrow">{dm(product.dots[0]?.date ?? today)} to today, {product.dots.length} dots</span>
+      <Legend counts={kinds} />
+    </div>
+    <MiniLine dots={product.dots.map((d) => ({ id: d.id, date: d.date, kind: d.kind }))} today={today} href={`${base}/${product.id}`} />
+  </div>
+
+  <div class="mb-3 flex flex-wrap items-center gap-2 text-sm text-muted" data-kind-filter>
+    Show:
+    <button type="button" data-kind="all" aria-pressed="true" class="rounded-full bg-accent-soft px-2 py-0.5 text-xs font-medium text-accent">All</button>
+    {KINDS.filter((k) => kinds[k] > 0).map((k) => <button type="button" data-kind={k} aria-pressed="false" class="rounded-full bg-hover px-2 py-0.5 text-xs font-medium text-muted">{KIND_LABEL[k]} {kinds[k]}</button>)}
+  </div>
+
+  <ol class="max-w-5xl">
+    {
+      product.dots.map((d, i) => (
+        <li data-row-kind={d.kind} class="relative flex gap-4">
+          <div class="relative flex w-5 shrink-0 justify-center pt-4">
+            {i < product.dots.length - 1 && <div class="absolute -bottom-2 top-7 w-px bg-line"></div>}
+            <Dot kind={d.kind} />
+          </div>
+          <details id={d.id} class="dot group mb-2 min-w-0 flex-1 rounded-card border border-border bg-panel open:border-accent/40 open:shadow-sm">
+            <summary class="flex cursor-pointer list-none items-center gap-3 px-4 py-2.5 text-sm [&::-webkit-details-marker]:hidden">
+              <span class="num w-12 shrink-0 text-xs text-dim">{dm(d.date)}</span>
+              <span class="min-w-0 font-medium group-open:text-base">{d.title}</span>
+              <span class="ml-auto"><Chip>{KIND_LABEL[d.kind]}</Chip></span>
+            </summary>
+            <div class="mx-4 border-t border-border pb-3 pt-3 sm:pl-[60px]">
+              {d.detail && <p class="text-sm text-muted">{d.detail}</p>}
+              {
+                d.links.length > 0 && (
+                  <div class="mt-3 flex flex-wrap gap-2">
+                    {d.links.map((l) => (
+                      <a href={l.href} class="inline-flex items-center gap-1.5 rounded-lg border border-border bg-rail px-2.5 py-1 text-xs font-medium text-accent hover:bg-hover">
+                        {isCode(l.href) ? <GitPullRequest className="size-3.5" /> : <FileText className="size-3.5" />}
+                        {l.label}
+                      </a>
+                    ))}
+                  </div>
+                )
+              }
+              {
+                d.cross.length > 0 && (
+                  <div class="mt-3 flex flex-wrap items-center gap-2 text-xs text-dim">
+                    <Link2 className="size-3.5" />Same moment on
+                    {d.cross.map((c) => (
+                      <a href={`${base}/${c.product}#${c.id}`} class="inline-flex items-center gap-1.5 rounded-full bg-accent-soft px-2.5 py-1 font-medium text-accent">
+                        <Dot kind={kindOfId(c.id)} size="sm" />
+                        {names.get(c.product) ?? c.product} {dm(c.date)}: {c.title.length > 34 ? `${c.title.slice(0, 33)}…` : c.title}
+                      </a>
+                    ))}
+                  </div>
+                )
+              }
+            </div>
+          </details>
+        </li>
+      ))
+    }
+    <li class="flex items-center gap-4"><span class="grid w-5 place-items-center"><Clock className="size-4 text-accent" /></span><span class="num text-xs font-semibold uppercase text-accent">Today, {dm(today)}</span></li>
+  </ol>
+  {kinds.contacts === 0 && product.id === 'tabib' && <p class="mt-4 text-sm text-dim">No outreach weeks are shown: the outreach counts file was not available when this page was generated.</p>}
+</HubLayout>
+
+<script>
+  // Filter chips: hide the rows of the other kinds.
+  const bar = document.querySelector('[data-kind-filter]')
+  bar?.addEventListener('click', (e) => {
+    const btn = e.target instanceof Element ? e.target.closest<HTMLButtonElement>('button[data-kind]') : null
+    if (!btn) return
+    const kind = btn.dataset.kind
+    for (const b of bar.querySelectorAll<HTMLButtonElement>('button[data-kind]')) {
+      const on = b === btn
+      b.setAttribute('aria-pressed', String(on))
+      b.className = `rounded-full px-2 py-0.5 text-xs font-medium ${on ? 'bg-accent-soft text-accent' : 'bg-hover text-muted'}`
+    }
+    for (const row of document.querySelectorAll<HTMLElement>('[data-row-kind]')) row.hidden = kind !== 'all' && row.dataset.rowKind !== kind
+  })
+</script>

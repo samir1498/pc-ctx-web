@@ -1,0 +1,18 @@
+---
+interface Props {
+  project: string
+  /** Fill the box with the query a results page shows. */
+  value?: string
+  big?: boolean
+}
+const { project, value = '', big = false } = Astro.props
+---
+
+<form action={`/p/${project}/search`} method="get" role="search" class:list={['w-full', big ? '' : 'hidden w-72 sm:block']}>
+  <label class:list={['flex items-center gap-3 rounded-card border bg-panel', big ? 'border-line px-4 py-3.5 text-base shadow-sm' : 'border-border px-3 py-1.5 text-sm']}>
+    <svg class="size-4 shrink-0 text-dim" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+    <span class="sr-only">Search the hub</span>
+    <input name="q" value={value} data-hub-search placeholder="Search the hub" autocomplete="off" class="w-full min-w-0 bg-transparent outline-none placeholder:text-dim" />
+    <kbd class="rounded border border-border bg-rail px-1.5 font-mono text-[11px] text-dim">/</kbd>
+  </label>
+</form>
