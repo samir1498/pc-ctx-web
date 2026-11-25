@@ -19,13 +19,16 @@ export type BaseFolderKey = (typeof FOLDERS)[number]
 
 // 'plans-archived' maps to plans/archived; 'progress-standup' is where one store
 // keeps its standups (see FOLDER_FALLBACKS). 'usage' holds the collector's day files.
-export type FolderKey = BaseFolderKey | 'plans-archived' | 'progress-standup' | 'mockups' | 'usage'
+// 'overview' and 'overview-products' hold the Overview generator's JSON, 'overview-docs' the people's how-to pages.
+export type FolderKey = BaseFolderKey | 'plans-archived' | 'progress-standup' | 'mockups' | 'usage' | 'overview' | 'overview-products' | 'overview-docs'
 
-export const ALL_FOLDERS: readonly FolderKey[] = [...FOLDERS, 'plans-archived', 'progress-standup', 'mockups', 'usage']
+export const ALL_FOLDERS: readonly FolderKey[] = [...FOLDERS, 'plans-archived', 'progress-standup', 'mockups', 'usage', 'overview', 'overview-products', 'overview-docs']
 
 const NESTED_PATHS: Partial<Record<FolderKey, string>> = {
   'plans-archived': 'plans/archived',
   'progress-standup': 'progress/standup',
+  'overview-products': 'overview/products',
+  'overview-docs': 'overview/docs',
 }
 
 export function folderPath(folder: FolderKey): string {
@@ -49,6 +52,7 @@ const HTML_FOLDERS: readonly FolderKey[] = ['designs', 'mockups', 'reports']
 export function isDocument(name: string, folder?: FolderKey): boolean {
   if (/^readme\.mdx?$/i.test(name)) return false
   if (folder === 'usage') return /^\d{4}-\d{2}-\d{2}\.json$/.test(name)
+  if (folder === 'overview' || folder === 'overview-products') return /^[\w-]+\.json$/.test(name)
   if (isMarkdown(name)) return true
   return folder !== undefined && HTML_FOLDERS.includes(folder) && isHtml(name)
 }

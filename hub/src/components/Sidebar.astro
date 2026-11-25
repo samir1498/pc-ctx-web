@@ -9,13 +9,15 @@ interface Props {
   summaries: SectionSummary[]
   active: string
   mobile?: boolean
+  /** The Overview section is listed only when the generator's files exist. */
+  overview?: boolean
 }
-const { project, projects, summaries, active, mobile = false } = Astro.props
+const { project, projects, summaries, active, mobile = false, overview = false } = Astro.props
 const base = project ? `/p/${project.id}` : ''
 const count = new Map(summaries.map((s) => [s.key, s.count]))
 const primary = PRIMARY.filter((k) => (count.get(k) ?? 0) > 0)
 const secondary = SECONDARY.filter((k) => (count.get(k) ?? 0) > 0)
-const top = project ? [{ href: base, label: project.audience === 'plain' ? 'Overview' : 'Dashboard', key: 'dashboard' }] : []
+const top = project ? [{ href: base, label: project.audience === 'plain' ? 'Home' : 'Dashboard', key: 'dashboard' }] : []
 const row = (on: boolean) => ['flex items-center justify-between rounded-lg px-3 py-1.5 transition-colors', on ? 'bg-accent-soft font-medium text-accent' : 'text-muted hover:bg-hover hover:text-fg']
 const id = mobile ? 'project-m' : 'project-d'
 ---
@@ -58,6 +60,16 @@ const id = mobile ? 'project-m' : 'project-d'
   </ul>
 
   <ul class="mt-4 space-y-0.5 px-3">
+    {
+      overview && project && (
+        <li>
+          <a href={`${base}/overview`} class:list={row(active === 'overview')}>
+            <span>Overview</span>
+            <span class="rounded-full bg-accent-soft px-2 py-0.5 text-xs font-medium text-accent">new</span>
+          </a>
+        </li>
+      )
+    }
     {
       primary.map((k) => (
         <li>

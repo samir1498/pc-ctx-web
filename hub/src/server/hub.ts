@@ -10,6 +10,8 @@ export interface HubEnv {
   GITHUB_OWNER?: string
   GITHUB_REPO?: string
   GITHUB_PATH_PREFIX?: string
+  /** Another GitHub API root: a local run only. */
+  GITHUB_API_URL?: string
   PROJECTS?: string
   ACCESS_TEAM_DOMAIN?: string
   ACCESS_AUD?: string
@@ -50,7 +52,7 @@ export async function createHub(meter: Meter): Promise<Hub> {
       let s = stores.get(id)
       if (!s) {
         s = tokenFor(p.owner, hubEnv, hubEnv.CTX_CONFIG ?? null).then((token) =>
-          createStore({ token, owner: p.owner, repo: p.repo, branch: p.branch, folder: p.folder }, hubEnv.CTX_CACHE ?? null, p.id, meter),
+          createStore({ token, owner: p.owner, repo: p.repo, branch: p.branch, folder: p.folder, api: hubEnv.GITHUB_API_URL || undefined }, hubEnv.CTX_CACHE ?? null, p.id, meter),
         )
         stores.set(id, s)
       }

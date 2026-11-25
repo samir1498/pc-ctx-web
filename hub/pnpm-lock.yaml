@@ -41,6 +41,9 @@ importers:
       marked:
         specifier: ^18.0.14
         version: 18.0.14
+      marked-gfm-heading-id:
+        specifier: ^4.1.4
+        version: 4.1.4(marked@18.0.14)
       marked-highlight:
         specifier: ^2.2.4
         version: 2.2.4(marked@18.0.14)
@@ -2369,6 +2372,11 @@ packages:
 
   magicast@0.5.5:
     resolution: {integrity: sha512-UicdXN8zQ3JHlxVq+28afMXPr1z7WNY6+7EJnzTdQWkTAlMLF5fNCCKxJHBQwGaNGR11581EiQmQzx73+MvszA==}
+
+  marked-gfm-heading-id@4.1.4:
+    resolution: {integrity: sha512-CspnvVfHSkb/znqdPS4jUR8HtCjq3M/DnrsJCrfLBLvdrgbemmoINKpeWKQYkBiXAoBGejw0cV7xzqrPdup3WA==}
+    peerDependencies:
+      marked: '>=13 <19'
 
   marked-highlight@2.2.4:
     resolution: {integrity: sha512-PZxisNMJDduSjc0q6uvjsnqqHCXc9s0eyzxDO9sB1eNGJnd/H1/Fu+z6g/liC1dfJdFW4SftMwMlLvsBhUPrqQ==}
@@ -5245,6 +5253,11 @@ snapshots:
       '@babel/parser': 7.29.9
       '@babel/types': 7.29.8
       source-map-js: 1.2.1
+
+  marked-gfm-heading-id@4.1.4(marked@18.0.14):
+    dependencies:
+      github-slugger: 2.0.0
+      marked: 18.0.14
 
   marked-highlight@2.2.4(marked@18.0.14):
     dependencies:
