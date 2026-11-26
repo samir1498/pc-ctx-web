@@ -1,19 +1,16 @@
 ---
-import { Clock, FileText, GitPullRequest, Link2 } from 'lucide-react'
 import HubLayout from '../../../../layouts/HubLayout.astro'
 import Crumbs from '../../../../components/Crumbs.astro'
-import Chip from '../../../../components/overview/Chip.astro'
 import Dot from '../../../../components/overview/Dot.astro'
-import Legend from '../../../../components/overview/Legend.astro'
-import MiniLine from '../../../../components/overview/MiniLine.astro'
 import OverviewHead from '../../../../components/overview/OverviewHead.astro'
 import { notFound, pageCtx } from '../../../../lib/page'
-import { dm, loadOverview, loadProduct, overviewBase } from '../../../../lib/overview'
-import { KINDS, KIND_LABEL, kindCounts, kindOfId } from '../../../../lib/overview-types'
+import { dayLabel, monthKey, monthName, plural } from '../../../../lib/format'
+import { loadOverview, loadProduct, overviewBase } from '../../../../lib/overview'
+import { KINDS, KIND_LABEL, kindCounts } from '../../../../lib/overview-types'
 
 const ctx = await pageCtx(Astro)
 if (!ctx) return notFound('project')
-const { project, store } = ctx
+const { project, store, say } = ctx
 const product = await loadProduct(store, Astro.params.product ?? '')
 if (!product) return notFound(`product ${Astro.params.product}`)
 const overview = await loadOverview(store)
@@ -21,95 +18,129 @@ const base = overviewBase(project.id)
 const today = new Date().toISOString().slice(0, 10)
 const kinds = kindCounts(product.dots)
 const names = new Map((overview?.products ?? []).map((p) => [p.id, p.name]))
-const isCode = (href: string) => href.includes('github.com')
+const MANY = { version: 'versions', feature: 'features', install: 'installs', customer: 'customers', contacts: 'contact weeks' } as const
+// Newest first. A line of five dots or fewer opens every month and every dot, so a short line still fills its page.
+const few = product.dots.length <= 5
+const sorted = [...product.dots].sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id))
+const months = [...new Set(sorted.map((d) => monthKey(d.date)))].map((m, i) => {
+  const items = sorted.filter((d) => monthKey(d.date) === m)
+  const k = kindCounts(items)
+  return {
+    key: m,
+    items,
+    open: few || i === 0,
+    summary: KINDS.filter((x) => k[x] > 0).map((x) => plural(k[x], KIND_LABEL[x].toLowerCase(), MANY[x])).join(', '),
+    range: `${dayLabel(items[items.length - 1]?.date ?? today)} to ${dayLabel(items[0]?.date ?? today)}`,
+  }
+})
+const CHEVRON = 'size-3.5 shrink-0 text-dim opacity-60 transition-transform group-open:rotate-90 group-open:opacity-100'
+const LINK = 'text-accent underline decoration-accent/30 underline-offset-[3px]'
 ---
 
-<HubLayout title={product.name} active="overview" project={project}>
+<HubLayout title={product.name} active={`overview/${product.id}`} project={project}>
   <Crumbs slot="crumbs" items={[{ label: project.name, href: `/p/${project.id}` }, { label: 'Overview', href: base }, { label: product.name }]} />
-  <OverviewHead title={product.name} sub={product.tagline}>
-    <div class="flex gap-2">
-      {product.latest && <Chip tone="accent">latest {product.latest}</Chip>}
-      <Chip tone={product.customers ? 'good' : 'dim'}>{product.customers} customer{product.customers === 1 ? '' : 's'}</Chip>
-    </div>
-  </OverviewHead>
+  <OverviewHead title={product.name} sub={product.tagline} />
 
-  <div class="card mb-6 p-5">
-    <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
-      <span class="eyebrow">{dm(product.dots[0]?.date ?? today)} to today, {product.dots.length} dots</span>
-      <Legend counts={kinds} />
-    </div>
-    <MiniLine dots={product.dots.map((d) => ({ id: d.id, date: d.date, kind: d.kind }))} today={today} href={`${base}/${product.id}`} />
-  </div>
-
-  <div class="mb-3 flex flex-wrap items-center gap-2 text-sm text-muted" data-kind-filter>
-    Show:
-    <button type="button" data-kind="all" aria-pressed="true" class="rounded-full bg-accent-soft px-2 py-0.5 text-xs font-medium text-accent">All</button>
-    {KINDS.filter((k) => kinds[k] > 0).map((k) => <button type="button" data-kind={k} aria-pressed="false" class="rounded-full bg-hover px-2 py-0.5 text-xs font-medium text-muted">{KIND_LABEL[k]} {kinds[k]}</button>)}
-  </div>
-
-  <ol class="max-w-5xl">
-    {
-      product.dots.map((d, i) => (
-        <li data-row-kind={d.kind} class="relative flex gap-4">
-          <div class="relative flex w-5 shrink-0 justify-center pt-4">
-            {i < product.dots.length - 1 && <div class="absolute -bottom-2 top-7 w-px bg-line"></div>}
-            <Dot kind={d.kind} />
-          </div>
-          <details id={d.id} class="dot group mb-2 min-w-0 flex-1 rounded-card border border-border bg-panel open:border-accent/40 open:shadow-sm">
-            <summary class="flex cursor-pointer list-none items-center gap-3 px-4 py-2.5 text-sm [&::-webkit-details-marker]:hidden">
-              <span class="num w-12 shrink-0 text-xs text-dim">{dm(d.date)}</span>
-              <span class="min-w-0 font-medium group-open:text-base">{d.title}</span>
-              <span class="ml-auto"><Chip>{KIND_LABEL[d.kind]}</Chip></span>
+  <div class="grid gap-x-14 gap-y-10 lg:grid-cols-[minmax(0,1fr)_15rem]">
+    <div>
+      <div class="flex items-baseline pb-3 text-sm">
+        <span class="num w-[4.25rem] text-xs text-accent">{dayLabel(today)}</span>
+        <span class="flex w-6 justify-center self-center"><span class="size-2 rounded-full border-[1.5px] border-accent"></span></span>
+        <span class="text-[13px] text-accent">Today</span>
+      </div>
+      {
+        months.map((m) => (
+          <details data-month class="group/month mb-5" open={m.open}>
+            <summary class="flex cursor-pointer list-none items-baseline gap-3 border-b border-line pb-2 [&::-webkit-details-marker]:hidden">
+              <svg class="size-4 shrink-0 translate-y-0.5 text-dim transition-transform group-open/month:rotate-90" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg>
+              <h2 class="font-display text-[15px] font-semibold">{monthName(m.key)}</h2>
+              <span class="text-[13px] text-muted">{m.summary}</span>
+              <span class="ml-auto text-[13px] text-dim group-open/month:hidden">{m.range}</span>
             </summary>
-            <div class="mx-4 border-t border-border pb-3 pt-3 sm:pl-[60px]">
-              {d.detail && <p class="text-sm text-muted">{d.detail}</p>}
+            <ol class="relative pt-2 text-sm">
+              <span class="absolute bottom-2 left-[calc(5rem-0.5px)] top-0 w-px bg-line"></span>
               {
-                d.links.length > 0 && (
-                  <div class="mt-3 flex flex-wrap gap-2">
-                    {d.links.map((l) => (
-                      <a href={l.href} class="inline-flex items-center gap-1.5 rounded-lg border border-border bg-rail px-2.5 py-1 text-xs font-medium text-accent hover:bg-hover">
-                        {isCode(l.href) ? <GitPullRequest className="size-3.5" /> : <FileText className="size-3.5" />}
-                        {l.label}
-                      </a>
-                    ))}
-                  </div>
-                )
+                m.items.map((d, i) => (
+                  <li data-row-kind={d.kind} data-day={d.date}>
+                    <details id={d.id} class="dot group" open={few}>
+                      <summary class="flex cursor-pointer list-none items-baseline py-[5px] hover:text-accent group-open:py-2.5 [&::-webkit-details-marker]:hidden">
+                        <span data-date class:list={['num w-[4.25rem] shrink-0 self-start pt-[3px] text-xs text-dim', i > 0 && m.items[i - 1]?.date === d.date && 'invisible']}>{dayLabel(d.date)}</span>
+                        <span class="relative z-10 flex h-[22px] w-6 shrink-0 items-center justify-center self-start"><span class="rounded-full ring-4 ring-page"><Dot kind={d.kind} /></span></span>
+                        <span class="min-w-0 flex-1 truncate pr-6 group-open:whitespace-normal group-open:font-semibold">{say(d.title)}</span>
+                        <span class="flex shrink-0 items-center gap-1.5 self-start pt-[3px] text-xs text-dim">{KIND_LABEL[d.kind]}<svg class={CHEVRON} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg></span>
+                      </summary>
+                      <div class="max-w-[46rem] pb-1 pl-[5.75rem] pr-6 text-[13.5px] leading-[1.55]">
+                        {d.detail && <p class="text-muted">{say(d.detail)}</p>}
+                        {d.links.length > 0 && <p class="mt-1.5 flex flex-wrap gap-x-4 gap-y-0.5">{d.links.map((l) => <a href={l.href} class={LINK}>{l.label}</a>)}</p>}
+                        {
+                          d.cross.length > 0 && (
+                            <p class="mt-1.5 flex flex-wrap gap-x-4 gap-y-0.5 text-dim">
+                              Same moment on
+                              {d.cross.map((c) => <a href={`${base}/${c.product}#${c.id}`} class={LINK}>{names.get(c.product) ?? c.product}: {say(c.title)}</a>)}
+                            </p>
+                          )
+                        }
+                      </div>
+                    </details>
+                  </li>
+                ))
               }
-              {
-                d.cross.length > 0 && (
-                  <div class="mt-3 flex flex-wrap items-center gap-2 text-xs text-dim">
-                    <Link2 className="size-3.5" />Same moment on
-                    {d.cross.map((c) => (
-                      <a href={`${base}/${c.product}#${c.id}`} class="inline-flex items-center gap-1.5 rounded-full bg-accent-soft px-2.5 py-1 font-medium text-accent">
-                        <Dot kind={kindOfId(c.id)} size="sm" />
-                        {names.get(c.product) ?? c.product} {dm(c.date)}: {c.title.length > 34 ? `${c.title.slice(0, 33)}…` : c.title}
-                      </a>
-                    ))}
-                  </div>
-                )
-              }
-            </div>
+            </ol>
           </details>
-        </li>
-      ))
-    }
-    <li class="flex items-center gap-4"><span class="grid w-5 place-items-center"><Clock className="size-4 text-accent" /></span><span class="num text-xs font-semibold uppercase text-accent">Today, {dm(today)}</span></li>
-  </ol>
-  {kinds.contacts === 0 && product.id === 'tabib' && <p class="mt-4 text-sm text-dim">No outreach weeks are shown: the outreach counts file was not available when this page was generated.</p>}
+        ))
+      }
+      {kinds.contacts === 0 && product.id === 'tabib' && <p class="mt-4 text-sm text-dim">No outreach weeks are shown: the outreach counts file was not available when this page was generated.</p>}
+    </div>
+
+    <aside class="text-[13.5px]">
+      <div class="eyebrow border-b border-line pb-2">{product.name} in figures</div>
+      <dl class="pt-1.5">
+        <div class="flex items-baseline justify-between py-[5px]"><dt class="text-muted">Latest version</dt><dd class="num text-[13px]">{product.latest || 'none yet'}</dd></div>
+        <div class="flex items-baseline justify-between py-[5px]"><dt class="text-muted">Customers</dt><dd class="num text-[13px]">{product.customers}</dd></div>
+        <div class="flex items-baseline justify-between py-[5px]"><dt class="text-muted">First dot</dt><dd class="num text-[13px]">{dayLabel(product.dots[0]?.date ?? today)}</dd></div>
+        <div class="flex items-baseline justify-between py-[5px]"><dt class="text-muted">Dots</dt><dd class="num text-[13px]">{product.dots.length}</dd></div>
+      </dl>
+      <div class="eyebrow mt-6 border-b border-line pb-2">Show</div>
+      <div class="pt-1.5" data-kind-filter>
+        <button type="button" data-kind="all" aria-pressed="true" class="flex w-full items-baseline justify-between py-[5px] text-muted aria-pressed:font-medium aria-pressed:text-fg"><span>Every kind</span><span class="num text-[13px]">{product.dots.length}</span></button>
+        {
+          KINDS.map((k) => (
+            <button type="button" data-kind={k} aria-pressed="false" disabled={kinds[k] === 0} class="flex w-full items-center justify-between gap-2 py-[5px] text-muted hover:text-fg disabled:opacity-60 aria-pressed:font-medium aria-pressed:text-fg">
+              <span class="flex items-center gap-2"><Dot kind={k} />{KIND_LABEL[k]}</span>
+              <span class="num text-[13px]">{kinds[k]}</span>
+            </button>
+          ))
+        }
+      </div>
+      <div class="eyebrow mt-6 border-b border-line pb-2">Months</div>
+      <dl class="pt-1.5">
+        {months.map((m) => <div class="flex items-baseline justify-between py-[5px]"><dt class="text-muted">{monthName(m.key)}</dt><dd class="num text-[13px]">{m.items.length}</dd></div>)}
+      </dl>
+    </aside>
+  </div>
 </HubLayout>
 
 <script>
-  // Filter chips: hide the rows of the other kinds.
+  // Kind filter: hide the rows of the other kinds, print each day's date once, on its first visible row, and hide a month with nothing left.
   const bar = document.querySelector('[data-kind-filter]')
   bar?.addEventListener('click', (e) => {
     const btn = e.target instanceof Element ? e.target.closest<HTMLButtonElement>('button[data-kind]') : null
-    if (!btn) return
+    if (!btn || btn.disabled) return
     const kind = btn.dataset.kind
-    for (const b of bar.querySelectorAll<HTMLButtonElement>('button[data-kind]')) {
-      const on = b === btn
-      b.setAttribute('aria-pressed', String(on))
-      b.className = `rounded-full px-2 py-0.5 text-xs font-medium ${on ? 'bg-accent-soft text-accent' : 'bg-hover text-muted'}`
+    for (const b of bar.querySelectorAll<HTMLButtonElement>('button[data-kind]')) b.setAttribute('aria-pressed', String(b === btn))
+    for (const month of document.querySelectorAll<HTMLElement>('[data-month]')) {
+      let last = ''
+      let shown = 0
+      for (const row of month.querySelectorAll<HTMLElement>('[data-row-kind]')) {
+        row.hidden = kind !== 'all' && row.dataset.rowKind !== kind
+        if (row.hidden) continue
+        shown++
+        const date = row.querySelector<HTMLElement>('[data-date]')
+        const first = row.dataset.day !== last
+        last = row.dataset.day ?? ''
+        date?.classList.toggle('invisible', !first)
+      }
+      month.hidden = shown === 0
     }
-    for (const row of document.querySelectorAll<HTMLElement>('[data-row-kind]')) row.hidden = kind !== 'all' && row.dataset.rowKind !== kind
   })
 </script>

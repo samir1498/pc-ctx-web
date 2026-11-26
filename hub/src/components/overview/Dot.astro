@@ -1,18 +1,10 @@
 ---
 import type { Kind } from '../../lib/overview-types'
+import { KIND_BG } from '../../lib/overview-types'
 interface Props {
   kind: Kind
-  size?: 'sm' | 'md'
 }
-const { kind, size = 'md' } = Astro.props
-// Whole class names, so Tailwind sees each one.
-const COLOR: Record<Kind, string> = {
-  version: 'bg-k-version ring-k-version/30',
-  feature: 'bg-k-feature ring-k-feature/30',
-  install: 'bg-k-install ring-k-install/30',
-  customer: 'bg-k-customer ring-k-customer/30',
-  contacts: 'bg-k-contacts ring-k-contacts/30',
-}
+const { kind } = Astro.props
 ---
 
-<span class:list={['relative z-10 inline-block shrink-0 rounded-full ring-4', COLOR[kind], size === 'sm' ? 'size-2.5 ring-2' : 'size-3.5']}></span>
+<span class:list={['inline-block size-2 shrink-0 rounded-full', KIND_BG[kind]]}></span>

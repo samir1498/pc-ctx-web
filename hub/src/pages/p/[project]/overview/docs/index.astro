@@ -1,32 +1,39 @@
 ---
-import { BookOpen } from 'lucide-react'
 import HubLayout from '../../../../../layouts/HubLayout.astro'
 import Crumbs from '../../../../../components/Crumbs.astro'
 import OverviewHead from '../../../../../components/overview/OverviewHead.astro'
 import { notFound, pageCtx } from '../../../../../lib/page'
-import { loadOverview, overviewBase } from '../../../../../lib/overview'
+import { dayLabel } from '../../../../../lib/format'
+import { loadDocHeadings, loadOverview, overviewBase } from '../../../../../lib/overview'
 
 const ctx = await pageCtx(Astro)
 if (!ctx) return notFound('project')
-const { project, store } = ctx
+const { project, store, say } = ctx
 const overview = await loadOverview(store)
 if (!overview) return notFound('overview')
 const base = overviewBase(project.id)
+const inside = await loadDocHeadings(store, overview.docs.map((d) => d.slug))
+// A slug starts with the day the page was written: 20261124-demo-script.
+const written = (slug: string) => (/^\d{8}-/.test(slug) ? dayLabel(`${slug.slice(0, 4)}-${slug.slice(4, 6)}-${slug.slice(6, 8)}`) : '')
 ---
 
-<HubLayout title="Docs for us" active="overview" project={project}>
+<HubLayout title="Docs for us" active="overview/docs" project={project}>
   <Crumbs slot="crumbs" items={[{ label: project.name, href: `/p/${project.id}` }, { label: 'Overview', href: base }, { label: 'Docs for us' }]} />
-  <OverviewHead title="Docs for us" sub="How-to pages for the two of us. Moved here from Docs, Processes and the guides folder." />
-  <div class="card divide-y divide-border">
+  <OverviewHead title="Docs for us" sub="How-to pages for the two of us, each with what is inside it." />
+  <div class="eyebrow grid grid-cols-[4.25rem_minmax(0,1fr)] gap-x-6 border-b border-line pb-2"><span>Written</span><span>Page</span></div>
+  <ul class="divide-y divide-border border-b border-border">
     {
       overview.docs.map((d) => (
-        <a href={`${base}/docs/${d.slug}`} class="flex items-center gap-4 px-5 py-4 hover:bg-hover">
-          <BookOpen className="size-5 shrink-0 text-accent" />
-          <div class="min-w-0 flex-1"><div class="font-medium">{d.title}</div><div class="text-sm text-muted">{d.note}</div></div>
-          <span class="num hidden text-xs text-dim sm:block">{d.slug}</span>
-        </a>
+        <li class="grid grid-cols-[4.25rem_minmax(0,1fr)] items-baseline gap-x-6 py-4">
+          <span class="num text-xs text-dim">{written(d.slug)}</span>
+          <div class="min-w-0 max-w-[58rem]">
+            <a href={`${base}/docs/${d.slug}`} class="text-[15px] font-medium hover:text-accent">{say(d.title)}</a>
+            <p class="mt-0.5 text-muted">{say(d.note)}</p>
+            {(inside.get(d.slug) ?? []).length > 0 && <p class="mt-1.5 text-[13px] leading-relaxed text-dim">{(inside.get(d.slug) ?? []).map((h) => say(h)).join('  /  ')}</p>}
+          </div>
+        </li>
       ))
     }
-  </div>
-  <p class="mt-4 text-sm text-dim">Old addresses under Docs and Processes answer with a redirect to the page here.</p>
+  </ul>
+  <p class="mt-3 text-[13px] text-dim">Old addresses under Docs and Processes answer with a redirect to the page here.</p>
 </HubLayout>

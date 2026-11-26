@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Palette } from 'lucide-react'
+import { ChevronDown } from 'lucide-react'
 import { THEMES, THEME_EVENT, activeTheme, applyTheme, type ThemeKey } from '../lib/themes'
 
 export default function ThemeSwitcher() {
@@ -12,16 +12,16 @@ export default function ThemeSwitcher() {
   }, [])
 
   return (
-    <label className="flex items-center gap-2 rounded-card border border-border bg-panel px-2.5 py-1.5 text-sm text-muted">
-      <Palette className="size-4" aria-hidden />
+    <label className="relative inline-flex h-[34px] items-center px-1 text-sm text-muted">
       <span className="sr-only">Theme</span>
       <select
-        className="bg-transparent text-fg outline-none"
+        className="cursor-pointer appearance-none bg-transparent pr-5 text-muted outline-none focus-visible:underline"
         value={theme}
         onChange={(e) => {
-          const key = e.target.value as ThemeKey
-          setTheme(key)
-          applyTheme(key)
+          const next = THEMES.find((t) => t.key === e.target.value)
+          if (!next) return
+          setTheme(next.key)
+          applyTheme(next.key)
         }}
       >
         {THEMES.map((t) => (
@@ -30,6 +30,7 @@ export default function ThemeSwitcher() {
           </option>
         ))}
       </select>
+      <ChevronDown className="pointer-events-none absolute right-1 size-3.5 text-dim" strokeWidth={2.5} aria-hidden />
     </label>
   )
 }

@@ -1,0 +1,22 @@
+---
+import type { StripDot } from '../../lib/overview-types'
+import { KIND_BG } from '../../lib/overview-types'
+interface Props {
+  dots: StripDot[]
+  /** Percent position of a date on the axis every product shares. */
+  at: (date: string) => number
+  months: { label: string; at: number }[]
+}
+const { dots, at, months } = Astro.props
+---
+
+<div class="relative mr-2 h-5" aria-hidden="true">
+  <span class="absolute -right-2 left-0 top-1/2 h-px bg-border"></span>
+  {months.map((m) => <span class="absolute inset-y-0 w-px bg-line" style={{ left: `${m.at}%` }}></span>)}
+  {
+    dots.map((d) => {
+      const nth = dots.filter((x) => x.date === d.date).indexOf(d)
+      return <span class:list={['absolute top-[3px] h-3.5 w-[3px] rounded-[1px]', KIND_BG[d.kind]]} style={{ left: `calc(${at(d.date)}% + ${nth * 4}px)` }}></span>
+    })
+  }
+</div>

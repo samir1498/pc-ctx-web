@@ -6,6 +6,9 @@ export type Kind = (typeof KINDS)[number]
 
 export const KIND_LABEL: Record<Kind, string> = { version: 'Version', feature: 'Feature', install: 'Install', customer: 'Customer', contacts: 'Contacts' }
 
+/** Whole class names, so Tailwind sees each one. */
+export const KIND_BG: Record<Kind, string> = { version: 'bg-k-version', feature: 'bg-k-feature', install: 'bg-k-install', customer: 'bg-k-customer', contacts: 'bg-k-contacts' }
+
 export interface DotLink {
   label: string
   href: string

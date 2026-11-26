@@ -7,6 +7,7 @@ import type { Project } from '../source/projects'
 import { summarizeAll } from '../lib/dashboard'
 import { LAST_PROJECT } from '../server/hub'
 import SearchBox from '../components/SearchBox.astro'
+import { overviewNav } from '../lib/overview'
 
 interface Props {
   title: string
@@ -20,7 +21,7 @@ const hub = Astro.locals.hub
 const shown = project ?? hub.project(Astro.cookies.get(LAST_PROJECT)?.value ?? '') ?? hub.projects[0]
 const store = shown ? await hub.store(shown.id) : null
 const summaries = store ? summarizeAll(await store.trees()) : []
-const hasOverview = store ? !!(await store.tree('overview')) : false
+const overview = store ? await overviewNav(store, active === 'overview' || active.startsWith('overview/')) : null
 ---
 
 <!doctype html>
@@ -47,14 +48,14 @@ const hasOverview = store ? !!(await store.tree('overview')) : false
   </head>
   <body class="min-h-dvh">
     <div class="lg:grid lg:h-dvh lg:grid-cols-[16rem_1fr]">
-      <Sidebar project={shown} projects={hub.projects} summaries={summaries} active={active} overview={hasOverview} />
+      <Sidebar project={shown} projects={hub.projects} summaries={summaries} active={active} overview={overview} />
       <div class="flex min-w-0 flex-col lg:h-dvh lg:overflow-y-auto">
         <header class="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-border bg-page/85 px-4 py-3 backdrop-blur sm:px-8">
           <div class="flex min-w-0 items-center gap-3">
             <details class="relative lg:hidden">
-              <summary class="cursor-pointer list-none rounded-card border border-border bg-panel px-3 py-1.5 text-sm">Menu</summary>
-              <div class="absolute left-0 top-11 z-20 w-64 overflow-hidden rounded-card border border-border shadow-xl">
-                <Sidebar project={shown} projects={hub.projects} summaries={summaries} active={active} overview={hasOverview} mobile />
+              <summary class="flex cursor-pointer list-none items-center gap-1 px-1 py-1.5 text-sm text-muted [&::-webkit-details-marker]:hidden">Menu<svg class="size-3.5 text-dim" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></summary>
+              <div class="absolute left-0 top-11 z-20 w-64 overflow-hidden border border-border shadow-xl">
+                <Sidebar project={shown} projects={hub.projects} summaries={summaries} active={active} overview={overview} mobile />
               </div>
             </details>
             <slot name="crumbs" />

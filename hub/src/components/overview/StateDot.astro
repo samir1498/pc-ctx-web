@@ -1,0 +1,17 @@
+---
+import type { LoopState } from '../../lib/overview-types'
+interface Props {
+  state: LoopState
+}
+const { state } = Astro.props
+const DOT: Record<LoopState, string> = {
+  running: 'bg-good',
+  scheduled: 'bg-accent',
+  quiet: 'bg-dim',
+  stale: 'bg-warn',
+  paused: 'border border-dim',
+  done: 'border border-line',
+}
+---
+
+<span class:list={['mr-2 inline-block size-1.5 -translate-y-0.5 rounded-full', DOT[state]]}></span>
