@@ -378,9 +378,9 @@ def count_customers(listing, rules, today):
 
 def read_csv(path):
     try:
-        with open(expand(path), encoding="utf-8", newline="") as f:
+        with open(expand(path), encoding="utf-8-sig", newline="") as f:
             return list(csv.DictReader(f))
-    except OSError:
+    except (OSError, UnicodeDecodeError, csv.Error):
         return []
 
 
@@ -407,7 +407,8 @@ def read_leads(rules):
     req = urllib.request.Request(rules["leads_url"].rstrip("/") + "/api/leads", headers={"Authorization": "Bearer " + token, "User-Agent": "overview-collector"})
     try:
         with urllib.request.urlopen(req, timeout=30) as r:
-            return json.load(r).get("leads", [])
+            leads = json.load(r).get("leads", [])
+            return [x for x in leads if isinstance(x, dict)] if isinstance(leads, list) else []
     except Exception:
         return []
 
@@ -420,10 +421,16 @@ def contacts_dots(rules, leads=None, warnings=None):
         d = valid_date(row.get("date"))
         if d and row.get("result") in ("sent", "followup"):
             weeks[week_of(dt.date.fromisoformat(d))]["sent"] += 1
+    auto = re.compile("|".join(re.escape(m) for m in rules["auto_reply_markers"]), re.I)
+    seen = set()
     for row in read_csv(rules["contacts_replies"]):
         d = valid_date(row.get("date"))
         text = row.get("reply_text") or ""
-        if d and "auto-reply" not in text.lower():
+        key = tuple(row.get(k) for k in rules["replies_key"])
+        if key in seen:
+            continue
+        seen.add(key)
+        if d and not auto.search(text):
             w = weeks[week_of(dt.date.fromisoformat(d))]
             w["declined" if decline.search(text) else "answered"] += 1
     leads = read_leads(rules) if leads is None else leads
@@ -432,7 +439,8 @@ def contacts_dots(rules, leads=None, warnings=None):
     for lead in leads:
         day = ms_day(lead.get("createdAt"))
         if day and lead.get("source") in rules["form_sources"]:
-            weeks[week_of(day)]["forms"][str(lead.get("stage", "new"))] += 1
+            stage = lead.get("stage")
+            weeks[week_of(day)]["forms"][stage if stage in rules["known_stages"] else "other"] += 1
     dots = []
     for w, v in sorted(weeks.items()):
         forms = sum(v["forms"].values())

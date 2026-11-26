@@ -244,5 +244,30 @@
     "trial",
     "customer"
   ],
-  "decline_words": "pas int[ée]ress|non merci|no thanks|not interested|stop|ne plus|désabonn|unsubscribe"
+  "decline_words": "\\b(pas int[ée]ress|non merci|no thanks|not interested|unsubscribe|d[ée]sabonn)",
+  "auto_reply_markers": [
+    "auto-reply",
+    "réponse automatique",
+    "reponse automatique",
+    "message automatique",
+    "absent",
+    "رد تلقائي",
+    "رسالة تلقائية",
+    "رد آلي"
+  ],
+  "replies_key": [
+    "date",
+    "time",
+    "id",
+    "channel"
+  ],
+  "known_stages": [
+    "new",
+    "contacted",
+    "replied",
+    "demo",
+    "trial",
+    "customer",
+    "lost"
+  ]
 }
