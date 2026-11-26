@@ -1,31 +1,48 @@
 ---
 import HubLayout from '../../../../layouts/HubLayout.astro'
 import Crumbs from '../../../../components/Crumbs.astro'
-import LoopTable from '../../../../components/overview/LoopTable.astro'
+import LoopRows from '../../../../components/overview/LoopRows.astro'
 import OverviewHead from '../../../../components/overview/OverviewHead.astro'
-import StateChip from '../../../../components/overview/StateChip.astro'
+import Section from '../../../../components/overview/Section.astro'
+import StateDot from '../../../../components/overview/StateDot.astro'
 import { notFound, pageCtx } from '../../../../lib/page'
+import { dayLabel } from '../../../../lib/format'
 import { loadOverview, overviewBase } from '../../../../lib/overview'
 import { LOOP_STATES } from '../../../../lib/overview-types'
 
 const ctx = await pageCtx(Astro)
 if (!ctx) return notFound('project')
-const { project, store } = ctx
+const { project, store, say } = ctx
 const overview = await loadOverview(store)
 if (!overview) return notFound('overview')
-const rank = (s: string) => LOOP_STATES.findIndex((x) => x === s)
-const by = (owner: string) => overview.loops.filter((l) => l.owner === owner).sort((a, b) => rank(a.state) - rank(b.state))
-const count = (s: string) => overview.loops.filter((l) => l.state === s).length
+const LABEL = { running: 'Running', scheduled: 'Scheduled', quiet: 'Quiet', stale: 'Stale', paused: 'Paused', done: 'Done' } as const
+const groups = LOOP_STATES.map((s) => ({ state: s, items: overview.loops.filter((l) => l.state === s) })).filter((g) => g.items.length > 0)
+const GRID = 'md:grid md:grid-cols-[17rem_minmax(0,1fr)_6rem_6rem] md:items-baseline md:gap-x-6'
 ---
 
-<HubLayout title="Loops" active="overview" project={project}>
+<HubLayout title="Loops" active="overview/loops" project={project}>
   <Crumbs slot="crumbs" items={[{ label: project.name, href: `/p/${project.id}` }, { label: 'Overview', href: overviewBase(project.id) }, { label: 'Loops' }]} />
-  <OverviewHead title="Loops" sub="Everything that runs by itself or in a chat. Running first.">
-    <div class="flex flex-wrap gap-3">
-      {LOOP_STATES.map((s) => <span class="inline-flex items-center gap-1.5"><StateChip state={s} /><b class="num text-xs">{count(s)}</b></span>)}
-    </div>
-  </OverviewHead>
-  <LoopTable title="Ours" loops={by('ours')} />
-  <LoopTable title="The owner's" loops={by('owner')} />
-  {overview.folded.map((f) => <p class="mb-2 text-sm text-dim">{f}</p>)}
+  <OverviewHead title="Loops" sub="Everything that runs by itself or in a chat, by state. Running first." />
+  <div class:list={[GRID, 'eyebrow hidden pb-5']}><span>Loop</span><span>What it does</span><span>Whose</span><span class="text-right">Last moved</span></div>
+  {
+    groups.map((g) => (
+      <Section class="mb-7" title={LABEL[g.state]} n={g.items.length}>
+        <StateDot slot="mark" state={g.state} />
+        {
+          g.state === 'done' ? (
+            <details class="group">
+              <summary class="flex cursor-pointer list-none items-center gap-1 py-2 text-[13px] text-dim [&::-webkit-details-marker]:hidden">
+                Folded, last one {dayLabel(g.items.map((l) => l.last).sort().reverse()[0] ?? '')}
+                <svg class="size-3.5 transition-transform group-open:rotate-90" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg>
+              </summary>
+              <LoopRows loops={g.items} say={say} />
+            </details>
+          ) : (
+            <LoopRows loops={g.items} say={say} />
+          )
+        }
+      </Section>
+    ))
+  }
+  <div class="space-y-1 text-[13px] text-dim">{overview.folded.map((f) => <p>{say(f)}</p>)}</div>
 </HubLayout>

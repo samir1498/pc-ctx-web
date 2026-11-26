@@ -1,0 +1,23 @@
+---
+import { lastLabel } from '../../lib/overview'
+import type { Loop } from '../../lib/overview-types'
+interface Props {
+  loops: Loop[]
+  say: (s: string) => string
+}
+const { loops, say } = Astro.props
+const GRID = 'md:grid md:grid-cols-[17rem_minmax(0,1fr)_6rem_6rem] md:items-baseline md:gap-x-6'
+---
+
+<ul class="divide-y divide-border">
+  {
+    loops.map((l) => (
+      <li id={l.id} class:list={[GRID, 'py-2']}>
+        {l.link ? <a href={l.link} class="font-medium hover:text-accent">{say(l.name)}</a> : <span class="font-medium">{say(l.name)}</span>}
+        <span class="line-clamp-2 text-[13.5px] text-muted">{say(l.what)}</span>
+        <span class="text-[13px] text-muted">{l.owner === 'ours' ? 'ours' : "the owner's"}</span>
+        <span class="num whitespace-nowrap text-xs text-dim md:text-right">{lastLabel(l.last)}</span>
+      </li>
+    ))
+  }
+</ul>

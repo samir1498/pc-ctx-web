@@ -16,7 +16,7 @@ const planNames = (await ctx.store.entries('plans')).map((e) => e.name)
 const base = overviewBase(ctx.project.id)
 ---
 
-<HubLayout title={ctx.say(docTitle(asItem(entry)))} active="overview" project={ctx.project}>
+<HubLayout title={ctx.say(docTitle(asItem(entry)))} active="overview/docs" project={ctx.project}>
   <Crumbs slot="crumbs" items={[{ label: ctx.project.name, href: `/p/${ctx.project.id}` }, { label: 'Overview', href: base }, { label: 'Docs for us', href: `${base}/docs` }, { label: 'Doc' }]} />
   <DocView ctx={ctx} section="docs" entry={entry} planNames={planNames} />
 </HubLayout>

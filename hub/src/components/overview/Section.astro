@@ -1,0 +1,18 @@
+---
+interface Props {
+  id?: string
+  title: string
+  /** A count printed small beside the title. */
+  n?: number | string
+  class?: string
+}
+const { id, title, n, class: extra } = Astro.props
+---
+
+<section id={id} class={extra}>
+  <div class="flex items-baseline justify-between gap-6 border-b border-line pb-2">
+    <h2 class="font-display text-[15px] font-semibold"><slot name="mark" />{title}{n !== undefined && <span class="num ml-2 text-xs font-normal text-dim">{n}</span>}</h2>
+    <div class="text-[13px] text-muted"><slot name="right" /></div>
+  </div>
+  <slot />
+</section>

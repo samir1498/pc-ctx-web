@@ -1,0 +1,16 @@
+---
+interface Props {
+  id: string
+  /** Navigate to the chosen option's value (the project picker). */
+  switcher?: boolean
+  class?: string
+}
+const { id, switcher = false, class: extra } = Astro.props
+---
+
+<span class="relative inline-flex items-center">
+  <select id={id} data-project-switch={switcher ? '' : undefined} class:list={['cursor-pointer appearance-none bg-transparent pr-5 outline-none focus-visible:underline [&>option]:bg-panel [&>option]:text-fg', extra]}>
+    <slot />
+  </select>
+  <svg class="pointer-events-none absolute right-0 size-3.5 text-dim" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg>
+</span>

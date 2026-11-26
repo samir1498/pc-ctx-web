@@ -2,6 +2,8 @@
 import type { Project } from '../source/projects'
 import type { SectionSummary } from '../lib/dashboard'
 import { PRIMARY, SECONDARY, label } from '../lib/sections'
+import type { OverviewNav } from '../lib/overview'
+import PlainSelect from './PlainSelect.astro'
 
 interface Props {
   project?: Project
@@ -10,15 +12,18 @@ interface Props {
   active: string
   mobile?: boolean
   /** The Overview section is listed only when the generator's files exist. */
-  overview?: boolean
+  overview?: OverviewNav | null
 }
-const { project, projects, summaries, active, mobile = false, overview = false } = Astro.props
+const { project, projects, summaries, active, mobile = false, overview = null } = Astro.props
 const base = project ? `/p/${project.id}` : ''
 const count = new Map(summaries.map((s) => [s.key, s.count]))
 const primary = PRIMARY.filter((k) => (count.get(k) ?? 0) > 0)
 const secondary = SECONDARY.filter((k) => (count.get(k) ?? 0) > 0)
 const top = project ? [{ href: base, label: project.audience === 'plain' ? 'Home' : 'Dashboard', key: 'dashboard' }] : []
-const row = (on: boolean) => ['flex items-center justify-between rounded-lg px-3 py-1.5 transition-colors', on ? 'bg-accent-soft font-medium text-accent' : 'text-muted hover:bg-hover hover:text-fg']
+const row = (on: boolean) => ['flex items-center justify-between px-3 py-1.5 transition-colors', on ? 'font-semibold text-fg' : 'text-muted hover:text-fg']
+// Overview is open while on any of its pages; its children sit on a guide line.
+const inOverview = active === 'overview' || active.startsWith('overview/')
+const child = (on: boolean) => ['-ml-0.5 flex h-[26px] items-center justify-between border-l-2 pl-4 pr-3 text-[12.5px] transition-colors', on ? 'border-accent font-medium text-accent' : 'border-transparent text-dim hover:text-fg']
 const id = mobile ? 'project-m' : 'project-d'
 ---
 
@@ -44,13 +49,13 @@ const id = mobile ? 'project-m' : 'project-d'
         <label class="eyebrow mb-1.5 block" for={id}>
           Project
         </label>
-        <select id={id} data-project-switch class="w-full rounded-lg border border-border bg-panel px-2.5 py-1.5 text-fg">
+        <PlainSelect id={id} switcher class="font-medium text-fg">
           {projects.map((p) => (
             <option value={`/p/${p.id}`} selected={p.id === project?.id}>
               {p.name}
             </option>
           ))}
-        </select>
+        </PlainSelect>
       </div>
     )
   }
@@ -63,10 +68,23 @@ const id = mobile ? 'project-m' : 'project-d'
     {
       overview && project && (
         <li>
-          <a href={`${base}/overview`} class:list={row(active === 'overview')}>
-            <span>Overview</span>
-            <span class="rounded-full bg-accent-soft px-2 py-0.5 text-xs font-medium text-accent">new</span>
+          <a href={`${base}/overview`} class:list={['flex items-center gap-1.5 px-3 py-1.5 transition-colors', active === 'overview' ? 'font-semibold text-accent' : inOverview ? 'font-semibold text-fg' : 'text-muted hover:text-fg']}>
+            <svg class:list={['-ml-1 size-3.5 shrink-0 text-dim transition-transform', inOverview && 'rotate-90']} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg>
+            <span class="flex-1">Overview</span>
+            {!inOverview && <span class="num text-xs text-dim">{overview.count}</span>}
           </a>
+          {inOverview && (
+            <ul class="mb-2 ml-[1.15rem] mt-0.5 border-l-2 border-line/80">
+              {overview.children.map((c) => (
+                <li>
+                  <a href={`${base}/overview/${c.id}`} class:list={child(active === `overview/${c.id}`)}>
+                    <span>{c.label}</span>
+                    <span class="num text-[11px] text-dim/70">{c.n}</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          )}
         </li>
       )
     }

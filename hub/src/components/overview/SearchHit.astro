@@ -1,0 +1,25 @@
+---
+import type { Hit } from '../../lib/overview'
+interface Props {
+  hit: Hit
+  words: string[]
+}
+const { hit, words } = Astro.props
+const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+// Split a text around the search words: odd parts are the matches.
+const parts = (text: string) => (words.length ? text.split(new RegExp(`(${words.map(escapeRe).join('|')})`, 'i')) : [text])
+const isMatch = (part: string) => words.includes(part.toLowerCase())
+// The snippet starts near the first hit so the match is on the one line shown.
+const near = (s: string) => {
+  const i = Math.min(...words.map((w) => s.toLowerCase().indexOf(w)).filter((n) => n >= 0), s.length)
+  return i < 70 ? s : `…${s.slice(s.lastIndexOf(' ', i - 40) + 1)}`
+}
+---
+
+<li class="grid grid-cols-[minmax(0,1fr)_4rem] items-baseline gap-x-6 py-2">
+  <a href={hit.href} class="min-w-0 hover:text-accent">
+    <div class="truncate font-medium">{parts(hit.title).map((p) => (isMatch(p) ? <b class="font-semibold underline decoration-accent decoration-2 underline-offset-4">{p}</b> : p))}</div>
+    {hit.summary && <div class="truncate text-[13px] text-muted">{parts(near(hit.summary)).map((p) => (isMatch(p) ? <b class="font-semibold text-fg">{p}</b> : p))}</div>}
+  </a>
+  <span class="num text-right text-xs text-dim">{hit.meta}</span>
+</li>

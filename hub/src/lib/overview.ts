@@ -1,11 +1,38 @@
 import type { Store } from '../source/store'
 import { SECTIONS, label } from './sections'
 import { docHref } from './list'
-import { dayLabel } from './format'
-import type { Dot, Overview, Product } from './overview-types'
+import { dayLabel, monthKey, monthShort } from './format'
+import type { Dot, Overview, Product, StripDot } from './overview-types'
 import { parseOverview, parseProduct } from './overview-types'
 
 export const overviewBase = (project: string) => `/p/${project}/overview`
+
+export interface OverviewNav {
+  /** Shown beside the closed group. */
+  count: number
+  /** Empty while the group is closed. */
+  children: { id: string; label: string; n: number }[]
+}
+
+/**
+ * The sidebar's Overview group. Closed it needs only the child count, which the file tree
+ * gives for free; open it reads the generator's index for the names and counts.
+ */
+export async function overviewNav(store: Store, open: boolean): Promise<OverviewNav | null> {
+  if (!(await store.tree('overview'))) return null
+  if (!open) {
+    const products = await store.entries('overview-products')
+    return { count: products.length + 2, children: [] }
+  }
+  const overview = await loadOverview(store)
+  if (!overview) return null
+  const children = [
+      ...overview.products.map((p) => ({ id: p.id, label: p.name, n: p.dots })),
+      { id: 'loops', label: 'Loops', n: overview.loops.length },
+      { id: 'docs', label: 'Docs', n: overview.docs.length },
+  ]
+  return { count: children.length, children }
+}
 
 /** index.json and loops.json of context/overview/, or null when the generator has not run. */
 export async function loadOverview(store: Store): Promise<Overview | null> {
@@ -31,6 +58,28 @@ export async function loadProducts(store: Store, ids: string[]): Promise<Product
 export const dm = (d: string) => (d.length >= 10 ? `${d.slice(8, 10)}.${d.slice(5, 7)}` : d)
 /** "2026-11-25 07:00" -> "25.11 07h" */
 export const lastLabel = (s: string) => (s.length > 10 ? `${dm(s)} ${s.slice(11, 13)}h` : s ? dm(s) : '')
+
+const dayNumber = (d: string) => Date.parse(`${d.slice(0, 10)}T00:00:00Z`) / 864e5
+
+/** One time axis for every product on the home page: from the first month with a dot to today, in percent. */
+export function sharedAxis(dots: StripDot[], today: string) {
+  const first = dots.map((d) => d.date).sort()[0] ?? today
+  const start = dayNumber(`${monthKey(first)}-01`)
+  const span = Math.max(dayNumber(today) - start, 1)
+  const at = (d: string) => ((dayNumber(d) - start) / span) * 100
+  const months = [...new Set(dots.map((d) => monthKey(d.date)))].sort().map((m) => ({ label: monthShort(m), at: at(`${m}-01`) }))
+  return { at, months }
+}
+
+/** The "## " headings of a doc, trimmed to the bare words: what is inside it. */
+export const docHeadings = (text: string): string[] =>
+  [...text.matchAll(/^## (.*)$/gm)].map((m) => (m[1] ?? '').replace(/\s*\(.*\)$/, '').replace(/^\d+\.\s*/, '').trim()).filter(Boolean)
+
+/** Each doc's headings by slug, read from overview/docs once. */
+export async function loadDocHeadings(store: Store, slugs: string[]): Promise<Map<string, string[]>> {
+  const files = await store.texts('overview-docs', slugs.map((s) => `${s}.md`))
+  return new Map(files.map((f) => [f.name.replace(/\.md$/, ''), docHeadings(f.text)]))
+}
 
 /**
  * A people's doc by slug: overview/docs first, then the folders it moved out of,

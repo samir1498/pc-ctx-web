@@ -1,20 +1,8 @@
 ---
 import Dot from './Dot.astro'
 import { KINDS, KIND_LABEL } from '../../lib/overview-types'
-import type { Kind } from '../../lib/overview-types'
-interface Props {
-  counts?: Record<Kind, number>
-}
-const { counts } = Astro.props
 ---
 
-<div class="flex flex-wrap items-center gap-2">
-  {
-    KINDS.map((k) => (
-      <span class="inline-flex items-center gap-2 rounded-full border border-border bg-panel px-3 py-1 text-xs text-muted">
-        <Dot kind={k} size="sm" /> {KIND_LABEL[k]}
-        {counts && <b class="num text-fg">{counts[k]}</b>}
-      </span>
-    ))
-  }
-</div>
+<span class="flex flex-wrap items-center gap-x-4 gap-y-1">
+  {KINDS.map((k) => <span class="inline-flex items-center gap-1.5"><Dot kind={k} />{KIND_LABEL[k]}</span>)}
+</span>

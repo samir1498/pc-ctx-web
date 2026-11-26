@@ -1,9 +1,10 @@
 ---
 import HubLayout from '../../../layouts/HubLayout.astro'
 import Crumbs from '../../../components/Crumbs.astro'
-import SearchBox from '../../../components/SearchBox.astro'
-import Chip from '../../../components/overview/Chip.astro'
+import SearchHit from '../../../components/overview/SearchHit.astro'
+import Section from '../../../components/overview/Section.astro'
 import { notFound, pageCtx } from '../../../lib/page'
+import { plural } from '../../../lib/format'
 import { searchHub } from '../../../lib/overview'
 
 const ctx = await pageCtx(Astro)
@@ -13,36 +14,48 @@ const q = (Astro.url.searchParams.get('q') ?? '').slice(0, 100).trim()
 const groups = q ? await searchHub(store, project.id, q, say) : []
 const total = groups.reduce((n, g) => n + g.hits.length, 0)
 const words = q.toLowerCase().split(/\s+/).filter(Boolean)
-const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-// Split a text around the search words: odd parts are the matches.
-const parts = (text: string) => (words.length ? text.split(new RegExp(`(${words.map(escapeRe).join('|')})`, 'i')) : [text])
-const isMatch = (part: string) => words.includes(part.toLowerCase())
+const PER = 6
+const LINK = 'text-accent underline decoration-accent/30 underline-offset-[3px]'
 ---
 
 <HubLayout title={q ? `Search: ${q}` : 'Search'} active="search" project={project}>
   <Crumbs slot="crumbs" items={[{ label: project.name, href: `/p/${project.id}` }, { label: 'Search' }]} />
-  <SearchBox project={project.id} value={q} big />
-  <p class="mb-6 mt-3 text-sm text-muted">
-    {q ? `${total} result${total === 1 ? '' : 's'} in the Overview section and in the rest of the hub, by title and summary.` : 'Type a word to search the Overview section and the rest of the hub, by title and summary.'}
-  </p>
-  {
-    groups.map((g) => (
-      <section id={g.key} class="mb-6">
-        <div class="mb-2 flex items-center gap-2"><h2 class="eyebrow">{g.title}</h2><span class="num text-xs text-dim">{g.hits.length}</span></div>
-        <div class="card divide-y divide-border">
-          {g.hits.map((h) => (
-            <a href={h.href} class="flex items-start gap-3 px-4 py-3 hover:bg-hover">
-              <div class="min-w-0 flex-1">
-                <div class="text-sm font-medium text-accent">{parts(h.title).map((p) => (isMatch(p) ? <mark class="rounded bg-warn/20 px-0.5 text-fg">{p}</mark> : p))}</div>
-                {h.summary && <div class="mt-0.5 text-sm text-muted">{parts(h.summary).map((p) => (isMatch(p) ? <mark class="rounded bg-warn/20 px-0.5 text-fg">{p}</mark> : p))}</div>}
-              </div>
-              {h.meta && <span class="num text-xs text-dim">{h.meta}</span>}
-              <Chip tone={h.chip.startsWith('Overview') ? 'accent' : 'plain'}>{h.chip}</Chip>
-            </a>
-          ))}
-        </div>
-      </section>
-    ))
-  }
-  {q && total === 0 && <p class="text-sm text-dim">Nothing matches "{q}". Titles and summaries only; try a shorter word.</p>}
+  <header class="mb-8">
+    <h1 class="font-display text-3xl font-semibold tracking-tight">{q ? <><span class="text-dim">Search:</span> {q}</> : 'Search'}</h1>
+    <p class="mt-1.5 text-[15px] text-muted">
+      {q ? `${plural(total, 'result')} in the Overview section and in the rest of the hub, by title and summary.` : 'Type a word in the box above to search the Overview section and the rest of the hub, by title and summary.'}
+    </p>
+  </header>
+  <div class="grid gap-x-14 gap-y-8 lg:grid-cols-[minmax(0,1fr)_13rem]">
+    <div>
+      {
+        groups.map((g) => (
+          <Section id={g.key} class="mb-8" title={g.title} n={g.hits.length}>
+            <ul class="divide-y divide-border">
+              {g.hits.slice(0, PER).map((h) => <SearchHit hit={h} words={words} />)}
+            </ul>
+            {
+              g.hits.length > PER && (
+                <details class="group border-t border-border">
+                  <summary class="cursor-pointer list-none py-2 text-[13px] [&::-webkit-details-marker]:hidden">
+                    <span class={LINK}>{g.hits.length - PER} more in {g.title}</span>
+                  </summary>
+                  <ul class="divide-y divide-border border-t border-border">
+                    {g.hits.slice(PER).map((h) => <SearchHit hit={h} words={words} />)}
+                  </ul>
+                </details>
+              )
+            }
+          </Section>
+        ))
+      }
+      {q && total === 0 && <p class="text-sm text-dim">Nothing matches "{q}". Titles and summaries only; try a shorter word.</p>}
+    </div>
+    <aside class="text-[13.5px]">
+      <div class="eyebrow border-b border-line pb-2">Found in</div>
+      <dl class="pt-1.5">
+        {groups.map((g) => <div class="flex items-baseline justify-between py-[5px]"><dt><a href={`#${g.key}`} class="text-muted hover:text-fg">{g.title}</a></dt><dd class="num text-[13px]">{g.hits.length}</dd></div>)}
+      </dl>
+    </aside>
+  </div>
 </HubLayout>
