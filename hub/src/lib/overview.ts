@@ -138,7 +138,7 @@ export async function searchHub(store: Store, project: string, q: string, say: (
       add('dots', 'Roadmap dots', products.flatMap((p) => p.dots.filter((d) => matches(words, p.name, d.title, d.detail)).map((d) => dotHit(project, p, d, say))))
       add(
         'loops',
-        'Loops',
+        'Overview loops',
         overview.loops
           .filter((l) => matches(words, l.name, l.what))
           .map((l) => ({ title: say(l.name), summary: say(l.what), href: `${overviewBase(project)}/loops#${l.id}`, group: 'loops', chip: 'Overview', meta: l.state })),

@@ -43,10 +43,10 @@ const LINK = 'text-accent underline decoration-accent/30 underline-offset-[3px]'
 
   <div class="grid gap-x-14 gap-y-10 lg:grid-cols-[minmax(0,1fr)_15rem]">
     <div>
-      <div class="flex items-baseline gap-4 pb-3">
+      <div class="flex items-baseline pb-3 text-sm">
         <span class="num w-[4.25rem] text-xs text-accent">{dayLabel(today)}</span>
         <span class="flex w-6 justify-center self-center"><span class="size-2 rounded-full border-[1.5px] border-accent"></span></span>
-        <span class="-ml-4 text-[13px] text-accent">Today</span>
+        <span class="text-[13px] text-accent">Today</span>
       </div>
       {
         months.map((m) => (
@@ -57,16 +57,16 @@ const LINK = 'text-accent underline decoration-accent/30 underline-offset-[3px]'
               <span class="text-[13px] text-muted">{m.summary}</span>
               <span class="ml-auto text-[13px] text-dim group-open/month:hidden">{m.range}</span>
             </summary>
-            <ol class="relative pt-2">
+            <ol class="relative pt-2 text-sm">
               <span class="absolute bottom-2 left-[calc(5rem-0.5px)] top-0 w-px bg-line"></span>
               {
                 m.items.map((d, i) => (
                   <li data-row-kind={d.kind} data-day={d.date}>
                     <details id={d.id} class="dot group" open={few}>
-                      <summary class="flex cursor-pointer list-none items-baseline gap-4 py-[5px] hover:text-accent group-open:py-2.5 [&::-webkit-details-marker]:hidden">
+                      <summary class="flex cursor-pointer list-none items-baseline py-[5px] hover:text-accent group-open:py-2.5 [&::-webkit-details-marker]:hidden">
                         <span data-date class:list={['num w-[4.25rem] shrink-0 self-start pt-[3px] text-xs text-dim', i > 0 && m.items[i - 1]?.date === d.date && 'invisible']}>{dayLabel(d.date)}</span>
                         <span class="relative z-10 flex h-[22px] w-6 shrink-0 items-center justify-center self-start"><span class="rounded-full ring-4 ring-page"><Dot kind={d.kind} /></span></span>
-                        <span class="-ml-4 min-w-0 flex-1 truncate group-open:whitespace-normal group-open:font-semibold">{say(d.title)}</span>
+                        <span class="min-w-0 flex-1 truncate pr-6 group-open:whitespace-normal group-open:font-semibold">{say(d.title)}</span>
                         <span class="flex shrink-0 items-center gap-1.5 self-start pt-[3px] text-xs text-dim">{KIND_LABEL[d.kind]}<svg class={CHEVRON} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg></span>
                       </summary>
                       <div class="max-w-[46rem] pb-1 pl-[5.75rem] pr-6 text-[13.5px] leading-[1.55]">

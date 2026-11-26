@@ -32,7 +32,7 @@ const GRID = 'md:grid md:grid-cols-[17rem_minmax(0,1fr)_6rem_6rem] md:items-base
           g.state === 'done' ? (
             <details class="group">
               <summary class="flex cursor-pointer list-none items-center gap-1 py-2 text-[13px] text-dim [&::-webkit-details-marker]:hidden">
-                Folded, last one {dayLabel(g.items.map((l) => l.last).sort().reverse()[0] ?? '')}
+                Folded, last one {dayLabel((g.items.map((l) => l.last).sort().reverse()[0] ?? '').slice(0, 10))}
                 <svg class="size-3.5 transition-transform group-open:rotate-90" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg>
               </summary>
               <LoopRows loops={g.items} say={say} />
