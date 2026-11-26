@@ -376,23 +376,87 @@ def count_customers(listing, rules, today):
     return out, names
 
 
-def contacts_dots(rules):
-    """One dot per week from the outreach stats file, when the rules name one and it exists."""
-    path = expand(rules.get("contacts_stats", ""))
-    if not rules.get("contacts_stats") or not os.path.exists(path):
+def read_csv(path):
+    try:
+        with open(expand(path), encoding="utf-8-sig", newline="") as f:
+            return list(csv.DictReader(f))
+    except (OSError, UnicodeDecodeError, csv.Error):
         return []
-    weeks = defaultdict(lambda: [0, 0])
-    with open(path, encoding="utf-8") as f:
-        for row in csv.DictReader(f):
-            d = (row.get("date") or "")[:10]
-            try:
-                day = dt.date.fromisoformat(d)
-            except ValueError:
-                continue
-            monday = (day - dt.timedelta(days=day.weekday())).isoformat()
-            weeks[monday][0] += int(row.get("sent") or 0)
-            weeks[monday][1] += int(row.get("replied") or 0)
-    return [{"date": w, "kind": "contacts", "title": f"Outreach week of {w[8:]}.{w[5:7]}: {s} messaged, {r} answered", "detail": "Counts only, from the outreach stats.", "links": [], "cross": []} for w, (s, r) in sorted(weeks.items())]
+
+
+def week_of(day):
+    return (day - dt.timedelta(days=day.weekday())).isoformat()
+
+
+def ms_day(ms):
+    try:
+        return dt.datetime.fromtimestamp(int(ms) / 1000).date()
+    except (TypeError, ValueError, OverflowError, OSError):
+        return None
+
+
+def read_leads(rules):
+    """Every lead from the Rule of 100 server, read only (GET /api/leads); [] when unreachable."""
+    token = ""
+    try:
+        for line in open(expand(rules["leads_token_file"]), encoding="utf-8"):
+            if line.startswith("LEADS_TOKEN="):
+                token = line.split("=", 1)[1].strip()
+    except OSError:
+        return []
+    req = urllib.request.Request(rules["leads_url"].rstrip("/") + "/api/leads", headers={"Authorization": "Bearer " + token, "User-Agent": "overview-collector"})
+    try:
+        with urllib.request.urlopen(req, timeout=30) as r:
+            leads = json.load(r).get("leads", [])
+            return [x for x in leads if isinstance(x, dict)] if isinstance(leads, list) else []
+    except Exception:
+        return []
+
+
+def contacts_dots(rules, leads=None, warnings=None):
+    """One Tabib dot per week: sent, answered, declined and the week's form leads by stage. Counts only."""
+    decline = re.compile(rules["decline_words"], re.I)
+    weeks = defaultdict(lambda: {"sent": 0, "answered": 0, "declined": 0, "forms": defaultdict(int)})
+    for row in read_csv(rules["contacts_sent"]):
+        d = valid_date(row.get("date"))
+        if d and row.get("result") in ("sent", "followup"):
+            weeks[week_of(dt.date.fromisoformat(d))]["sent"] += 1
+    auto = re.compile("|".join(re.escape(m) for m in rules["auto_reply_markers"]), re.I)
+    seen = set()
+    for row in read_csv(rules["contacts_replies"]):
+        d = valid_date(row.get("date"))
+        text = row.get("reply_text") or ""
+        key = tuple(row.get(k) for k in rules["replies_key"])
+        if key in seen:
+            continue
+        seen.add(key)
+        if d and not auto.search(text):
+            w = weeks[week_of(dt.date.fromisoformat(d))]
+            w["declined" if decline.search(text) else "answered"] += 1
+    leads = read_leads(rules) if leads is None else leads
+    if not leads and warnings is not None:
+        warnings.append("leads not read; contact weeks have no form-lead counts")
+    for lead in leads:
+        day = ms_day(lead.get("createdAt"))
+        if day and lead.get("source") in rules["form_sources"]:
+            stage = lead.get("stage")
+            weeks[week_of(day)]["forms"][stage if stage in rules["known_stages"] else "other"] += 1
+    dots = []
+    for w, v in sorted(weeks.items()):
+        forms = sum(v["forms"].values())
+        stages = ", ".join(f"{k} {n}" for k, n in sorted(v["forms"].items())) or "none"
+        dots.append({"date": w, "kind": "contacts", "title": f"Outreach week of {w[8:]}.{w[5:7]}: {v['sent']} sent, {v['answered']} answered, {v['declined']} declined, {forms} form lead{'s' if forms != 1 else ''}", "detail": f"Form leads by stage: {stages}. Counts only.", "links": [], "cross": []})
+    return dots
+
+
+def install_dots(rules, leads):
+    """Leads at an install stage (demo, trial, customer), counted per day of their last change. No lead is named."""
+    days = defaultdict(lambda: defaultdict(int))
+    for lead in leads:
+        day = ms_day(lead.get("updatedAt"))
+        if day and lead.get("stage") in rules["install_stages"]:
+            days[day.isoformat()][lead["stage"]] += 1
+    return [{"date": d, "kind": "install", "title": f"{sum(v.values())} lead{'s' if sum(v.values()) != 1 else ''} at an install stage", "detail": "By stage: " + ", ".join(f"{k} {n}" for k, n in sorted(v.items())) + ". Dated by the lead's last change. Counts only.", "links": [], "cross": []} for d, v in sorted(days.items())]
 
 
 def lead_names(rules):
@@ -620,7 +684,9 @@ def build(rules, now=None, listing=None, warnings=None):
         rec = customers.get(pid, {"count": 0, "since": ""})
         if rec["count"] and rec["since"]:
             dots[pid].append({"date": rec["since"], "kind": "customer", "title": f"{rec['count']} customer{'s' if rec['count'] != 1 else ''}", "detail": f"Live paying licences, counted on the {source}.", "links": [], "cross": []})
-    dots["tabib"].extend(contacts_dots(rules))
+    leads = read_leads(rules)
+    dots["tabib"].extend(contacts_dots(rules, leads, warnings))
+    dots["tabib"].extend(install_dots(rules, leads))
     all_dots = {pid: finish_dots(pid, dots.get(pid, [])) for pid in rules["products"]}
     link_cross(all_dots)
 

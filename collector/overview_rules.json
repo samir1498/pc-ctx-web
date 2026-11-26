@@ -230,5 +230,44 @@
       "note": "From the first message to an installed cabinet."
     }
   },
-  "chat_whitelist": "^(Tabib|Bassma|EMDR|Safa|Dinar|Saydali|Project Dinar|Standalone EMDR|Compile EMDR|Fix EMDR|Besma)\\b"
+  "chat_whitelist": "^(Tabib|Bassma|EMDR|Safa|Dinar|Saydali|Project Dinar|Standalone EMDR|Compile EMDR|Fix EMDR|Besma)\\b",
+  "contacts_sent": "/mnt/c/dz-software/dinar-outreach/sent.csv",
+  "contacts_replies": "/mnt/c/dz-software/dinar-outreach/replies.csv",
+  "leads_url": "https://logidar-rule-of-100-production.up.railway.app",
+  "leads_token_file": "/mnt/c/dz-software/logidar-tools/secrets.local.txt",
+  "form_sources": [
+    "ad form",
+    "page message"
+  ],
+  "install_stages": [
+    "demo",
+    "trial",
+    "customer"
+  ],
+  "decline_words": "\\b(pas int[ée]ress|non merci|no thanks|not interested|unsubscribe|d[ée]sabonn)",
+  "auto_reply_markers": [
+    "auto-reply",
+    "réponse automatique",
+    "reponse automatique",
+    "message automatique",
+    "absent",
+    "رد تلقائي",
+    "رسالة تلقائية",
+    "رد آلي"
+  ],
+  "replies_key": [
+    "date",
+    "time",
+    "id",
+    "channel"
+  ],
+  "known_stages": [
+    "new",
+    "contacted",
+    "replied",
+    "demo",
+    "trial",
+    "customer",
+    "lost"
+  ]
 }
